@@ -1,4 +1,4 @@
-package com.perplexhub.rsql.jpa;
+package io.github.perplexhub.rsql.jpa;
 
 import java.util.Set;
 import java.util.logging.Level;

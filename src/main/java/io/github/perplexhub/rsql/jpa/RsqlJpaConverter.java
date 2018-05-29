@@ -1,4 +1,4 @@
-package com.perplexhub.rsql.jpa;
+package io.github.perplexhub.rsql.jpa;
 
 import static cz.jirutka.rsql.parser.ast.RSQLOperators.EQUAL;
 import static cz.jirutka.rsql.parser.ast.RSQLOperators.GREATER_THAN;

@@ -1,4 +1,4 @@
-package com.perplexhub.rsql.jpa;
+package io.github.perplexhub.rsql.jpa;
 
 import javax.persistence.criteria.Path;
 import javax.persistence.metamodel.Attribute;
