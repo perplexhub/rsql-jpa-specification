@@ -42,3 +42,5 @@ hs_err_pid*
 **/.idea
 
 */sys.log*
+
+settings.xml

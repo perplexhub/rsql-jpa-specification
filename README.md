@@ -53,3 +53,14 @@ repository.findAll(RsqlJpaSpecification.rsql(filter), pageable);
 ```
 
 Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
+
+## 4) Maven
+
+
+```xml
+<dependency>
+  <groupId>io.github.perplexhub</groupId>
+  <artifactId>rsql-jpa-specification</artifactId>
+  <version>1.0.1</version>
+</dependency>
+```
