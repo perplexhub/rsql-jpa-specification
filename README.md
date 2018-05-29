@@ -1,9 +1,7 @@
 # rsql-jpa-specification
 
-Idea from rsql-parser, rsql-jpa and Dynamic-Specification-RSQL
-Visit [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser)
-Visit [RSQL for JPA](https://github.com/tennaito/rsql-jpa)
-Visit [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL)
+Idea from [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser), [RSQL for JPA](https://github.com/tennaito/rsql-jpa) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL)
+- support entities association query using Specification
 
 ## 1) Inject the EntityManager
 
@@ -54,7 +52,4 @@ repository.findAll(RsqlJpaSpecification.rsql(filter));
 repository.findAll(RsqlJpaSpecification.rsql(filter), pageable);
 ```
 
-Example:
-[RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples)
-[RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql)
-[Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
+Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
