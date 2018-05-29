@@ -8,33 +8,33 @@ Idea from [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser), [RSQL fo
 ### 1.1)
 
 ```java
-@ComponentScan("com.perplexhub.rsql.jpa")
+@ComponentScan("io.github.perplexhub.rsql.jpa")
 ```
 
 ### 1.2)
 
 ```java
 @Bean
-public com.perplexhub.rsql.jpa.RsqlJpaSpecification RsqlJpaSpecification(EntityManager entityManager) {
-    return new com.perplexhub.rsql.jpa.RsqlJpaSpecification(entityManager);
+public io.github.perplexhub.rsql.jpa.RsqlJpaSpecification RsqlJpaSpecification(EntityManager entityManager) {
+    return new io.github.perplexhub.rsql.jpa.RsqlJpaSpecification(entityManager);
 }
 ```
 
 ### 1.3)
 
 ```java
-new RsqlJpaSpecification(entityManager);
+new io.github.perplexhub.rsql.jpa.RsqlJpaSpecification(entityManager);
 ```
 
 ## 2) Add JpaSpecificationExecutor to your JPA repository class
 
 ```java
-package com.perplexhub.rsql.repository;
+package com.perplexhub.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import com.perplexhub.rsql.model.User;
+import com.perplexhub.model.User;
 
 public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
 }
