@@ -61,6 +61,6 @@ Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#ex
 <dependency>
   <groupId>io.github.perplexhub</groupId>
   <artifactId>rsql-jpa-specification</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
 </dependency>
 ```
