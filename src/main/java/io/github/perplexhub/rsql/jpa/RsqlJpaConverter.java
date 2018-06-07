@@ -154,6 +154,8 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 				object = LocalDateTime.parse(value);
 			} else if (dynamicClass.equals(Character.class)) {
 				object = (!StringUtils.isEmpty(value) ? value.charAt(0) : null);
+			} else if (dynamicClass.equals(boolean.class) || dynamicClass.equals(Boolean.class)) {
+				object = Boolean.valueOf(value);
 			} else {
 				Constructor<?> cons = (Constructor<?>) dynamicClass.getConstructor(new Class<?>[] { String.class });
 				object = cons.newInstance(new Object[] { value });
