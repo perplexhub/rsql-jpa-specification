@@ -149,7 +149,7 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 	public Object castDynamicClass(Class dynamicClass, String value) {
 		Object object = null;
 		try {
-			if (dynamicClass.equals(Date.class)) {
+			if (dynamicClass.equals(Date.class) || dynamicClass.equals(java.sql.Date.class)) {
 				object = java.sql.Date.valueOf(LocalDate.parse(value));
 			} else if (dynamicClass.equals(LocalDate.class)) {
 				object = LocalDate.parse(value);
