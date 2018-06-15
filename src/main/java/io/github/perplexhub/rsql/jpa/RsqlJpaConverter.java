@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -148,7 +149,9 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 	public Object castDynamicClass(Class dynamicClass, String value) {
 		Object object = null;
 		try {
-			if (dynamicClass.equals(LocalDate.class)) {
+			if (dynamicClass.equals(Date.class)) {
+				object = java.sql.Date.valueOf(LocalDate.parse(value));
+			} else if (dynamicClass.equals(LocalDate.class)) {
 				object = LocalDate.parse(value);
 			} else if (dynamicClass.equals(LocalDateTime.class)) {
 				object = LocalDateTime.parse(value);
