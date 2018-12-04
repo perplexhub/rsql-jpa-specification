@@ -7,7 +7,7 @@
 	<packaging>jar</packaging>
 	<name>RSQL-JPA-Specification</name>
 	<inceptionYear>2018</inceptionYear>
-	<description>A Java used to translate RSQL nodes to Spring Data JPA Specification.</description>
+	<description>A Java library used to translate RSQL nodes to Spring Data JPA Specification.</description>
 	<url>https://github.com/perplexhub/rsql-jpa-specification</url>
 	<licenses>
 		<license>
