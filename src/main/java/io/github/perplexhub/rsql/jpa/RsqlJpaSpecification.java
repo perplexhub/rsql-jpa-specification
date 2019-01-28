@@ -18,9 +18,7 @@ import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.Metamodel;
 import javax.persistence.metamodel.PluralAttribute;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.github.tennaito.rsql.builder.BuilderTools;
@@ -29,13 +27,11 @@ import com.github.tennaito.rsql.builder.SimpleBuilderTools;
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
 
-@Component
 @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
 public class RsqlJpaSpecification {
 	private static final Logger logger = Logger.getLogger(RsqlJpaSpecification.class.getName());
 	private static EntityManager entityManager;
 
-	@Autowired
 	public RsqlJpaSpecification(EntityManager entityManager) {
 		RsqlJpaSpecification.entityManager = entityManager;
 	}
@@ -86,7 +82,7 @@ public class RsqlJpaSpecification {
 					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
 					String previousClass = classMetadata.getJavaType().getName();
 					classMetadata = metaModel.managedType(associationType);
-					logger.log(Level.INFO, "Create a join between {0} and {1}.", new Object[]{previousClass, classMetadata.getJavaType().getName()});
+					logger.log(Level.INFO, "Create a join between {0} and {1}.", new Object[] { previousClass, classMetadata.getJavaType().getName() });
 
 					if (root instanceof Join) {
 						root = root.get(mappedProperty);
@@ -94,7 +90,7 @@ public class RsqlJpaSpecification {
 						root = ((From) root).join(mappedProperty);
 					}
 				} else {
-					logger.log(Level.INFO, "Create property path for type {0} property {1}.", new Object[]{classMetadata.getJavaType().getName(), mappedProperty});
+					logger.log(Level.INFO, "Create property path for type {0} property {1}.", new Object[] { classMetadata.getJavaType().getName(), mappedProperty });
 					root = root.get(mappedProperty);
 
 					if (isEmbeddedType(mappedProperty, classMetadata)) {

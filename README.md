@@ -8,7 +8,7 @@ Idea from [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser), [RSQL fo
 ### 1.1)
 
 ```java
-@ComponentScan("io.github.perplexhub.rsql.jpa")
+@Import(io.github.perplexhub.rsql.jpa.RsqlJpaSpecificationConfig.class)
 ```
 
 ### 1.2)
