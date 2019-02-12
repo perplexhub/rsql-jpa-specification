@@ -1,29 +1,12 @@
 # rsql-jpa-specification
 
-Idea from [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser), [RSQL for JPA](https://github.com/tennaito/rsql-jpa) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL)
-- support entities association query using Specification
+Translate RSQL query to org.springframework.data.jpa.domain.Specification
+- support entities association query
 
-## 1) Inject the EntityManager
-
-### 1.1)
+## 1) Import Config
 
 ```java
 @Import(io.github.perplexhub.rsql.jpa.RsqlJpaSpecificationConfig.class)
-```
-
-### 1.2)
-
-```java
-@Bean
-public io.github.perplexhub.rsql.jpa.RsqlJpaSpecification RsqlJpaSpecification(EntityManager entityManager) {
-    return new io.github.perplexhub.rsql.jpa.RsqlJpaSpecification(entityManager);
-}
-```
-
-### 1.3)
-
-```java
-new io.github.perplexhub.rsql.jpa.RsqlJpaSpecification(entityManager);
 ```
 
 ## 2) Add JpaSpecificationExecutor to your JPA repository class

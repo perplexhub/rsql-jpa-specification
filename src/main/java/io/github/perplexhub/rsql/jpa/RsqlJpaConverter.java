@@ -57,8 +57,8 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 		//Path attrPath = root.get(node.getSelector());
 		//Attribute attribute = root.getModel().getAttribute(node.getSelector());
 		RsqlJpaHolder holder = RsqlJpaSpecification.findPropertyPath(node.getSelector(), root);
-		Path attrPath = holder.path;
-		Attribute attribute = holder.attribute;
+		Path attrPath = holder.getPath();
+		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();
 		if (node.getArguments().size() > 1) {
 			/**
