@@ -1,12 +1,6 @@
 package io.github.perplexhub.rsql.jpa;
 
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.EQUAL;
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.GREATER_THAN;
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.GREATER_THAN_OR_EQUAL;
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.IN;
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.LESS_THAN;
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.LESS_THAN_OR_EQUAL;
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.NOT_EQUAL;
+import static cz.jirutka.rsql.parser.ast.RSQLOperators.*;
 
 import java.lang.reflect.Constructor;
 import java.time.LocalDate;
@@ -14,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Path;
@@ -155,6 +150,8 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 				object = LocalDate.parse(value);
 			} else if (dynamicClass.equals(LocalDateTime.class)) {
 				object = LocalDateTime.parse(value);
+			} else if (dynamicClass.equals(UUID.class)) {
+				object = UUID.fromString(value);
 			} else if (dynamicClass.equals(Character.class)) {
 				object = (!StringUtils.isEmpty(value) ? value.charAt(0) : null);
 			} else if (dynamicClass.equals(boolean.class) || dynamicClass.equals(Boolean.class)) {
