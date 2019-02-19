@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,11 +40,18 @@ import cz.jirutka.rsql.parser.ast.Node;
 public class RsqlJpaSpecification {
 	private static final Logger logger = Logger.getLogger(RsqlJpaSpecification.class.getName());
 	private static final Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
+	private static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
 	private static Map<String, EntityManager> entityManagerMap = Collections.emptyMap();
 	private static Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
 
 	public RsqlJpaSpecification(Map<String, EntityManager> entityManagerMap) {
 		RsqlJpaSpecification.entityManagerMap = entityManagerMap;
+	}
+
+	public void addEntityAttributeParser(Class valueClass, Function<String, Object> function) {
+		if (valueClass != null && function != null) {
+			RsqlJpaSpecification.valueParserMap.put(valueClass, function);
+		}
 	}
 
 	/**
@@ -124,7 +132,7 @@ public class RsqlJpaSpecification {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser().parse(rsqlQuery);
-					return rsql.accept(new RsqlJpaConverter(cb), root);
+					return rsql.accept(new RsqlJpaConverter(cb, valueParserMap), root);
 				} else
 					return null;
 			}

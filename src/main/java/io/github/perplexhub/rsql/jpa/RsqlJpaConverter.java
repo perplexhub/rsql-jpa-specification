@@ -5,10 +5,14 @@ import static cz.jirutka.rsql.parser.ast.RSQLOperators.*;
 import java.lang.reflect.Constructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Path;
@@ -31,10 +35,12 @@ import cz.jirutka.rsql.parser.ast.RSQLVisitor;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 	private final CriteriaBuilder builder;
+	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
 
-	public RsqlJpaConverter(CriteriaBuilder builder) {
+	public RsqlJpaConverter(CriteriaBuilder builder, Map<Class, Function<String, Object>> valueParserMap) {
 		this.builder = builder;
+		this.valueParserMap = valueParserMap;
 	}
 
 	public Predicate visit(AndNode node, Root root) {
@@ -49,16 +55,11 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 
 	public Predicate visit(ComparisonNode node, Root root) {
 		ComparisonOperator op = node.getOperator();
-		//Path attrPath = root.get(node.getSelector());
-		//Attribute attribute = root.getModel().getAttribute(node.getSelector());
 		RsqlJpaHolder holder = RsqlJpaSpecification.findPropertyPath(node.getSelector(), root);
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();
 		if (node.getArguments().size() > 1) {
-			/**
-			 * Implementasi List
-			 */
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
 				listObject.add(castDynamicClass(type, argument));
@@ -144,14 +145,20 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 	public Object castDynamicClass(Class dynamicClass, String value) {
 		Object object = null;
 		try {
-			if (dynamicClass.equals(Date.class) || dynamicClass.equals(java.sql.Date.class)) {
+			if (valueParserMap.containsKey(dynamicClass)) {
+				object = valueParserMap.get(dynamicClass).apply(value);
+			} else if (dynamicClass.equals(UUID.class)) {
+				object = UUID.fromString(value);
+			} else if (dynamicClass.equals(Date.class) || dynamicClass.equals(java.sql.Date.class)) {
 				object = java.sql.Date.valueOf(LocalDate.parse(value));
 			} else if (dynamicClass.equals(LocalDate.class)) {
 				object = LocalDate.parse(value);
 			} else if (dynamicClass.equals(LocalDateTime.class)) {
 				object = LocalDateTime.parse(value);
-			} else if (dynamicClass.equals(UUID.class)) {
-				object = UUID.fromString(value);
+			} else if (dynamicClass.equals(OffsetDateTime.class)) {
+				object = OffsetDateTime.parse(value);
+			} else if (dynamicClass.equals(ZonedDateTime.class)) {
+				object = ZonedDateTime.parse(value);
 			} else if (dynamicClass.equals(Character.class)) {
 				object = (!StringUtils.isEmpty(value) ? value.charAt(0) : null);
 			} else if (dynamicClass.equals(boolean.class) || dynamicClass.equals(Boolean.class)) {
