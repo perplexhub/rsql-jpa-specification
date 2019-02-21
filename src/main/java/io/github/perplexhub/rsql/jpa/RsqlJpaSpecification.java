@@ -48,12 +48,6 @@ public class RsqlJpaSpecification {
 		RsqlJpaSpecification.entityManagerMap = entityManagerMap;
 	}
 
-	public void addEntityAttributeParser(Class valueClass, Function<String, Object> function) {
-		if (valueClass != null && function != null) {
-			RsqlJpaSpecification.valueParserMap.put(valueClass, function);
-		}
-	}
-
 	/**
 	 * Returns a single entity matching the given {@link Specification} or {@link Optional#empty()} if none found.
 	 *
@@ -128,6 +122,7 @@ public class RsqlJpaSpecification {
 
 	// clone from com.putracode.utils.JPARsqlConverter
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
+		logger.log(Level.FINE, "rsql({0})", new Object[] { rsqlQuery });
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
@@ -206,6 +201,12 @@ public class RsqlJpaSpecification {
 
 	public static void addMapping(Class<?> entityClass, String selector, String property) {
 		propertyRemapping.computeIfAbsent(entityClass, entityClazz -> new ConcurrentHashMap<>()).put(selector, property);
+	}
+
+	public static void addEntityAttributeParser(Class valueClass, Function<String, Object> function) {
+		if (valueClass != null && function != null) {
+			RsqlJpaSpecification.valueParserMap.put(valueClass, function);
+		}
 	}
 
 	private static <T> ManagedType<T> getManagedType(Class<T> cls) {
