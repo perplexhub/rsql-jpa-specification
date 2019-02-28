@@ -1,18 +1,21 @@
 package io.github.perplexhub.rsql.jpa;
 
-import static cz.jirutka.rsql.parser.ast.RSQLOperators.*;
+import static io.github.perplexhub.rsql.jpa.RsqlOperators.*;
 
 import java.lang.reflect.Constructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Path;
@@ -34,6 +37,7 @@ import cz.jirutka.rsql.parser.ast.RSQLVisitor;
 // clone from com.putracode.utils.JPARsqlConverter
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
+	private static final Logger logger = Logger.getLogger(RsqlJpaConverter.class.getName());
 	private final CriteriaBuilder builder;
 	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
@@ -75,6 +79,12 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 			 * Searching With One Value
 			 */
 			Object argument = castDynamicClass(type, node.getArguments().get(0));
+			if (op.equals(IS_NULL)) {
+				return builder.isNull(attrPath);
+			}
+			if (op.equals(NOT_NULL)) {
+				return builder.isNotNull(attrPath);
+			}
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
@@ -169,8 +179,10 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 			}
 
 			return object;
+		} catch (DateTimeParseException | IllegalArgumentException e) {
+			logger.log(Level.FINE, "Parsing [{0}] with [{1}] causing [{2}], skip", new Object[] { value, dynamicClass.getName(), e.getMessage() });
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.log(Level.WARNING, "Parsing [{0}] with [{1}] causing [{2}], skip", new Object[] { value, dynamicClass.getName(), e.getMessage() });
 		}
 		return null;
 	}

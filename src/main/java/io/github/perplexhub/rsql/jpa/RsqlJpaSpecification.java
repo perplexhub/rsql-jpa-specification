@@ -126,7 +126,7 @@ public class RsqlJpaSpecification {
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
-					Node rsql = new RSQLParser().parse(rsqlQuery);
+					Node rsql = new RSQLParser(RsqlOperators.supportedOperators()).parse(rsqlQuery);
 					return rsql.accept(new RsqlJpaConverter(cb, valueParserMap), root);
 				} else
 					return null;
