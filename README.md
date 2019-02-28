@@ -23,14 +23,32 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 }
 ```
 
-## 3) Obtain the Specification from RsqlJpaSpecification.rsql(filter) using RSQL syntax
+## 3) Obtain the Specification from RsqlJpaSpecification.rsql(rsqlQuery) using RSQL syntax
 
 ```java
-filter = "company.code==perplexhub"; //equal
-filter = "company.code==perplex*"; //like perplex%
-filter = "company.code==*hub"; //like %hub
-filter = "company.code==*plex*"; //like %plex%
-filter = "company.code==^*PLEX*"; //ignore case like %PLEX%
+filter = "company.code==demo"; //equal
+filter = "company.code==''"; //equal to empty string
+filter = "company.code==dem*"; //like perplex%
+filter = "company.code==*emo"; //like %hub
+filter = "company.code==*em*"; //like %plex%
+filter = "company.code==^*EM*"; //ignore case like %PLEX%
+filter = "company.code!=demo"; //not equal
+filter = "company.code=in=(demo,real)"; //in
+filter = "company.code=out=(demo,real)"; //not in
+filter = "company.id=gt=100"; //greater than
+filter = "company.id=lt=100"; //less than
+filter = "company.id=ge=100"; //greater than or equal
+filter = "company.id=le=100"; //less than or equal
+filter = "company.id>100"; //greater than
+filter = "company.id<100"; //less than
+filter = "company.id>=100"; //greater than or equal
+filter = "company.id<=100"; //less than or equal
+filter = "company.code=isnull=''"; //is null
+filter = "company.code=null=''"; //is null
+filter = "company.code=na=''"; //is null
+filter = "company.code=nn=''"; //is not null
+filter = "company.code=notnull=''"; //is not null
+filter = "company.code=isnotnull=''"; //is not null
 repository.findAll(RsqlJpaSpecification.rsql(filter));
 repository.findAll(RsqlJpaSpecification.rsql(filter), pageable);
 ```
