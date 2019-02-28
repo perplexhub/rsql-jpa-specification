@@ -28,10 +28,10 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 ```java
 filter = "company.code==demo"; //equal
 filter = "company.code==''"; //equal to empty string
-filter = "company.code==dem*"; //like perplex%
-filter = "company.code==*emo"; //like %hub
-filter = "company.code==*em*"; //like %plex%
-filter = "company.code==^*EM*"; //ignore case like %PLEX%
+filter = "company.code==dem*"; //like dem%
+filter = "company.code==*emo"; //like %emo
+filter = "company.code==*em*"; //like %em%
+filter = "company.code==^*EM*"; //ignore case like %EM%
 filter = "company.code!=demo"; //not equal
 filter = "company.code=in=(demo,real)"; //in
 filter = "company.code=out=(demo,real)"; //not in
