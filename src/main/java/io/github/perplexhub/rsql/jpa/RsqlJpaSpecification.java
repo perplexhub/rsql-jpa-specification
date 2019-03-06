@@ -48,6 +48,33 @@ public class RsqlJpaSpecification {
 		RsqlJpaSpecification.entityManagerMap = entityManagerMap;
 	}
 
+	public static <T> Specification<T> rsql(final String rsqlQuery) {
+		logger.log(Level.FINE, "rsql({0})", new Object[] { rsqlQuery });
+		return new Specification<T>() {
+			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+				if (StringUtils.hasText(rsqlQuery)) {
+					Node rsql = new RSQLParser(RsqlOperators.supportedOperators()).parse(rsqlQuery);
+					return rsql.accept(new RsqlJpaConverter(cb, valueParserMap), root);
+				} else
+					return null;
+			}
+		};
+	}
+
+	public static <T> Specification<T> rsql(final String rsqlQuery, final boolean distinct) {
+		logger.log(Level.FINE, "rsql({0},{1})", new Object[] { rsqlQuery, distinct });
+		return new Specification<T>() {
+			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+				query.distinct(distinct);
+				if (StringUtils.hasText(rsqlQuery)) {
+					Node rsql = new RSQLParser(RsqlOperators.supportedOperators()).parse(rsqlQuery);
+					return rsql.accept(new RsqlJpaConverter(cb, valueParserMap), root);
+				} else
+					return null;
+			}
+		};
+	}
+
 	/**
 	 * Returns a single entity matching the given {@link Specification} or {@link Optional#empty()} if none found.
 	 *
@@ -118,20 +145,6 @@ public class RsqlJpaSpecification {
 	 */
 	public static long count(JpaSpecificationExecutor<?> jpaSpecificationExecutor, @Nullable String rsqlQuery) {
 		return jpaSpecificationExecutor.count(rsql(rsqlQuery));
-	}
-
-	// clone from com.putracode.utils.JPARsqlConverter
-	public static <T> Specification<T> rsql(final String rsqlQuery) {
-		logger.log(Level.FINE, "rsql({0})", new Object[] { rsqlQuery });
-		return new Specification<T>() {
-			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-				if (StringUtils.hasText(rsqlQuery)) {
-					Node rsql = new RSQLParser(RsqlOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RsqlJpaConverter(cb, valueParserMap), root);
-				} else
-					return null;
-			}
-		};
 	}
 
 	public static <T> RsqlJpaHolder<?, ?> findPropertyPath(String propertyPath, Path startRoot) {
