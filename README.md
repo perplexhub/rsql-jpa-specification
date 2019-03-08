@@ -49,8 +49,16 @@ filter = "company.code=na=''"; //is null
 filter = "company.code=nn=''"; //is not null
 filter = "company.code=notnull=''"; //is not null
 filter = "company.code=isnotnull=''"; //is not null
+```
+
+```java
+Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
+
 repository.findAll(RsqlJpaSpecification.rsql(filter));
 repository.findAll(RsqlJpaSpecification.rsql(filter), pageable);
+
+repository.findAll(RsqlJpaSpecification.rsql(filter, true)); // select distinct
+repository.findAll(RsqlJpaSpecification.rsql(filter, true), pageable);
 ```
 
 Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
