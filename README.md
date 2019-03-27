@@ -59,6 +59,15 @@ repository.findAll(RSQLSupport.rsql(filter), pageable);
 
 repository.findAll(RSQLSupport.rsql(filter, true)); // select distinct
 repository.findAll(RSQLSupport.rsql(filter, true), pageable);
+
+// use static import
+import static io.github.perplexhub.rsql.RSQLSupport.*;
+
+repository.findAll(rsql(filter));
+repository.findAll(rsql(filter), pageable);
+
+repository.findAll(rsql(filter, true)); // select distinct
+repository.findAll(rsql(filter, true), pageable);
 ```
 
 Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
