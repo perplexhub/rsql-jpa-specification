@@ -1,4 +1,4 @@
-package io.github.perplexhub.rsql.jpa;
+package io.github.perplexhub.rsql;
 
 import java.util.Collections;
 import java.util.List;
@@ -8,8 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -35,26 +33,29 @@ import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
-public class RsqlJpaSpecification {
-	private static final Logger logger = Logger.getLogger(RsqlJpaSpecification.class.getName());
+public class RSQLSupport {
+
 	private static final Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
 	private static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
 	private static Map<String, EntityManager> entityManagerMap = Collections.emptyMap();
 	private static Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
 
-	public RsqlJpaSpecification(Map<String, EntityManager> entityManagerMap) {
-		RsqlJpaSpecification.entityManagerMap = entityManagerMap;
+	public RSQLSupport(Map<String, EntityManager> entityManagerMap) {
+		RSQLSupport.entityManagerMap = entityManagerMap;
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
-		logger.log(Level.FINE, "rsql({0})", new Object[] { rsqlQuery });
+		log.debug("rsql({})", rsqlQuery);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
-					Node rsql = new RSQLParser(RsqlOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RsqlJpaConverter(cb, valueParserMap), root);
+					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
+					return rsql.accept(new RSQLConverter(cb, valueParserMap), root);
 				} else
 					return null;
 			}
@@ -62,13 +63,13 @@ public class RsqlJpaSpecification {
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery, final boolean distinct) {
-		logger.log(Level.FINE, "rsql({0},{1})", new Object[] { rsqlQuery, distinct });
+		log.debug("rsql({},distinct:{})", rsqlQuery, distinct);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				query.distinct(distinct);
 				if (StringUtils.hasText(rsqlQuery)) {
-					Node rsql = new RSQLParser(RsqlOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RsqlJpaConverter(cb, valueParserMap), root);
+					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
+					return rsql.accept(new RSQLConverter(cb, valueParserMap), root);
 				} else
 					return null;
 			}
@@ -147,20 +148,34 @@ public class RsqlJpaSpecification {
 		return jpaSpecificationExecutor.count(rsql(rsqlQuery));
 	}
 
-	public static <T> RsqlJpaHolder<?, ?> findPropertyPath(String propertyPath, Path startRoot) {
-		String[] graph = propertyPath.split("\\.");
+	public static void addMapping(Class<?> entityClass, Map<String, String> mapping) {
+		log.info("Adding entity class mapping for {}", entityClass);
+		propertyRemapping.put(entityClass, mapping);
+	}
 
+	public static void addMapping(Class<?> entityClass, String selector, String property) {
+		log.info("Adding entity class mapping for {}, selector {} and property {}", entityClass, selector, property);
+		propertyRemapping.computeIfAbsent(entityClass, entityClazz -> new ConcurrentHashMap<>()).put(selector, property);
+	}
+
+	public static void addEntityAttributeParser(Class valueClass, Function<String, Object> function) {
+		log.info("Adding entity attribute parser for {}", valueClass);
+		if (valueClass != null && function != null) {
+			RSQLSupport.valueParserMap.put(valueClass, function);
+		}
+	}
+
+	static <T> RSQLContext findPropertyPath(String propertyPath, Path startRoot) {
 		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
-
 		Path<?> root = startRoot;
 		Attribute<?, ?> attribute = null;
 
-		for (String property : graph) {
+		for (String property : propertyPath.split("\\.")) {
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
 			if (!mappedProperty.equals(property)) {
-				RsqlJpaHolder _holder = findPropertyPath(mappedProperty, root);
-				root = _holder.getPath();
-				attribute = _holder.getAttribute();
+				RSQLContext context = findPropertyPath(mappedProperty, root);
+				root = context.getPath();
+				attribute = context.getAttribute();
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
 					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
@@ -170,7 +185,7 @@ public class RsqlJpaSpecification {
 					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
 					String previousClass = classMetadata.getJavaType().getName();
 					classMetadata = getManagedType(associationType);
-					logger.log(Level.FINE, "Create a join between {0} and {1}.", new Object[] { previousClass, classMetadata.getJavaType().getName() });
+					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
 
 					if (root instanceof Join) {
 						root = root.get(mappedProperty);
@@ -178,7 +193,7 @@ public class RsqlJpaSpecification {
 						root = ((From) root).join(mappedProperty);
 					}
 				} else {
-					logger.log(Level.FINE, "Create property path for type {0} property {1}.", new Object[] { classMetadata.getJavaType().getName(), mappedProperty });
+					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
 					root = root.get(mappedProperty);
 
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
@@ -189,66 +204,49 @@ public class RsqlJpaSpecification {
 				}
 			}
 		}
-		RsqlJpaHolder holder = new RsqlJpaHolder<>();
-		holder.setPath(root);
-		holder.setAttribute(attribute);
-		return holder;
+		return RSQLContext.of(root, attribute);
 	}
 
-	private static String mapProperty(String selector, Class<?> entityClass) {
+	static String mapProperty(String selector, Class<?> entityClass) {
 		if (!propertyRemapping.isEmpty()) {
 			Map<String, String> map = propertyRemapping.get(entityClass);
 			String property = (map != null) ? map.get(selector) : null;
-
 			if (property != null) {
-				logger.log(Level.INFO, "Found mapping {0} -> {1}", new Object[] { selector, property });
+				log.debug("Map [{}] to [{}] for [{}]", selector, property, entityClass);
 				return property;
 			}
 		}
 		return selector;
 	}
 
-	public static void addMapping(Class<?> entityClass, Map<String, String> mapping) {
-		propertyRemapping.put(entityClass, mapping);
-	}
-
-	public static void addMapping(Class<?> entityClass, String selector, String property) {
-		propertyRemapping.computeIfAbsent(entityClass, entityClazz -> new ConcurrentHashMap<>()).put(selector, property);
-	}
-
-	public static void addEntityAttributeParser(Class valueClass, Function<String, Object> function) {
-		if (valueClass != null && function != null) {
-			RsqlJpaSpecification.valueParserMap.put(valueClass, function);
-		}
-	}
-
-	private static <T> ManagedType<T> getManagedType(Class<T> cls) {
-		Exception _e = null;
+	@SneakyThrows(Exception.class)
+	static <T> ManagedType<T> getManagedType(Class<T> cls) {
+		Exception ex = null;
 		if (entityManagerMap.size() > 0) {
 			ManagedType<T> managedType = managedTypeMap.get(cls);
 			if (managedType != null) {
-				logger.log(Level.FINE, "Found managed type [{0}] in cache", new Object[] { cls });
+				log.debug("Found managed type [{}] in cache", cls);
 				return managedType;
 			}
 			for (Entry<String, EntityManager> entityManagerEntry : entityManagerMap.entrySet()) {
 				try {
 					managedType = entityManagerEntry.getValue().getMetamodel().managedType(cls);
 					managedTypeMap.put(cls, managedType);
-					logger.log(Level.INFO, "Found managed type [{0}] in EntityManager [{1}]", new Object[] { cls, entityManagerEntry.getKey() });
+					log.info("Found managed type [{}] in EntityManager [{}]", cls, entityManagerEntry.getKey());
 					return managedType;
 				} catch (Exception e) {
 					if (e != null) {
-						_e = e;
+						ex = e;
 					}
-					logger.log(Level.FINE, "[{0}] not found in EntityManager [{1}] due to [{2}]", new Object[] { cls, entityManagerEntry.getKey(), e == null ? "-" : e.getMessage() });
+					log.debug("[{}] not found in EntityManager [{}] due to [{}]", cls, entityManagerEntry.getKey(), e == null ? "-" : e.getMessage());
 				}
 			}
 		}
-		logger.log(Level.SEVERE, "[{0}] not found in EntityManager{}: [{1}]", new Object[] { cls, entityManagerMap.size() > 1 ? "s" : "", StringUtils.collectionToCommaDelimitedString(entityManagerMap.keySet()) });
-		throw _e != null ? new RuntimeException(_e) : new IllegalStateException("No entity manager bean found in application context");
+		log.error("[{}] not found in EntityManager{}: [{}]", cls, entityManagerMap.size() > 1 ? "s" : "", StringUtils.collectionToCommaDelimitedString(entityManagerMap.keySet()));
+		throw ex != null ? ex : new IllegalStateException("No entity manager bean found in application context");
 	}
 
-	private static <T> Class<?> findPropertyType(String property, ManagedType<T> classMetadata) {
+	static <T> Class<?> findPropertyType(String property, ManagedType<T> classMetadata) {
 		Class<?> propertyType = null;
 		if (classMetadata.getAttribute(property).isCollection()) {
 			propertyType = ((PluralAttribute) classMetadata.getAttribute(property)).getBindableJavaType();
@@ -258,7 +256,7 @@ public class RsqlJpaSpecification {
 		return propertyType;
 	}
 
-	private static <T> boolean hasPropertyName(String property, ManagedType<T> classMetadata) {
+	static <T> boolean hasPropertyName(String property, ManagedType<T> classMetadata) {
 		Set<Attribute<? super T, ?>> names = classMetadata.getAttributes();
 		for (Attribute<? super T, ?> name : names) {
 			if (name.getName().equals(property))
@@ -267,11 +265,11 @@ public class RsqlJpaSpecification {
 		return false;
 	}
 
-	private static <T> boolean isEmbeddedType(String property, ManagedType<T> classMetadata) {
+	static <T> boolean isEmbeddedType(String property, ManagedType<T> classMetadata) {
 		return classMetadata.getAttribute(property).getPersistentAttributeType() == PersistentAttributeType.EMBEDDED;
 	}
 
-	private static <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
+	static <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
 		return classMetadata.getAttribute(property).isAssociation();
 	}
 }

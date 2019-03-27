@@ -6,7 +6,7 @@ Translate RSQL query to org.springframework.data.jpa.domain.Specification
 ## 1) Import Config
 
 ```java
-@Import(io.github.perplexhub.rsql.RSQLConfig.class)
+@Import(io.github.perplexhub.rsql.jpa.RsqlJpaSpecificationConfig.class)
 ```
 
 ## 2) Add JpaSpecificationExecutor to your JPA repository class
@@ -23,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 }
 ```
 
-## 3) Obtain the Specification from RSQLSupport.rsql(rsqlQuery) using RSQL syntax
+## 3) Obtain the Specification from RsqlJpaSpecification.rsql(rsqlQuery) using RSQL syntax
 
 ```java
 filter = "company.code==demo"; //equal
@@ -54,11 +54,11 @@ filter = "company.code=isnotnull=''"; //is not null
 ```java
 Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
-repository.findAll(RSQLSupport.rsql(filter));
-repository.findAll(RSQLSupport.rsql(filter), pageable);
+repository.findAll(RsqlJpaSpecification.rsql(filter));
+repository.findAll(RsqlJpaSpecification.rsql(filter), pageable);
 
-repository.findAll(RSQLSupport.rsql(filter, true)); // select distinct
-repository.findAll(RSQLSupport.rsql(filter, true), pageable);
+repository.findAll(RsqlJpaSpecification.rsql(filter, true)); // select distinct
+repository.findAll(RsqlJpaSpecification.rsql(filter, true), pageable);
 ```
 
 Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)

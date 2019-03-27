@@ -1,4 +1,4 @@
-package io.github.perplexhub.rsql.jpa;
+package io.github.perplexhub.rsql;
 
 import static java.util.Arrays.*;
 
@@ -7,7 +7,7 @@ import java.util.Set;
 
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 
-public class RsqlOperators {
+public class RSQLOperators {
 
 	public static final ComparisonOperator EQUAL = new ComparisonOperator("=="),
 			NOT_EQUAL = new ComparisonOperator("!="),
@@ -24,4 +24,5 @@ public class RsqlOperators {
 		return new HashSet<>(asList(EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL,
 				LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NULL, NOT_NULL));
 	}
+
 }

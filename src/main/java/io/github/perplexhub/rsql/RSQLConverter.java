@@ -1,6 +1,6 @@
-package io.github.perplexhub.rsql.jpa;
+package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.jpa.RsqlOperators.*;
+import static io.github.perplexhub.rsql.RSQLOperators.*;
 
 import java.lang.reflect.Constructor;
 import java.time.LocalDate;
@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Path;
@@ -33,33 +31,32 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.Node;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
+import lombok.extern.slf4j.Slf4j;
 
 // clone from com.putracode.utils.JPARsqlConverter
+@Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
-	private static final Logger logger = Logger.getLogger(RsqlJpaConverter.class.getName());
+public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 	private final CriteriaBuilder builder;
 	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
 
-	public RsqlJpaConverter(CriteriaBuilder builder, Map<Class, Function<String, Object>> valueParserMap) {
+	public RSQLConverter(CriteriaBuilder builder, Map<Class, Function<String, Object>> valueParserMap) {
 		this.builder = builder;
 		this.valueParserMap = valueParserMap;
 	}
 
 	public Predicate visit(AndNode node, Root root) {
-
 		return builder.and(processNodes(node.getChildren(), root));
 	}
 
 	public Predicate visit(OrNode node, Root root) {
-
 		return builder.or(processNodes(node.getChildren(), root));
 	}
 
 	public Predicate visit(ComparisonNode node, Root root) {
 		ComparisonOperator op = node.getOperator();
-		RsqlJpaHolder holder = RsqlJpaSpecification.findPropertyPath(node.getSelector(), root);
+		RSQLContext holder = RSQLSupport.findPropertyPath(node.getSelector(), root);
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();
@@ -73,11 +70,7 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 			} else {
 				return builder.not(attrPath.in(listObject));
 			}
-
 		} else {
-			/**
-			 * Searching With One Value
-			 */
 			Object argument = castDynamicClass(type, node.getArguments().get(0));
 			if (op.equals(IS_NULL)) {
 				return builder.isNull(attrPath);
@@ -121,8 +114,8 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 				}
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
-				throw new IllegalArgumentException(String.format(
-						"Operator %s can be used only for Comparables", op));
+				log.error("Operator {} can be used only for Comparables", op);
+				throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
 			}
 			Comparable comparable = (Comparable) conversionService.convert(argument, type);
 
@@ -139,20 +132,19 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 				return builder.lessThanOrEqualTo(attrPath, comparable);
 			}
 		}
+		log.error("Unknown operator: {}", op);
 		throw new IllegalArgumentException("Unknown operator: " + op);
 	}
 
-	private Predicate[] processNodes(List<Node> nodes, Root root) {
-
+	Predicate[] processNodes(List<Node> nodes, Root root) {
 		Predicate[] predicates = new Predicate[nodes.size()];
-
 		for (int i = 0; i < nodes.size(); i++) {
 			predicates[i] = nodes.get(i).accept(this, root);
 		}
 		return predicates;
 	}
 
-	public Object castDynamicClass(Class dynamicClass, String value) {
+	Object castDynamicClass(Class dynamicClass, String value) {
 		Object object = null;
 		try {
 			if (valueParserMap.containsKey(dynamicClass)) {
@@ -180,9 +172,9 @@ public class RsqlJpaConverter implements RSQLVisitor<Predicate, Root> {
 
 			return object;
 		} catch (DateTimeParseException | IllegalArgumentException e) {
-			logger.log(Level.FINE, "Parsing [{0}] with [{1}] causing [{2}], skip", new Object[] { value, dynamicClass.getName(), e.getMessage() });
+			log.debug("Parsing [{}] with [{}] causing [{}], skip", value, dynamicClass.getName(), e.getMessage());
 		} catch (Exception e) {
-			logger.log(Level.WARNING, "Parsing [{0}] with [{1}] causing [{2}], skip", new Object[] { value, dynamicClass.getName(), e.getMessage() });
+			log.error("Parsing [{}] with [{}] causing [{}], skip", value, dynamicClass.getName(), e.getMessage());
 		}
 		return null;
 	}
