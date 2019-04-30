@@ -78,7 +78,13 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 			if (op.equals(NOT_NULL)) {
 				return builder.isNotNull(attrPath);
 			}
-			if (op.equals(EQUAL) || op.equals(IN)) {
+			if (op.equals(IN)) {
+				return builder.equal(attrPath, argument);
+			}
+			if (op.equals(NOT_IN)) {
+				return builder.notEqual(attrPath, argument);
+			}
+			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
 						return builder.like(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
@@ -96,7 +102,7 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 					return builder.equal(attrPath, argument);
 				}
 			}
-			if (op.equals(NOT_EQUAL) || op.equals(NOT_IN)) {
+			if (op.equals(NOT_EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
 						return builder.notLike(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
