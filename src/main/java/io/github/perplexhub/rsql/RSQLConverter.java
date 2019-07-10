@@ -171,6 +171,8 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 				object = (!StringUtils.isEmpty(value) ? value.charAt(0) : null);
 			} else if (dynamicClass.equals(boolean.class) || dynamicClass.equals(Boolean.class)) {
 				object = Boolean.valueOf(value);
+			} else if (dynamicClass.isEnum()) {
+				object = Enum.valueOf(dynamicClass, value);
 			} else {
 				Constructor<?> cons = (Constructor<?>) dynamicClass.getConstructor(new Class<?>[] { String.class });
 				object = cons.newInstance(new Object[] { value });
@@ -180,7 +182,7 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 		} catch (DateTimeParseException | IllegalArgumentException e) {
 			log.debug("Parsing [{}] with [{}] causing [{}], skip", value, dynamicClass.getName(), e.getMessage());
 		} catch (Exception e) {
-			log.error("Parsing [{}] with [{}] causing [{}], skip", value, dynamicClass.getName(), e.getMessage());
+			log.error("Parsing [{}] with [{}] causing [{}], add your value parser via RSQLSupport.addEntityAttributeParser(Type.class, Type::valueOf)", value, dynamicClass.getName(), e.getMessage(), e);
 		}
 		return null;
 	}
