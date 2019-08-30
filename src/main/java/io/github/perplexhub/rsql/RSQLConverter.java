@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +38,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
+
+	private static final Map<Class, Class> primitiveToWrapper = new HashMap<>();
+
+	static {
+		primitiveToWrapper.put(boolean.class, Boolean.class);
+		primitiveToWrapper.put(byte.class, Byte.class);
+		primitiveToWrapper.put(char.class, Character.class);
+		primitiveToWrapper.put(double.class, Double.class);
+		primitiveToWrapper.put(float.class, Float.class);
+		primitiveToWrapper.put(int.class, Integer.class);
+		primitiveToWrapper.put(long.class, Long.class);
+		primitiveToWrapper.put(short.class, Short.class);
+		primitiveToWrapper.put(void.class, Void.class);
+	}
+
 	private final CriteriaBuilder builder;
 	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
@@ -60,6 +76,10 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();
+		if (type.isPrimitive()) {
+			type = primitiveToWrapper.get(type);
+		}
+
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
