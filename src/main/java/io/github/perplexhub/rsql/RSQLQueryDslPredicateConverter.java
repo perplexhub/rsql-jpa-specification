@@ -16,29 +16,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.ManagedType;
 
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.util.StringUtils;
 
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import cz.jirutka.rsql.parser.ast.Node;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-// clone from com.putracode.utils.JPARsqlConverter
 @Slf4j
+@RequiredArgsConstructor
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
+public class RSQLQueryDslPredicateConverter implements RSQLVisitor<BooleanExpression, Path> {
 
 	private static final Map<Class, Class> primitiveToWrapper;
 
@@ -56,90 +58,126 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 		primitiveToWrapper = Collections.unmodifiableMap(map);
 	}
 
-	private final CriteriaBuilder builder;
 	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
 
-	public RSQLConverter(CriteriaBuilder builder, Map<Class, Function<String, Object>> valueParserMap) {
-		this.builder = builder;
-		this.valueParserMap = valueParserMap;
+	@Override
+	public BooleanExpression visit(AndNode node, Path entityClass) {
+		log.debug("visit(node:{},param:{})", node, entityClass);
+
+		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::and)).get();
 	}
 
-	public Predicate visit(AndNode node, Root root) {
-		return builder.and(processNodes(node.getChildren(), root));
+	@Override
+	public BooleanExpression visit(OrNode node, Path entityClass) {
+		log.debug("visit(node:{},param:{})", node, entityClass);
+
+		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::or)).get();
 	}
 
-	public Predicate visit(OrNode node, Root root) {
-		return builder.or(processNodes(node.getChildren(), root));
+	RSQLQueryDslContext findPropertyPath(String propertyPath, Path entityClass) {
+		ManagedType<?> classMetadata = RSQLSupport.getManagedType(entityClass.getType());
+		Attribute<?, ?> attribute = null;
+		String mappedPropertyPath = "";
+
+		for (String property : propertyPath.split("\\.")) {
+			String mappedProperty = RSQLSupport.mapProperty(property, entityClass.getType());
+			if (!mappedProperty.equals(property)) {
+				RSQLQueryDslContext holder = findPropertyPath(mappedProperty, entityClass);
+				attribute = holder.getAttribute();
+				mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + holder.getPropertyPath();
+			} else {
+				mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + mappedProperty;
+				if (!RSQLSupport.hasPropertyName(mappedProperty, classMetadata)) {
+					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+				}
+
+				if (RSQLSupport.isAssociationType(mappedProperty, classMetadata)) {
+					Class<?> associationType = RSQLSupport.findPropertyType(mappedProperty, classMetadata);
+					String previousClass = classMetadata.getJavaType().getName();
+					classMetadata = RSQLSupport.getManagedType(associationType);
+					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
+				} else {
+					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
+					if (RSQLSupport.isEmbeddedType(mappedProperty, classMetadata)) {
+						Class<?> embeddedType = RSQLSupport.findPropertyType(mappedProperty, classMetadata);
+						classMetadata = RSQLSupport.getManagedType(embeddedType);
+					}
+					attribute = classMetadata.getAttribute(property);
+				}
+			}
+		}
+		return RSQLQueryDslContext.of(mappedPropertyPath, attribute);
 	}
 
-	public Predicate visit(ComparisonNode node, Root root) {
+	@Override
+	public BooleanExpression visit(ComparisonNode node, Path entityClass) {
+		log.debug("visit(node:{},param:{})", node, entityClass);
+
 		ComparisonOperator op = node.getOperator();
-		RSQLContext holder = RSQLSupport.findPropertyPath(node.getSelector(), root);
-		Path attrPath = holder.getPath();
+		RSQLQueryDslContext holder = findPropertyPath(node.getSelector(), entityClass);
 		Attribute attribute = holder.getAttribute();
+		String property = holder.getPropertyPath();
 		Class type = attribute.getJavaType();
 		if (type.isPrimitive()) {
 			type = primitiveToWrapper.get(type);
 		}
-
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
 				listObject.add(castDynamicClass(type, argument));
 			}
 			if (op.equals(IN)) {
-				return attrPath.in(listObject);
+				return Expressions.path(type, entityClass, property).in(listObject);
 			} else {
-				return builder.not(attrPath.in(listObject));
+				return Expressions.path(type, entityClass, property).notIn(listObject);
 			}
 		} else {
 			Object argument = castDynamicClass(type, node.getArguments().get(0));
 			if (op.equals(IS_NULL)) {
-				return builder.isNull(attrPath);
+				return Expressions.path(type, entityClass, property).isNull();
 			}
 			if (op.equals(NOT_NULL)) {
-				return builder.isNotNull(attrPath);
+				return Expressions.path(type, entityClass, property).isNotNull();
 			}
 			if (op.equals(IN)) {
-				return builder.equal(attrPath, argument);
+				return Expressions.path(type, entityClass, property).in(argument);
 			}
 			if (op.equals(NOT_IN)) {
-				return builder.notEqual(attrPath, argument);
+				return Expressions.path(type, entityClass, property).notIn(argument);
 			}
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return builder.like(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
+						return Expressions.stringPath(entityClass, property).containsIgnoreCase(argument.toString().replace("*", "").replace("^", ""));
 					} else if (argument.toString().contains("*")) {
-						return builder.like(attrPath, argument.toString().replace('*', '%'));
+						return Expressions.stringPath(entityClass, property).contains(argument.toString().replace("*", ""));
 					} else if (argument.toString().contains("^")) {
-
-						return builder.equal(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
+						return Expressions.stringPath(entityClass, property).equalsIgnoreCase(argument.toString().replace("^", ""));
 					} else {
-						return builder.equal(attrPath, argument);
+						return Expressions.stringPath(entityClass, property).eq(argument.toString());
 					}
 				} else if (argument == null) {
-					return builder.isNull(attrPath);
+					return Expressions.path(type, entityClass, property).isNull();
 				} else {
-					return builder.equal(attrPath, argument);
+					return Expressions.path(type, entityClass, property).eq(argument);
 				}
 			}
 			if (op.equals(NOT_EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return builder.notLike(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
+						return Expressions.stringPath(entityClass, property).containsIgnoreCase(argument.toString().replace("*", "").replace("^", "")).not();
 					} else if (argument.toString().contains("*")) {
-						return builder.notLike(attrPath, argument.toString().replace('*', '%'));
+						return Expressions.stringPath(entityClass, property).contains(argument.toString().replace("*", "")).not();
 					} else if (argument.toString().contains("^")) {
-						return builder.notEqual(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
+						return Expressions.stringPath(entityClass, property).equalsIgnoreCase(argument.toString().replace("^", "")).not();
 					} else {
-						return builder.notEqual(attrPath, argument);
+						return Expressions.stringPath(entityClass, property).eq(argument.toString()).not();
 					}
 				} else if (argument == null) {
-					return builder.isNotNull(attrPath);
+					return Expressions.path(type, entityClass, property).isNotNull();
 				} else {
-					return builder.notEqual(attrPath, argument);
+					return Expressions.path(type, entityClass, property).eq(argument).not();
 				}
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
@@ -149,31 +187,25 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 			Comparable comparable = (Comparable) conversionService.convert(argument, type);
 
 			if (op.equals(GREATER_THAN)) {
-				return builder.greaterThan(attrPath, comparable);
+				return Expressions.comparableEntityPath(type, entityClass, property).gt(comparable);
 			}
 			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return builder.greaterThanOrEqualTo(attrPath, comparable);
+				return Expressions.comparableEntityPath(type, entityClass, property).goe(comparable);
 			}
 			if (op.equals(LESS_THAN)) {
-				return builder.lessThan(attrPath, comparable);
+				return Expressions.comparableEntityPath(type, entityClass, property).lt(comparable);
 			}
 			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return builder.lessThanOrEqualTo(attrPath, comparable);
+				return Expressions.comparableEntityPath(type, entityClass, property).loe(comparable);
 			}
 		}
 		log.error("Unknown operator: {}", op);
 		throw new IllegalArgumentException("Unknown operator: " + op);
 	}
 
-	Predicate[] processNodes(List<Node> nodes, Root root) {
-		Predicate[] predicates = new Predicate[nodes.size()];
-		for (int i = 0; i < nodes.size(); i++) {
-			predicates[i] = nodes.get(i).accept(this, root);
-		}
-		return predicates;
-	}
-
 	Object castDynamicClass(Class dynamicClass, String value) {
+		log.debug("castDynamicClass(dynamicClass:{},value:{})", dynamicClass, value);
+
 		Object object = null;
 		try {
 			if (valueParserMap.containsKey(dynamicClass)) {
@@ -209,4 +241,5 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 		}
 		return null;
 	}
+
 }

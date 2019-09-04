@@ -50,30 +50,45 @@ public class RSQLSupport {
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
-		log.debug("rsql({})", rsqlQuery);
+		return toSpecification(rsqlQuery);
+	}
+
+	public static <T> Specification<T> rsql(final String rsqlQuery, final boolean distinct) {
+		return toSpecification(rsqlQuery, distinct);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery) {
+		log.debug("toSpecification({})", rsqlQuery);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLConverter(cb, valueParserMap), root);
+					return rsql.accept(new RSQLPredicateConverter(cb, valueParserMap), root);
 				} else
 					return null;
 			}
 		};
 	}
 
-	public static <T> Specification<T> rsql(final String rsqlQuery, final boolean distinct) {
-		log.debug("rsql({},distinct:{})", rsqlQuery, distinct);
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct) {
+		log.debug("toSpecification({},distinct:{})", rsqlQuery, distinct);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				query.distinct(distinct);
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLConverter(cb, valueParserMap), root);
+					return rsql.accept(new RSQLPredicateConverter(cb, valueParserMap), root);
 				} else
 					return null;
 			}
 		};
+	}
+
+	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path clazz) {
+		log.debug("toPredicate({},clazz:{})", rsqlQuery, clazz);
+		return new RSQLParser(RSQLOperators.supportedOperators())
+				.parse(rsqlQuery)
+				.accept(new RSQLQueryDslPredicateConverter(valueParserMap), clazz);
 	}
 
 	/**
@@ -85,7 +100,7 @@ public class RSQLSupport {
 	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException if more than one entity found.
 	 */
 	public static Optional<?> findOne(JpaSpecificationExecutor<?> jpaSpecificationExecutor, @Nullable String rsqlQuery) {
-		return jpaSpecificationExecutor.findOne(rsql(rsqlQuery));
+		return jpaSpecificationExecutor.findOne(toSpecification(rsqlQuery));
 	}
 
 	/**
@@ -96,7 +111,7 @@ public class RSQLSupport {
 	 * @return never {@literal null}.
 	 */
 	public static List<?> findAll(JpaSpecificationExecutor<?> jpaSpecificationExecutor, @Nullable String rsqlQuery) {
-		return jpaSpecificationExecutor.findAll(rsql(rsqlQuery));
+		return jpaSpecificationExecutor.findAll(toSpecification(rsqlQuery));
 	}
 
 	/**
@@ -108,7 +123,7 @@ public class RSQLSupport {
 	 * @return never {@literal null}.
 	 */
 	public static Page<?> findAll(JpaSpecificationExecutor<?> jpaSpecificationExecutor, @Nullable String rsqlQuery, Pageable pageable) {
-		return jpaSpecificationExecutor.findAll(rsql(rsqlQuery), pageable);
+		return jpaSpecificationExecutor.findAll(toSpecification(rsqlQuery), pageable);
 	}
 
 	/**
@@ -120,7 +135,7 @@ public class RSQLSupport {
 	 * @return never {@literal null}.
 	 */
 	public static List<?> findAll(JpaSpecificationExecutor<?> jpaSpecificationExecutor, @Nullable String rsqlQuery, Sort sort) {
-		return jpaSpecificationExecutor.findAll(rsql(rsqlQuery), sort);
+		return jpaSpecificationExecutor.findAll(toSpecification(rsqlQuery), sort);
 	}
 
 	/**
@@ -133,8 +148,8 @@ public class RSQLSupport {
 	 */
 	public static List<?> findAll(JpaSpecificationExecutor<?> jpaSpecificationExecutor, @Nullable String rsqlQuery, @Nullable String sort) {
 		return StringUtils.hasText(sort)
-				? jpaSpecificationExecutor.findAll(rsql(rsqlQuery), Sort.by(Direction.ASC, StringUtils.commaDelimitedListToStringArray(sort)))
-				: jpaSpecificationExecutor.findAll(rsql(rsqlQuery));
+				? jpaSpecificationExecutor.findAll(toSpecification(rsqlQuery), Sort.by(Direction.ASC, StringUtils.commaDelimitedListToStringArray(sort)))
+				: jpaSpecificationExecutor.findAll(toSpecification(rsqlQuery));
 	}
 
 	/**
@@ -145,7 +160,7 @@ public class RSQLSupport {
 	 * @return the number of instances.
 	 */
 	public static long count(JpaSpecificationExecutor<?> jpaSpecificationExecutor, @Nullable String rsqlQuery) {
-		return jpaSpecificationExecutor.count(rsql(rsqlQuery));
+		return jpaSpecificationExecutor.count(toSpecification(rsqlQuery));
 	}
 
 	public static void addMapping(Class<?> entityClass, Map<String, String> mapping) {
