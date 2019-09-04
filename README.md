@@ -3,13 +3,13 @@
 Translate RSQL query to org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate
 - support entities association query
 
-## 1) Import Config
+## Import Config
 
 ```java
 @Import(io.github.perplexhub.rsql.RSQLConfig.class)
 ```
 
-## 2) Add JpaSpecificationExecutor and QuerydslPredicateExecutor to your JPA repository class
+## Add JpaSpecificationExecutor and QuerydslPredicateExecutor to your JPA repository class
 
 ```java
 package com.perplexhub.repository;
@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 }
 ```
 
-## 3) RSQL syntax reference
+## RSQL syntax reference
 
 ```java
 filter = "company.code==demo"; //equal
@@ -56,7 +56,7 @@ filter = "company.code=isnotnull=''"; //is not null
 Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
 
-## 4) Obtain the Specification from RSQLSupport.toSpecification(rsqlQuery) using RSQL syntax
+## Obtain the Specification from RSQLSupport.toSpecification(rsqlQuery) using RSQL syntax
 ```java
 Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
@@ -76,7 +76,7 @@ repository.findAll(toSpecification(filter, true)); // select distinct
 repository.findAll(toSpecification(filter, true), pageable);
 ```
 
-## 5) Obtain the QueryDSL predicate (BooleanExpression) from RSQLSupport.toPredicate(rsqlQuery, com.querydsl.core.types.Path) using RSQL syntax
+## Obtain the QueryDSL predicate (BooleanExpression) from RSQLSupport.toPredicate(rsqlQuery, com.querydsl.core.types.Path) using RSQL syntax
 ```java
 Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
@@ -90,6 +90,6 @@ repository.findAll(toPredicate(filter, QUser.user));
 repository.findAll(toPredicate(filter, QUser.user), pageable);
 ```
 
-## 4) Maven
+## Maven
 
 https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-jpa-specification
