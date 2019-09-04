@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -39,18 +40,20 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 
-	private static final Map<Class, Class> primitiveToWrapper = new HashMap<>();
+	private static final Map<Class, Class> primitiveToWrapper;
 
 	static {
-		primitiveToWrapper.put(boolean.class, Boolean.class);
-		primitiveToWrapper.put(byte.class, Byte.class);
-		primitiveToWrapper.put(char.class, Character.class);
-		primitiveToWrapper.put(double.class, Double.class);
-		primitiveToWrapper.put(float.class, Float.class);
-		primitiveToWrapper.put(int.class, Integer.class);
-		primitiveToWrapper.put(long.class, Long.class);
-		primitiveToWrapper.put(short.class, Short.class);
-		primitiveToWrapper.put(void.class, Void.class);
+		Map<Class, Class> map = new HashMap<>();
+		map.put(boolean.class, Boolean.class);
+		map.put(byte.class, Byte.class);
+		map.put(char.class, Character.class);
+		map.put(double.class, Double.class);
+		map.put(float.class, Float.class);
+		map.put(int.class, Integer.class);
+		map.put(long.class, Long.class);
+		map.put(short.class, Short.class);
+		map.put(void.class, Void.class);
+		primitiveToWrapper = Collections.unmodifiableMap(map);
 	}
 
 	private final CriteriaBuilder builder;
