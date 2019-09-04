@@ -54,24 +54,27 @@ filter = "company.code=isnotnull=''"; //is not null
 ```java
 Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
-repository.findAll(RSQLSupport.rsql(filter));
-repository.findAll(RSQLSupport.rsql(filter), pageable);
+repository.findAll(RSQLSupport.toSpecification(filter));
+repository.findAll(RSQLSupport.toSpecification(filter), pageable);
 
-repository.findAll(RSQLSupport.rsql(filter, true)); // select distinct
-repository.findAll(RSQLSupport.rsql(filter, true), pageable);
+repository.findAll(RSQLSupport.toSpecification(filter, true)); // select distinct
+repository.findAll(RSQLSupport.toSpecification(filter, true), pageable);
 
 // use static import
 import static io.github.perplexhub.rsql.RSQLSupport.*;
 
-repository.findAll(rsql(filter));
-repository.findAll(rsql(filter), pageable);
+repository.findAll(toSpecification(filter));
+repository.findAll(toSpecification(filter), pageable);
 
-repository.findAll(rsql(filter, true)); // select distinct
-repository.findAll(rsql(filter, true), pageable);
+repository.findAll(toSpecification(filter, true)); // select distinct
+repository.findAll(toSpecification(filter, true), pageable);
 ```
+
+// use toPredicate to obtain QueryDSL predicate (BooleanExpression)
+RSQLSupport.toPredicate(filter, QUser.user);
 
 Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
 
 ## 4) Maven
 
-https://oss.sonatype.org/#nexus-search;quick~io.github.perplexhub
+https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-jpa-specification

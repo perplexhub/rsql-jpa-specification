@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.perplexhub</groupId>
 	<artifactId>rsql-jpa-specification</artifactId>
@@ -6,7 +7,7 @@
 	<packaging>jar</packaging>
 	<name>RSQL-JPA-Specification</name>
 	<inceptionYear>2018</inceptionYear>
-	<description>A Java library used to translate RSQL nodes to Spring Data JPA Specification.</description>
+	<description>A Java library used to translate RSQL nodes to Spring Data JPA Specification and QueryDSL Predicate.</description>
 	<url>https://github.com/perplexhub/rsql-jpa-specification</url>
 	<licenses>
 		<license>
@@ -28,7 +29,9 @@
 	<properties>
 		<java.version>1.8</java.version>
 		<maven.compiler.target>1.8</maven.compiler.target>
-		<spring.version>2.0.0.RELEASE</spring.version>
+		<springdata.version>2.0.0.RELEASE</springdata.version>
+		<springboot.version>2.0.0.RELEASE</springboot.version>
+		<querydsl-core.version>4.0.0</querydsl-core.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -48,9 +51,15 @@
 			<version>2.2</version>
 		</dependency>
 		<dependency>
+			<groupId>com.querydsl</groupId>
+			<artifactId>querydsl-core</artifactId>
+			<version>${querydsl-core.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-jpa</artifactId>
-			<version>${spring.version}</version>
+			<version>${springdata.version}</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>

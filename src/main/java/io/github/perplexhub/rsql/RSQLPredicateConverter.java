@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Path;
@@ -29,7 +30,6 @@ import org.springframework.util.StringUtils;
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import cz.jirutka.rsql.parser.ast.Node;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 // clone from com.putracode.utils.JPARsqlConverter
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
+public class RSQLPredicateConverter implements RSQLVisitor<Predicate, Root> {
 
 	private static final Map<Class, Class> primitiveToWrapper;
 
@@ -59,20 +59,26 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
 
-	public RSQLConverter(CriteriaBuilder builder, Map<Class, Function<String, Object>> valueParserMap) {
+	public RSQLPredicateConverter(CriteriaBuilder builder, Map<Class, Function<String, Object>> valueParserMap) {
 		this.builder = builder;
 		this.valueParserMap = valueParserMap;
 	}
 
 	public Predicate visit(AndNode node, Root root) {
-		return builder.and(processNodes(node.getChildren(), root));
+		log.debug("visit(node:{},root:{})", node, root);
+
+		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::and)).get();
 	}
 
 	public Predicate visit(OrNode node, Root root) {
-		return builder.or(processNodes(node.getChildren(), root));
+		log.debug("visit(node:{},root:{})", node, root);
+
+		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
 	}
 
 	public Predicate visit(ComparisonNode node, Root root) {
+		log.debug("visit(node:{},root:{})", node, root);
+
 		ComparisonOperator op = node.getOperator();
 		RSQLContext holder = RSQLSupport.findPropertyPath(node.getSelector(), root);
 		Path attrPath = holder.getPath();
@@ -109,7 +115,6 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 					} else if (argument.toString().contains("*")) {
 						return builder.like(attrPath, argument.toString().replace('*', '%'));
 					} else if (argument.toString().contains("^")) {
-
 						return builder.equal(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
 					} else {
 						return builder.equal(attrPath, argument);
@@ -160,15 +165,9 @@ public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
 		throw new IllegalArgumentException("Unknown operator: " + op);
 	}
 
-	Predicate[] processNodes(List<Node> nodes, Root root) {
-		Predicate[] predicates = new Predicate[nodes.size()];
-		for (int i = 0; i < nodes.size(); i++) {
-			predicates[i] = nodes.get(i).accept(this, root);
-		}
-		return predicates;
-	}
-
 	Object castDynamicClass(Class dynamicClass, String value) {
+		log.debug("castDynamicClass(dynamicClass:{},value:{})", dynamicClass, value);
+
 		Object object = null;
 		try {
 			if (valueParserMap.containsKey(dynamicClass)) {
