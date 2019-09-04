@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,23 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLConverter implements RSQLVisitor<Predicate, Root> {
+
+	private static final Map<Class, Class> primitiveToWrapper;
+
+	static {
+		Map<Class, Class> map = new HashMap<>();
+		map.put(boolean.class, Boolean.class);
+		map.put(byte.class, Byte.class);
+		map.put(char.class, Character.class);
+		map.put(double.class, Double.class);
+		map.put(float.class, Float.class);
+		map.put(int.class, Integer.class);
+		map.put(long.class, Long.class);
+		map.put(short.class, Short.class);
+		map.put(void.class, Void.class);
+		primitiveToWrapper = Collections.unmodifiableMap(map);
+	}
+
 	private final CriteriaBuilder builder;
 	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
