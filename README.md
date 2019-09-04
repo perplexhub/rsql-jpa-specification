@@ -1,6 +1,6 @@
 # rsql-jpa-specification
 
-Translate RSQL query to org.springframework.data.jpa.domain.Specification
+Translate RSQL query to org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate
 - support entities association query
 
 ## 1) Import Config
@@ -9,21 +9,22 @@ Translate RSQL query to org.springframework.data.jpa.domain.Specification
 @Import(io.github.perplexhub.rsql.RSQLConfig.class)
 ```
 
-## 2) Add JpaSpecificationExecutor to your JPA repository class
+## 2) Add JpaSpecificationExecutor and QuerydslPredicateExecutor to your JPA repository class
 
 ```java
 package com.perplexhub.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
 import com.perplexhub.model.User;
 
-public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
+public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User>, QuerydslPredicateExecutor<User> {
 }
 ```
 
-## 3) Obtain the Specification from RSQLSupport.rsql(rsqlQuery) using RSQL syntax
+## 3) RSQL syntax reference
 
 ```java
 filter = "company.code==demo"; //equal
@@ -33,6 +34,8 @@ filter = "company.code==*emo"; //like %emo
 filter = "company.code==*em*"; //like %em%
 filter = "company.code==^*EM*"; //ignore case like %EM%
 filter = "company.code!=demo"; //not equal
+filter = "company.code=in=(*)"; //equal to *
+filter = "company.code=in=(^)"; //equal to ^
 filter = "company.code=in=(demo,real)"; //in
 filter = "company.code=out=(demo,real)"; //not in
 filter = "company.id=gt=100"; //greater than
@@ -50,7 +53,10 @@ filter = "company.code=nn=''"; //is not null
 filter = "company.code=notnull=''"; //is not null
 filter = "company.code=isnotnull=''"; //is not null
 ```
+Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
+Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
 
+## 4) Obtain the Specification from RSQLSupport.toSpecification(rsqlQuery) using RSQL syntax
 ```java
 Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
@@ -70,10 +76,19 @@ repository.findAll(toSpecification(filter, true)); // select distinct
 repository.findAll(toSpecification(filter, true), pageable);
 ```
 
-// use toPredicate to obtain QueryDSL predicate (BooleanExpression)
-RSQLSupport.toPredicate(filter, QUser.user);
+## 5) Obtain the QueryDSL predicate (BooleanExpression) from RSQLSupport.toPredicate(rsqlQuery, com.querydsl.core.types.Path) using RSQL syntax
+```java
+Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
-Syntax reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
+repository.findAll(RSQLSupport.toPredicate(filter, QUser.user));
+repository.findAll(RSQLSupport.toPredicate(filter, QUser.user), pageable);
+
+// use static import
+import static io.github.perplexhub.rsql.RSQLSupport.*;
+
+repository.findAll(toPredicate(filter, QUser.user));
+repository.findAll(toPredicate(filter, QUser.user), pageable);
+```
 
 ## 4) Maven
 
