@@ -2,67 +2,37 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
-import java.lang.reflect.Constructor;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.From;
+import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.ManagedType;
 
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
-import cz.jirutka.rsql.parser.ast.RSQLVisitor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 // clone from com.putracode.utils.JPARsqlConverter
 @Slf4j
+@RequiredArgsConstructor
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public class RSQLPredicateConverter implements RSQLVisitor<Predicate, Root> {
-
-	private static final Map<Class, Class> primitiveToWrapper;
-
-	static {
-		Map<Class, Class> map = new HashMap<>();
-		map.put(boolean.class, Boolean.class);
-		map.put(byte.class, Byte.class);
-		map.put(char.class, Character.class);
-		map.put(double.class, Double.class);
-		map.put(float.class, Float.class);
-		map.put(int.class, Integer.class);
-		map.put(long.class, Long.class);
-		map.put(short.class, Short.class);
-		map.put(void.class, Void.class);
-		primitiveToWrapper = Collections.unmodifiableMap(map);
-	}
+public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> {
 
 	private final CriteriaBuilder builder;
-	private final Map<Class, Function<String, Object>> valueParserMap;
 	private final ConversionService conversionService = new DefaultConversionService();
-
-	public RSQLPredicateConverter(CriteriaBuilder builder, Map<Class, Function<String, Object>> valueParserMap) {
-		this.builder = builder;
-		this.valueParserMap = valueParserMap;
-	}
 
 	public Predicate visit(AndNode node, Root root) {
 		log.debug("visit(node:{},root:{})", node, root);
@@ -80,7 +50,7 @@ public class RSQLPredicateConverter implements RSQLVisitor<Predicate, Root> {
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLContext holder = RSQLSupport.findPropertyPath(node.getSelector(), root);
+		RSQLJpaContext holder = findPropertyPath(node.getSelector(), root);
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();
@@ -165,42 +135,46 @@ public class RSQLPredicateConverter implements RSQLVisitor<Predicate, Root> {
 		throw new IllegalArgumentException("Unknown operator: " + op);
 	}
 
-	Object castDynamicClass(Class dynamicClass, String value) {
-		log.debug("castDynamicClass(dynamicClass:{},value:{})", dynamicClass, value);
+	static <T> RSQLJpaContext findPropertyPath(String propertyPath, Path startRoot) {
+		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
+		Path<?> root = startRoot;
+		Attribute<?, ?> attribute = null;
 
-		Object object = null;
-		try {
-			if (valueParserMap.containsKey(dynamicClass)) {
-				object = valueParserMap.get(dynamicClass).apply(value);
-			} else if (dynamicClass.equals(UUID.class)) {
-				object = UUID.fromString(value);
-			} else if (dynamicClass.equals(Date.class) || dynamicClass.equals(java.sql.Date.class)) {
-				object = java.sql.Date.valueOf(LocalDate.parse(value));
-			} else if (dynamicClass.equals(LocalDate.class)) {
-				object = LocalDate.parse(value);
-			} else if (dynamicClass.equals(LocalDateTime.class)) {
-				object = LocalDateTime.parse(value);
-			} else if (dynamicClass.equals(OffsetDateTime.class)) {
-				object = OffsetDateTime.parse(value);
-			} else if (dynamicClass.equals(ZonedDateTime.class)) {
-				object = ZonedDateTime.parse(value);
-			} else if (dynamicClass.equals(Character.class)) {
-				object = (!StringUtils.isEmpty(value) ? value.charAt(0) : null);
-			} else if (dynamicClass.equals(boolean.class) || dynamicClass.equals(Boolean.class)) {
-				object = Boolean.valueOf(value);
-			} else if (dynamicClass.isEnum()) {
-				object = Enum.valueOf(dynamicClass, value);
+		for (String property : propertyPath.split("\\.")) {
+			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
+			if (!mappedProperty.equals(property)) {
+				RSQLJpaContext context = findPropertyPath(mappedProperty, root);
+				root = context.getPath();
+				attribute = context.getAttribute();
 			} else {
-				Constructor<?> cons = (Constructor<?>) dynamicClass.getConstructor(new Class<?>[] { String.class });
-				object = cons.newInstance(new Object[] { value });
-			}
+				if (!hasPropertyName(mappedProperty, classMetadata)) {
+					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+				}
 
-			return object;
-		} catch (DateTimeParseException | IllegalArgumentException e) {
-			log.debug("Parsing [{}] with [{}] causing [{}], skip", value, dynamicClass.getName(), e.getMessage());
-		} catch (Exception e) {
-			log.error("Parsing [{}] with [{}] causing [{}], add your value parser via RSQLSupport.addEntityAttributeParser(Type.class, Type::valueOf)", value, dynamicClass.getName(), e.getMessage(), e);
+				if (isAssociationType(mappedProperty, classMetadata)) {
+					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
+					String previousClass = classMetadata.getJavaType().getName();
+					classMetadata = getManagedType(associationType);
+					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
+
+					if (root instanceof Join) {
+						root = root.get(mappedProperty);
+					} else {
+						root = ((From) root).join(mappedProperty);
+					}
+				} else {
+					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
+					root = root.get(mappedProperty);
+
+					if (isEmbeddedType(mappedProperty, classMetadata)) {
+						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
+						classMetadata = getManagedType(embeddedType);
+					}
+					attribute = classMetadata.getAttribute(property);
+				}
+			}
 		}
-		return null;
+		return RSQLJpaContext.of(root, attribute);
 	}
+
 }
