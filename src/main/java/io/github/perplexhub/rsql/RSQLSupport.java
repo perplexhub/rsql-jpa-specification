@@ -60,6 +60,7 @@ public class RSQLSupport {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
+					RSQLJpaPredicateConverter.cachedJoins.clear();
 					return rsql.accept(new RSQLJpaPredicateConverter(cb), root);
 				} else
 					return null;
@@ -74,6 +75,7 @@ public class RSQLSupport {
 				query.distinct(distinct);
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
+					RSQLJpaPredicateConverter.cachedJoins.clear();
 					return rsql.accept(new RSQLJpaPredicateConverter(cb), root);
 				} else
 					return null;

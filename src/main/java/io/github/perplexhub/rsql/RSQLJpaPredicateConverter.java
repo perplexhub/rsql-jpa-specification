@@ -3,7 +3,9 @@ package io.github.perplexhub.rsql;
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -33,6 +35,7 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 
 	private final CriteriaBuilder builder;
 	private final ConversionService conversionService = new DefaultConversionService();
+	public static Map<String, Path> cachedJoins = new HashMap<>();
 
 	public Predicate visit(AndNode node, Root root) {
 		log.debug("visit(node:{},root:{})", node, root);
@@ -164,7 +167,14 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 					if (root instanceof Join) {
 						root = root.get(mappedProperty);
 					} else {
-						root = ((From) root).join(mappedProperty);
+						String keyJoin = startRoot.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+						if (cachedJoins.containsKey(keyJoin)) {
+							root = cachedJoins.get(keyJoin);
+						}
+						else {
+							root = ((From) root).join(mappedProperty);
+							cachedJoins.put(keyJoin, root);
+						}
 					}
 				} else {
 					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
