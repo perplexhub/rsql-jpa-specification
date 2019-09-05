@@ -1,26 +1,17 @@
 package io.github.perplexhub.rsql;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.From;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
-import javax.persistence.metamodel.PluralAttribute;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,20 +24,24 @@ import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
-import lombok.SneakyThrows;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@SuppressWarnings({ "rawtypes", "serial", "unchecked" })
+@SuppressWarnings({ "rawtypes", "serial" })
 public class RSQLSupport {
 
-	private static final Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
-	private static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
-	private static Map<String, EntityManager> entityManagerMap = Collections.emptyMap();
-	private static Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
+	private @Getter static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
+	private @Getter static final Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
+	private @Getter static final Map<String, EntityManager> entityManagerMap = new ConcurrentHashMap<>();
+	private @Getter static final Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
 
 	public RSQLSupport(Map<String, EntityManager> entityManagerMap) {
-		RSQLSupport.entityManagerMap = entityManagerMap;
+		if (entityManagerMap != null) {
+			RSQLSupport.entityManagerMap.putAll(entityManagerMap);
+		} else {
+			log.warn("No EntityManager beans are found");
+		}
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
@@ -63,7 +58,7 @@ public class RSQLSupport {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLPredicateConverter(cb, valueParserMap), root);
+					return rsql.accept(new RSQLJpaPredicateConverter(cb), root);
 				} else
 					return null;
 			}
@@ -77,18 +72,18 @@ public class RSQLSupport {
 				query.distinct(distinct);
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLPredicateConverter(cb, valueParserMap), root);
+					return rsql.accept(new RSQLJpaPredicateConverter(cb), root);
 				} else
 					return null;
 			}
 		};
 	}
 
-	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path clazz) {
-		log.debug("toPredicate({},clazz:{})", rsqlQuery, clazz);
+	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz) {
+		log.debug("toPredicate({},qClazz:{})", rsqlQuery, qClazz);
 		return new RSQLParser(RSQLOperators.supportedOperators())
 				.parse(rsqlQuery)
-				.accept(new RSQLQueryDslPredicateConverter(valueParserMap), clazz);
+				.accept(new RSQLQueryDslPredicateConverter(), qClazz);
 	}
 
 	/**
@@ -180,111 +175,4 @@ public class RSQLSupport {
 		}
 	}
 
-	static <T> RSQLContext findPropertyPath(String propertyPath, Path startRoot) {
-		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
-		Path<?> root = startRoot;
-		Attribute<?, ?> attribute = null;
-
-		for (String property : propertyPath.split("\\.")) {
-			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
-			if (!mappedProperty.equals(property)) {
-				RSQLContext context = findPropertyPath(mappedProperty, root);
-				root = context.getPath();
-				attribute = context.getAttribute();
-			} else {
-				if (!hasPropertyName(mappedProperty, classMetadata)) {
-					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
-				}
-
-				if (isAssociationType(mappedProperty, classMetadata)) {
-					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
-					String previousClass = classMetadata.getJavaType().getName();
-					classMetadata = getManagedType(associationType);
-					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
-
-					if (root instanceof Join) {
-						root = root.get(mappedProperty);
-					} else {
-						root = ((From) root).join(mappedProperty);
-					}
-				} else {
-					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
-					root = root.get(mappedProperty);
-
-					if (isEmbeddedType(mappedProperty, classMetadata)) {
-						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
-						classMetadata = getManagedType(embeddedType);
-					}
-					attribute = classMetadata.getAttribute(property);
-				}
-			}
-		}
-		return RSQLContext.of(root, attribute);
-	}
-
-	static String mapProperty(String selector, Class<?> entityClass) {
-		if (!propertyRemapping.isEmpty()) {
-			Map<String, String> map = propertyRemapping.get(entityClass);
-			String property = (map != null) ? map.get(selector) : null;
-			if (property != null) {
-				log.debug("Map [{}] to [{}] for [{}]", selector, property, entityClass);
-				return property;
-			}
-		}
-		return selector;
-	}
-
-	@SneakyThrows(Exception.class)
-	static <T> ManagedType<T> getManagedType(Class<T> cls) {
-		Exception ex = null;
-		if (entityManagerMap.size() > 0) {
-			ManagedType<T> managedType = managedTypeMap.get(cls);
-			if (managedType != null) {
-				log.debug("Found managed type [{}] in cache", cls);
-				return managedType;
-			}
-			for (Entry<String, EntityManager> entityManagerEntry : entityManagerMap.entrySet()) {
-				try {
-					managedType = entityManagerEntry.getValue().getMetamodel().managedType(cls);
-					managedTypeMap.put(cls, managedType);
-					log.info("Found managed type [{}] in EntityManager [{}]", cls, entityManagerEntry.getKey());
-					return managedType;
-				} catch (Exception e) {
-					if (e != null) {
-						ex = e;
-					}
-					log.debug("[{}] not found in EntityManager [{}] due to [{}]", cls, entityManagerEntry.getKey(), e == null ? "-" : e.getMessage());
-				}
-			}
-		}
-		log.error("[{}] not found in EntityManager{}: [{}]", cls, entityManagerMap.size() > 1 ? "s" : "", StringUtils.collectionToCommaDelimitedString(entityManagerMap.keySet()));
-		throw ex != null ? ex : new IllegalStateException("No entity manager bean found in application context");
-	}
-
-	static <T> Class<?> findPropertyType(String property, ManagedType<T> classMetadata) {
-		Class<?> propertyType = null;
-		if (classMetadata.getAttribute(property).isCollection()) {
-			propertyType = ((PluralAttribute) classMetadata.getAttribute(property)).getBindableJavaType();
-		} else {
-			propertyType = classMetadata.getAttribute(property).getJavaType();
-		}
-		return propertyType;
-	}
-
-	static <T> boolean hasPropertyName(String property, ManagedType<T> classMetadata) {
-		Set<Attribute<? super T, ?>> names = classMetadata.getAttributes();
-		for (Attribute<? super T, ?> name : names) {
-			if (name.getName().equals(property))
-				return true;
-		}
-		return false;
-	}
-
-	static <T> boolean isEmbeddedType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).getPersistentAttributeType() == PersistentAttributeType.EMBEDDED;
-	}
-
-	static <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).isAssociation();
-	}
 }

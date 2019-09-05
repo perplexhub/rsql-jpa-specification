@@ -6,7 +6,7 @@ import javax.persistence.metamodel.Attribute;
 import lombok.Value;
 
 @Value(staticConstructor = "of")
-class RSQLContext {
+class RSQLJpaContext {
 
 	private Path<?> path;
 	private Attribute<?, ?> attribute;
