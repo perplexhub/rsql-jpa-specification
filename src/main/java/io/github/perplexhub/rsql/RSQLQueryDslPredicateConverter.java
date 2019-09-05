@@ -15,12 +15,14 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.ListPath;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -44,19 +46,20 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::or)).get();
 	}
 
+	@SneakyThrows
 	RSQLQueryDslContext findPropertyPath(String propertyPath, Path entityClass) {
-		ManagedType<?> classMetadata = getManagedType(entityClass.getType());
+		Path path = entityClass;
+		ManagedType<?> classMetadata = getManagedType(path.getType());
 		Attribute<?, ?> attribute = null;
 		String mappedPropertyPath = "";
 
 		for (String property : propertyPath.split("\\.")) {
-			String mappedProperty = mapProperty(property, entityClass.getType());
+			String mappedProperty = mapProperty(property, path.getType());
 			if (!mappedProperty.equals(property)) {
-				RSQLQueryDslContext holder = findPropertyPath(mappedProperty, entityClass);
+				RSQLQueryDslContext holder = findPropertyPath(mappedProperty, path);
 				attribute = holder.getAttribute();
 				mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + holder.getPropertyPath();
 			} else {
-				mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + mappedProperty;
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
 					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
 				}
@@ -66,6 +69,11 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					String previousClass = classMetadata.getJavaType().getName();
 					classMetadata = getManagedType(associationType);
 					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
+					path = (Path) path.getClass().getDeclaredField(mappedProperty).get(path);
+					if (path instanceof ListPath) {
+						path = (Path) path.getClass().getDeclaredMethod("any").invoke(path);
+					}
+					mappedPropertyPath = "";
 				} else {
 					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
@@ -73,20 +81,22 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 						classMetadata = getManagedType(embeddedType);
 					}
 					attribute = classMetadata.getAttribute(property);
+					mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + mappedProperty;
 				}
 			}
 		}
-		return RSQLQueryDslContext.of(mappedPropertyPath, attribute);
+		return RSQLQueryDslContext.of(mappedPropertyPath, attribute, path);
 	}
 
 	@Override
-	public BooleanExpression visit(ComparisonNode node, Path entityClass) {
-		log.debug("visit(node:{},param:{})", node, entityClass);
+	public BooleanExpression visit(ComparisonNode node, Path path) {
+		log.debug("visit(node:{},path:{})", node, path);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLQueryDslContext holder = findPropertyPath(node.getSelector(), entityClass);
+		RSQLQueryDslContext holder = findPropertyPath(node.getSelector(), path);
 		Attribute attribute = holder.getAttribute();
 		String property = holder.getPropertyPath();
+		Path entityClass = holder.getEntityClass();
 		Class type = attribute.getJavaType();
 		if (type.isPrimitive()) {
 			type = primitiveToWrapper.get(type);
