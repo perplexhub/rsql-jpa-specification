@@ -83,9 +83,13 @@ public class RSQLSupport {
 
 	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz) {
 		log.debug("toPredicate({},qClazz:{})", rsqlQuery, qClazz);
-		return new RSQLParser(RSQLOperators.supportedOperators())
-				.parse(rsqlQuery)
-				.accept(new RSQLQueryDslPredicateConverter(), qClazz);
+		if (StringUtils.hasText(rsqlQuery)) {
+			return new RSQLParser(RSQLOperators.supportedOperators())
+					.parse(rsqlQuery)
+					.accept(new RSQLQueryDslPredicateConverter(), qClazz);
+		} else {
+			return null;
+		}
 	}
 
 	/**
