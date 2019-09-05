@@ -14,9 +14,8 @@ import org.springframework.core.convert.support.DefaultConversionService;
 
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CollectionPathBase;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.ListPath;
-import com.querydsl.core.types.dsl.SetPath;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
@@ -71,9 +70,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					classMetadata = getManagedType(associationType);
 					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
 					path = (Path) path.getClass().getDeclaredField(mappedProperty).get(path);
-					if (path instanceof ListPath) {
-						path = (Path) path.getClass().getDeclaredMethod("any").invoke(path);
-					} else if (path instanceof SetPath) {
+					if (path instanceof CollectionPathBase) {
 						path = (Path) path.getClass().getDeclaredMethod("any").invoke(path);
 					}
 					mappedPropertyPath = "";
