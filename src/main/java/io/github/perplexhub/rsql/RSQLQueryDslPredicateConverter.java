@@ -149,9 +149,9 @@ public class RSQLQueryDslPredicateConverter implements RSQLVisitor<BooleanExpres
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return Expressions.stringPath(entityClass, property).containsIgnoreCase(argument.toString().replace("*", "").replace("^", ""));
+						return Expressions.stringPath(entityClass, property).likeIgnoreCase(argument.toString().replace("*", "%").replace("^", ""));
 					} else if (argument.toString().contains("*")) {
-						return Expressions.stringPath(entityClass, property).contains(argument.toString().replace("*", ""));
+						return Expressions.stringPath(entityClass, property).like(argument.toString().replace("*", "%"));
 					} else if (argument.toString().contains("^")) {
 						return Expressions.stringPath(entityClass, property).equalsIgnoreCase(argument.toString().replace("^", ""));
 					} else {
@@ -166,9 +166,9 @@ public class RSQLQueryDslPredicateConverter implements RSQLVisitor<BooleanExpres
 			if (op.equals(NOT_EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return Expressions.stringPath(entityClass, property).containsIgnoreCase(argument.toString().replace("*", "").replace("^", "")).not();
+						return Expressions.stringPath(entityClass, property).likeIgnoreCase(argument.toString().replace("*", "%").replace("^", "")).not();
 					} else if (argument.toString().contains("*")) {
-						return Expressions.stringPath(entityClass, property).contains(argument.toString().replace("*", "")).not();
+						return Expressions.stringPath(entityClass, property).like(argument.toString().replace("*", "%")).not();
 					} else if (argument.toString().contains("^")) {
 						return Expressions.stringPath(entityClass, property).equalsIgnoreCase(argument.toString().replace("^", "")).not();
 					} else {
