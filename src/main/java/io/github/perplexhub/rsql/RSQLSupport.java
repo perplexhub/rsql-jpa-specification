@@ -39,9 +39,11 @@ public class RSQLSupport {
 	public RSQLSupport(Map<String, EntityManager> entityManagerMap) {
 		if (entityManagerMap != null) {
 			RSQLSupport.entityManagerMap.putAll(entityManagerMap);
+			log.info("{} EntityManager bean{} found: {}", entityManagerMap.size(), entityManagerMap.size() > 1 ? "s are" : " is", entityManagerMap);
 		} else {
 			log.warn("No EntityManager beans are found");
 		}
+		log.info("RSQLSupport is initialized");
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
