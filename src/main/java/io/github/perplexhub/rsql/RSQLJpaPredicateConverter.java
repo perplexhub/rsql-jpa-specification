@@ -3,7 +3,9 @@ package io.github.perplexhub.rsql;
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -25,7 +27,6 @@ import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-// clone from com.putracode.utils.JPARsqlConverter
 @Slf4j
 @RequiredArgsConstructor
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -33,6 +34,7 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 
 	private final CriteriaBuilder builder;
 	private final ConversionService conversionService = new DefaultConversionService();
+	private final Map<String, Path> cachedJoins = new HashMap<>();
 
 	<T> RSQLJpaContext findPropertyPath(String propertyPath, Path startRoot) {
 		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
@@ -59,7 +61,13 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 					if (root instanceof Join) {
 						root = root.get(mappedProperty);
 					} else {
-						root = ((From) root).join(mappedProperty);
+						String keyJoin = startRoot.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+						if (cachedJoins.containsKey(keyJoin)) {
+							root = cachedJoins.get(keyJoin);
+						} else {
+							root = ((From) root).join(mappedProperty);
+							cachedJoins.put(keyJoin, root);
+						}
 					}
 				} else {
 					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
