@@ -34,18 +34,49 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 	private final CriteriaBuilder builder;
 	private final ConversionService conversionService = new DefaultConversionService();
 
-	public Predicate visit(AndNode node, Root root) {
-		log.debug("visit(node:{},root:{})", node, root);
+	<T> RSQLJpaContext findPropertyPath(String propertyPath, Path startRoot) {
+		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
+		Path<?> root = startRoot;
+		Attribute<?, ?> attribute = null;
 
-		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::and)).get();
+		for (String property : propertyPath.split("\\.")) {
+			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
+			if (!mappedProperty.equals(property)) {
+				RSQLJpaContext context = findPropertyPath(mappedProperty, root);
+				root = context.getPath();
+				attribute = context.getAttribute();
+			} else {
+				if (!hasPropertyName(mappedProperty, classMetadata)) {
+					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+				}
+
+				if (isAssociationType(mappedProperty, classMetadata)) {
+					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
+					String previousClass = classMetadata.getJavaType().getName();
+					classMetadata = getManagedType(associationType);
+					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
+
+					if (root instanceof Join) {
+						root = root.get(mappedProperty);
+					} else {
+						root = ((From) root).join(mappedProperty);
+					}
+				} else {
+					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
+					root = root.get(mappedProperty);
+
+					if (isEmbeddedType(mappedProperty, classMetadata)) {
+						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
+						classMetadata = getManagedType(embeddedType);
+					}
+					attribute = classMetadata.getAttribute(property);
+				}
+			}
+		}
+		return RSQLJpaContext.of(root, attribute);
 	}
 
-	public Predicate visit(OrNode node, Root root) {
-		log.debug("visit(node:{},root:{})", node, root);
-
-		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
-	}
-
+	@Override
 	public Predicate visit(ComparisonNode node, Root root) {
 		log.debug("visit(node:{},root:{})", node, root);
 
@@ -135,46 +166,18 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 		throw new IllegalArgumentException("Unknown operator: " + op);
 	}
 
-	static <T> RSQLJpaContext findPropertyPath(String propertyPath, Path startRoot) {
-		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
-		Path<?> root = startRoot;
-		Attribute<?, ?> attribute = null;
+	@Override
+	public Predicate visit(AndNode node, Root root) {
+		log.debug("visit(node:{},root:{})", node, root);
 
-		for (String property : propertyPath.split("\\.")) {
-			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
-			if (!mappedProperty.equals(property)) {
-				RSQLJpaContext context = findPropertyPath(mappedProperty, root);
-				root = context.getPath();
-				attribute = context.getAttribute();
-			} else {
-				if (!hasPropertyName(mappedProperty, classMetadata)) {
-					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
-				}
+		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::and)).get();
+	}
 
-				if (isAssociationType(mappedProperty, classMetadata)) {
-					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
-					String previousClass = classMetadata.getJavaType().getName();
-					classMetadata = getManagedType(associationType);
-					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
+	@Override
+	public Predicate visit(OrNode node, Root root) {
+		log.debug("visit(node:{},root:{})", node, root);
 
-					if (root instanceof Join) {
-						root = root.get(mappedProperty);
-					} else {
-						root = ((From) root).join(mappedProperty);
-					}
-				} else {
-					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
-					root = root.get(mappedProperty);
-
-					if (isEmbeddedType(mappedProperty, classMetadata)) {
-						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
-						classMetadata = getManagedType(embeddedType);
-					}
-					attribute = classMetadata.getAttribute(property);
-				}
-			}
-		}
-		return RSQLJpaContext.of(root, attribute);
+		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
 	}
 
 }
