@@ -15,6 +15,7 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CollectionPathBase;
+import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.Expressions;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
@@ -75,6 +76,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 	}
 
 	@Override
+	@SneakyThrows
 	public BooleanExpression visit(ComparisonNode node, Path path) {
 		log.debug("visit(node:{},path:{})", node, path);
 
@@ -86,6 +88,8 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		Class type = attribute.getJavaType();
 		if (type.isPrimitive()) {
 			type = primitiveToWrapper.get(type);
+		} else if (RSQLSupport.getValueTypeMap().containsKey(type)) {
+			type = RSQLSupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
 		}
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
@@ -98,13 +102,13 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				return Expressions.path(type, entityClass, property).notIn(listObject);
 			}
 		} else {
-			Object argument = castDynamicClass(type, node.getArguments().get(0));
 			if (op.equals(IS_NULL)) {
 				return Expressions.path(type, entityClass, property).isNull();
 			}
 			if (op.equals(NOT_NULL)) {
 				return Expressions.path(type, entityClass, property).isNotNull();
 			}
+			Object argument = castDynamicClass(type, node.getArguments().get(0));
 			if (op.equals(IN)) {
 				return Expressions.path(type, entityClass, property).in(argument);
 			}
@@ -113,6 +117,17 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			}
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
+					if (entityClass.getClass().getDeclaredField(property).get(entityClass) instanceof EnumPath) {
+						if (argument.toString().contains("*") && argument.toString().contains("^")) {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().likeIgnoreCase(argument.toString().replace("*", "%").replace("^", ""));
+						} else if (argument.toString().contains("*")) {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().like(argument.toString().replace("*", "%"));
+						} else if (argument.toString().contains("^")) {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().equalsIgnoreCase(argument.toString().replace("^", ""));
+						} else {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().eq(argument.toString());
+						}
+					}
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
 						return Expressions.stringPath(entityClass, property).likeIgnoreCase(argument.toString().replace("*", "%").replace("^", ""));
 					} else if (argument.toString().contains("*")) {
@@ -130,6 +145,17 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			}
 			if (op.equals(NOT_EQUAL)) {
 				if (type.equals(String.class)) {
+					if (entityClass.getClass().getDeclaredField(property).get(entityClass) instanceof EnumPath) {
+						if (argument.toString().contains("*") && argument.toString().contains("^")) {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().likeIgnoreCase(argument.toString().replace("*", "%").replace("^", "")).not();
+						} else if (argument.toString().contains("*")) {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().like(argument.toString().replace("*", "%")).not();
+						} else if (argument.toString().contains("^")) {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().equalsIgnoreCase(argument.toString().replace("^", "")).not();
+						} else {
+							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().eq(argument.toString()).not();
+						}
+					}
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
 						return Expressions.stringPath(entityClass, property).likeIgnoreCase(argument.toString().replace("*", "%").replace("^", "")).not();
 					} else if (argument.toString().contains("*")) {

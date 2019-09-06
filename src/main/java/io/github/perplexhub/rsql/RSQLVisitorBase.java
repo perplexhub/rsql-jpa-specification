@@ -55,6 +55,8 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		try {
 			if (getValueParserMap().containsKey(dynamicClass)) {
 				object = getValueParserMap().get(dynamicClass).apply(value);
+			} else if (dynamicClass.equals(String.class)) {
+				object = value;
 			} else if (dynamicClass.equals(UUID.class)) {
 				object = UUID.fromString(value);
 			} else if (dynamicClass.equals(Date.class) || dynamicClass.equals(java.sql.Date.class)) {

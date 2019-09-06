@@ -93,6 +93,12 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();
+		if (type.isPrimitive()) {
+			type = primitiveToWrapper.get(type);
+		} else if (RSQLSupport.getValueTypeMap().containsKey(type)) {
+			type = RSQLSupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
+		}
+
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
@@ -104,13 +110,13 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 				return builder.not(attrPath.in(listObject));
 			}
 		} else {
-			Object argument = castDynamicClass(type, node.getArguments().get(0));
 			if (op.equals(IS_NULL)) {
 				return builder.isNull(attrPath);
 			}
 			if (op.equals(NOT_NULL)) {
 				return builder.isNotNull(attrPath);
 			}
+			Object argument = castDynamicClass(type, node.getArguments().get(0));
 			if (op.equals(IN)) {
 				return builder.equal(attrPath, argument);
 			}

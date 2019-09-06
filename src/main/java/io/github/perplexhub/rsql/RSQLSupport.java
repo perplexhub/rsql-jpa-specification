@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class RSQLSupport {
 
 	private @Getter static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
+	private @Getter static final Map<Class, Class> valueTypeMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<String, EntityManager> entityManagerMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
@@ -178,6 +179,13 @@ public class RSQLSupport {
 		log.info("Adding entity attribute parser for {}", valueClass);
 		if (valueClass != null && function != null) {
 			RSQLSupport.valueParserMap.put(valueClass, function);
+		}
+	}
+
+	public static void addEntityAttributeTypeMap(Class valueClass, Class mappedClass) {
+		log.info("Adding entity attribute type map for {} -> {}", valueClass, mappedClass);
+		if (valueClass != null && mappedClass != null) {
+			RSQLSupport.valueTypeMap.put(valueClass, mappedClass);
 		}
 	}
 
