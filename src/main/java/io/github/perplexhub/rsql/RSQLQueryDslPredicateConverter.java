@@ -32,20 +32,6 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 
 	private final ConversionService conversionService = new DefaultConversionService();
 
-	@Override
-	public BooleanExpression visit(AndNode node, Path entityClass) {
-		log.debug("visit(node:{},param:{})", node, entityClass);
-
-		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::and)).get();
-	}
-
-	@Override
-	public BooleanExpression visit(OrNode node, Path entityClass) {
-		log.debug("visit(node:{},param:{})", node, entityClass);
-
-		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::or)).get();
-	}
-
 	@SneakyThrows
 	RSQLQueryDslContext findPropertyPath(String propertyPath, Path entityClass) {
 		Path path = entityClass;
@@ -180,6 +166,20 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		}
 		log.error("Unknown operator: {}", op);
 		throw new IllegalArgumentException("Unknown operator: " + op);
+	}
+
+	@Override
+	public BooleanExpression visit(AndNode node, Path entityClass) {
+		log.debug("visit(node:{},param:{})", node, entityClass);
+
+		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::and)).get();
+	}
+
+	@Override
+	public BooleanExpression visit(OrNode node, Path entityClass) {
+		log.debug("visit(node:{},param:{})", node, entityClass);
+
+		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::or)).get();
 	}
 
 }
