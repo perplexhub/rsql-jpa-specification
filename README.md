@@ -28,11 +28,13 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
 ```java
 filter = "company.code==demo"; //equal
+filter = "company.code=='demo'"; //equal
 filter = "company.code==''"; //equal to empty string
 filter = "company.code==dem*"; //like dem%
 filter = "company.code==*emo"; //like %emo
 filter = "company.code==*em*"; //like %em%
 filter = "company.code==^*EM*"; //ignore case like %EM%
+filter = "company.code=='^*EM*'"; //ignore case like %EM%
 filter = "company.code!=demo"; //not equal
 filter = "company.code=in=(*)"; //equal to *
 filter = "company.code=in=(^)"; //equal to ^
@@ -52,6 +54,12 @@ filter = "company.code=na=''"; //is null
 filter = "company.code=nn=''"; //is not null
 filter = "company.code=notnull=''"; //is not null
 filter = "company.code=isnotnull=''"; //is not null
+
+filter = "company.code=='demo';company.id>100"; //and
+filter = "company.code=='demo' and company.id>100"; //and
+
+filter = "company.code=='demo',company.id>100"; //or
+filter = "company.code=='demo' or company.id>100"; //or
 ```
 Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
