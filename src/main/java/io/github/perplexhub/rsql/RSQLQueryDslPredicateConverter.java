@@ -15,8 +15,10 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CollectionPathBase;
+import com.querydsl.core.types.dsl.ComparableEntityPath;
 import com.querydsl.core.types.dsl.EnumPath;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringExpression;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
@@ -58,7 +60,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
 					path = (Path) path.getClass().getDeclaredField(mappedProperty).get(path);
 					if (path instanceof CollectionPathBase) {
-						path = (Path) path.getClass().getDeclaredMethod("any").invoke(path);
+						path = (Path) ((CollectionPathBase) path).any();
 					}
 					mappedPropertyPath = "";
 				} else {
@@ -117,25 +119,16 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			}
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
-					if (entityClass.getClass().getDeclaredField(property).get(entityClass) instanceof EnumPath) {
-						if (argument.toString().contains("*") && argument.toString().contains("^")) {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().likeIgnoreCase(argument.toString().replace("*", "%").replace("^", ""));
-						} else if (argument.toString().contains("*")) {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().like(argument.toString().replace("*", "%"));
-						} else if (argument.toString().contains("^")) {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().equalsIgnoreCase(argument.toString().replace("^", ""));
-						} else {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().eq(argument.toString());
-						}
-					}
+					StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
+
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return Expressions.stringPath(entityClass, property).likeIgnoreCase(argument.toString().replace("*", "%").replace("^", ""));
+						return stringExpression.likeIgnoreCase(argument.toString().replace("*", "%").replace("^", ""));
 					} else if (argument.toString().contains("*")) {
-						return Expressions.stringPath(entityClass, property).like(argument.toString().replace("*", "%"));
+						return stringExpression.like(argument.toString().replace("*", "%"));
 					} else if (argument.toString().contains("^")) {
-						return Expressions.stringPath(entityClass, property).equalsIgnoreCase(argument.toString().replace("^", ""));
+						return stringExpression.equalsIgnoreCase(argument.toString().replace("^", ""));
 					} else {
-						return Expressions.stringPath(entityClass, property).eq(argument.toString());
+						return stringExpression.eq(argument.toString());
 					}
 				} else if (argument == null) {
 					return Expressions.path(type, entityClass, property).isNull();
@@ -145,25 +138,16 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			}
 			if (op.equals(NOT_EQUAL)) {
 				if (type.equals(String.class)) {
-					if (entityClass.getClass().getDeclaredField(property).get(entityClass) instanceof EnumPath) {
-						if (argument.toString().contains("*") && argument.toString().contains("^")) {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().likeIgnoreCase(argument.toString().replace("*", "%").replace("^", "")).not();
-						} else if (argument.toString().contains("*")) {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().like(argument.toString().replace("*", "%")).not();
-						} else if (argument.toString().contains("^")) {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().equalsIgnoreCase(argument.toString().replace("^", "")).not();
-						} else {
-							return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue().eq(argument.toString()).not();
-						}
-					}
+					StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
+
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return Expressions.stringPath(entityClass, property).likeIgnoreCase(argument.toString().replace("*", "%").replace("^", "")).not();
+						return stringExpression.likeIgnoreCase(argument.toString().replace("*", "%").replace("^", "")).not();
 					} else if (argument.toString().contains("*")) {
-						return Expressions.stringPath(entityClass, property).like(argument.toString().replace("*", "%")).not();
+						return stringExpression.like(argument.toString().replace("*", "%")).not();
 					} else if (argument.toString().contains("^")) {
-						return Expressions.stringPath(entityClass, property).equalsIgnoreCase(argument.toString().replace("^", "")).not();
+						return stringExpression.equalsIgnoreCase(argument.toString().replace("^", "")).not();
 					} else {
-						return Expressions.stringPath(entityClass, property).eq(argument.toString()).not();
+						return stringExpression.eq(argument.toString()).not();
 					}
 				} else if (argument == null) {
 					return Expressions.path(type, entityClass, property).isNotNull();
@@ -176,18 +160,19 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
 			}
 			Comparable comparable = (Comparable) conversionService.convert(argument, type);
+			ComparableEntityPath comparableEntityPath = getComparableEntityPath(type, entityClass, property);
 
 			if (op.equals(GREATER_THAN)) {
-				return Expressions.comparableEntityPath(type, entityClass, property).gt(comparable);
+				return comparableEntityPath.gt(comparable);
 			}
 			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return Expressions.comparableEntityPath(type, entityClass, property).goe(comparable);
+				return comparableEntityPath.goe(comparable);
 			}
 			if (op.equals(LESS_THAN)) {
-				return Expressions.comparableEntityPath(type, entityClass, property).lt(comparable);
+				return comparableEntityPath.lt(comparable);
 			}
 			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return Expressions.comparableEntityPath(type, entityClass, property).loe(comparable);
+				return comparableEntityPath.loe(comparable);
 			}
 		}
 		log.error("Unknown operator: {}", op);
@@ -206,6 +191,26 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		log.debug("visit(node:{},param:{})", node, entityClass);
 
 		return node.getChildren().stream().map(n -> n.accept(this, entityClass)).collect(Collectors.reducing(BooleanExpression::or)).get();
+	}
+
+	ComparableEntityPath getComparableEntityPath(Class type, Path entityClass, String property) {
+		return Expressions.comparableEntityPath(type, entityClass, property);
+	}
+
+	@SneakyThrows
+	StringExpression getStringExpression(Path entityClass, String property, boolean isEnumPath) {
+		if (isEnumPath) {
+			return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue();
+		}
+		return Expressions.stringPath(entityClass, property);
+	}
+
+	boolean isEnumPath(Path entityClass, String property) {
+		try {
+			return entityClass.getClass().getDeclaredField(property).get(entityClass) instanceof EnumPath;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 }
