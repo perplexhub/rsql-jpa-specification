@@ -27,12 +27,19 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 ## RSQL syntax reference
 
 ```java
+filter = "company.code=like=em"; //like %em%
+filter = "company.code=ilike=EM"; //ignore case like %EM%
+filter = "company.code=icase=EM"; //ignore case equal EM
+filter = "company.code=like=e*m"; //like %e*m%
+filter = "company.code=ilike=E*M"; //ignore case like %E*M%
+filter = "company.code=icase=E^^M"; //ignore case equal E^^M
 filter = "company.code==demo"; //equal
 filter = "company.code=='demo'"; //equal
 filter = "company.code==''"; //equal to empty string
 filter = "company.code==dem*"; //like dem%
 filter = "company.code==*emo"; //like %emo
 filter = "company.code==*em*"; //like %em%
+filter = "company.code==^EM"; //ignore case equal EM
 filter = "company.code==^*EM*"; //ignore case like %EM%
 filter = "company.code=='^*EM*'"; //ignore case like %EM%
 filter = "company.code!=demo"; //not equal
