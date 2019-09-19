@@ -123,6 +123,15 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 			if (op.equals(NOT_IN)) {
 				return builder.notEqual(attrPath, argument);
 			}
+			if (op.equals(LIKE)) {
+				return builder.like(attrPath, "%" + argument.toString() + "%");
+			}
+			if (op.equals(IGNORE_CASE)) {
+				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
+			}
+			if (op.equals(IGNORE_CASE_LIKE)) {
+				return builder.equal(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%");
+			}
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
 					if (argument.toString().contains("*") && argument.toString().contains("^")) {

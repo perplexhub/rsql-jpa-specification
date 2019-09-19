@@ -18,11 +18,15 @@ public class RSQLOperators {
 			IN = new ComparisonOperator("=in=", true),
 			NOT_IN = new ComparisonOperator("=out=", true),
 			IS_NULL = new ComparisonOperator("=na=", "=isnull=", "=null="),
-			NOT_NULL = new ComparisonOperator("=nn=", "=notnull=", "=isnotnull=");
+			NOT_NULL = new ComparisonOperator("=nn=", "=notnull=", "=isnotnull="),
+			LIKE = new ComparisonOperator("=like="),
+			IGNORE_CASE = new ComparisonOperator("=icase="),
+			IGNORE_CASE_LIKE = new ComparisonOperator("=ilike=");
 
 	public static Set<ComparisonOperator> supportedOperators() {
 		return new HashSet<>(asList(EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL,
-				LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NULL, NOT_NULL));
+				LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NULL, NOT_NULL,
+				LIKE, IGNORE_CASE, IGNORE_CASE_LIKE));
 	}
 
 }

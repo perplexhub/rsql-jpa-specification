@@ -117,6 +117,18 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			if (op.equals(NOT_IN)) {
 				return Expressions.path(type, entityClass, property).notIn(argument);
 			}
+			if (op.equals(LIKE)) {
+				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
+				return stringExpression.like("%" + argument.toString() + "%");
+			}
+			if (op.equals(IGNORE_CASE)) {
+				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
+				return stringExpression.equalsIgnoreCase(argument.toString());
+			}
+			if (op.equals(IGNORE_CASE_LIKE)) {
+				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
+				return stringExpression.likeIgnoreCase("%" + argument.toString() + "%");
+			}
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {
 					StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
