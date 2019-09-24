@@ -8,6 +8,25 @@ Translate RSQL query to org.springframework.data.jpa.domain.Specification or com
 ```java
 @Import(io.github.perplexhub.rsql.RSQLConfig.class)
 ```
+## Add spring-data-jpa to your pom.xml
+
+```xml
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-jpa</artifactId>
+			<version>x.y.z</version>
+		</dependency>
+```
+
+## Add querydsl-core to your pom.xml if you plan to use RSQLSupport.toPredicate
+
+```xml
+		<dependency>
+			<groupId>com.querydsl</groupId>
+			<artifactId>querydsl-core</artifactId>
+			<version>x.y.z</version>
+		</dependency>
+```
 
 ## Add JpaSpecificationExecutor and QuerydslPredicateExecutor to your JPA repository class
 
