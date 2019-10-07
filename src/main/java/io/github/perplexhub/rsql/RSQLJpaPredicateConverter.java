@@ -41,7 +41,10 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 		Path<?> root = startRoot;
 		Attribute<?, ?> attribute = null;
 
-		for (String property : propertyPath.split("\\.")) {
+		String[] properties = propertyPath.split("\\.");
+		int deep = 0;
+
+		for (String property : properties) {
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
 			if (!mappedProperty.equals(property)) {
 				RSQLJpaContext context = findPropertyPath(mappedProperty, root);
@@ -76,10 +79,13 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
 						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
 						classMetadata = getManagedType(embeddedType);
+						attribute = classMetadata.getAttribute(properties[deep + 1]);
+					} else {
+						attribute = classMetadata.getAttribute(property);
 					}
-					attribute = classMetadata.getAttribute(property);
 				}
 			}
+			deep++;
 		}
 		return RSQLJpaContext.of(root, attribute);
 	}
