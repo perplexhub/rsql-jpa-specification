@@ -369,4 +369,34 @@ public class RSQLToSpecificationTest {
 		assertThat(rsql, count, is(0l));
 	}
 
+	@Test
+	public final void testAnd() {
+		String rsql = "company.id=in=(2,5);userRoles.role.code=='admin'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+
+		rsql = "company.id=in=(2,5) and userRoles.role.code=='admin'";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+	}
+
+	@Test
+	public final void testOr() {
+		String rsql = "company.id=in=(2,5),userRoles.role.code=='admin'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(7l));
+
+		rsql = "company.id=in=(2,5) or userRoles.role.code=='admin'";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(7l));
+	}
+
 }
