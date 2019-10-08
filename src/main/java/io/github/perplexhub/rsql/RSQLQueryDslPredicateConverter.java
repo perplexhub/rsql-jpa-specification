@@ -42,7 +42,10 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		Attribute<?, ?> attribute = null;
 		String mappedPropertyPath = "";
 
-		for (String property : propertyPath.split("\\.")) {
+		String[] properties = propertyPath.split("\\.");
+		int deep = 1;
+
+		for (String property : properties) {
 			String mappedProperty = mapProperty(property, path.getType());
 			if (!mappedProperty.equals(property)) {
 				RSQLQueryDslContext holder = findPropertyPath(mappedProperty, path);
@@ -68,10 +71,16 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
 						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
 						classMetadata = getManagedType(embeddedType);
+						attribute = classMetadata.getAttribute(properties[deep]);
+					} else {
+						attribute = classMetadata.getAttribute(property);
 					}
-					attribute = classMetadata.getAttribute(property);
 					mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + mappedProperty;
 				}
+			}
+			deep++;
+			if (deep >= properties.length) {
+				deep = properties.length - 1;
 			}
 		}
 		return RSQLQueryDslContext.of(mappedPropertyPath, attribute, path);
