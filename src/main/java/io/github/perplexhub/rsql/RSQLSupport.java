@@ -3,6 +3,7 @@ package io.github.perplexhub.rsql;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -44,7 +45,7 @@ public class RSQLSupport {
 		} else {
 			log.warn("No EntityManager beans are found");
 		}
-		log.info("RSQLSupport is initialized");
+		log.info("RSQLSupport {}is initialized", getVersion());
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
@@ -186,6 +187,17 @@ public class RSQLSupport {
 		log.info("Adding entity attribute type map for {} -> {}", valueClass, mappedClass);
 		if (valueClass != null && mappedClass != null) {
 			RSQLSupport.valueTypeMap.put(valueClass, mappedClass);
+		}
+	}
+
+	protected String getVersion() {
+		try {
+			Properties prop = new Properties();
+			prop.load(getClass().getResourceAsStream("/META-INF/maven/io.github.perplexhub/rsql-jpa-specification/pom.properties"));
+			String version = prop.getProperty("version");
+			return StringUtils.hasText(version) ? "[" + version + "] " : "";
+		} catch (Exception e) {
+			return "";
 		}
 	}
 
