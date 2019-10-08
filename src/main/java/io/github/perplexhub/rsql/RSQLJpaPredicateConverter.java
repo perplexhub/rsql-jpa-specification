@@ -79,6 +79,9 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
 						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
 						classMetadata = getManagedType(embeddedType);
+						if (deep >= properties.length) {
+							deep = properties.length - 1;
+						}
 						attribute = classMetadata.getAttribute(properties[deep]);
 					} else {
 						attribute = classMetadata.getAttribute(property);
@@ -86,9 +89,6 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 				}
 			}
 			deep++;
-			if (deep >= properties.length) {
-				deep = properties.length - 1;
-			}
 		}
 		return RSQLJpaContext.of(root, attribute);
 	}

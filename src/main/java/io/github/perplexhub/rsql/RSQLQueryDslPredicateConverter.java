@@ -71,6 +71,9 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
 						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
 						classMetadata = getManagedType(embeddedType);
+						if (deep >= properties.length) {
+							deep = properties.length - 1;
+						}
 						attribute = classMetadata.getAttribute(properties[deep]);
 					} else {
 						attribute = classMetadata.getAttribute(property);
@@ -79,9 +82,6 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				}
 			}
 			deep++;
-			if (deep >= properties.length) {
-				deep = properties.length - 1;
-			}
 		}
 		return RSQLQueryDslContext.of(mappedPropertyPath, attribute, path);
 	}
