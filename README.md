@@ -46,6 +46,8 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 ## RSQL syntax reference
 
 ```java
+filter = "id=bt=(2,4)";// id>=2 && id<=4 //between
+filter = "id=nb=(2,4)";// id<2 || id>4 //not between
 filter = "company.code=like=em"; //like %em%
 filter = "company.code=ilike=EM"; //ignore case like %EM%
 filter = "company.code=icase=EM"; //ignore case equal EM

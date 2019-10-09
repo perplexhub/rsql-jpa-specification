@@ -21,12 +21,14 @@ public class RSQLOperators {
 			NOT_NULL = new ComparisonOperator("=nn=", "=notnull=", "=isnotnull="),
 			LIKE = new ComparisonOperator("=like="),
 			IGNORE_CASE = new ComparisonOperator("=icase="),
-			IGNORE_CASE_LIKE = new ComparisonOperator("=ilike=");
+			IGNORE_CASE_LIKE = new ComparisonOperator("=ilike="),
+			BETWEEN = new ComparisonOperator("=bt=", "=between=", true),
+			NOT_BETWEEN = new ComparisonOperator("=nb=", "=notbetween=", true);
 
 	public static Set<ComparisonOperator> supportedOperators() {
 		return new HashSet<>(asList(EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL,
 				LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NULL, NOT_NULL,
-				LIKE, IGNORE_CASE, IGNORE_CASE_LIKE));
+				LIKE, IGNORE_CASE, IGNORE_CASE_LIKE, BETWEEN, NOT_BETWEEN));
 	}
 
 }

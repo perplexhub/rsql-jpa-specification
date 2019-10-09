@@ -109,8 +109,15 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 			}
 			if (op.equals(IN)) {
 				return attrPath.in(listObject);
-			} else {
-				return builder.not(attrPath.in(listObject));
+			}
+			if (op.equals(NOT_IN)) {
+				return attrPath.in(listObject).not();
+			}
+			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
+				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
+			}
+			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
+				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
 			}
 		} else {
 			if (op.equals(IS_NULL)) {
