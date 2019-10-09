@@ -1,13 +1,17 @@
 # rsql-jpa-specification
 
-Translate RSQL query to org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate
+Translate RSQL query into org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate
 - support entities association query
 
-## Import Config
+Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 
-```java
-@Import(io.github.perplexhub.rsql.RSQLConfig.class)
-```
+Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
+
+## Maven
+
+https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-jpa-specification
+
+
 ## Add spring-data-jpa to your pom.xml
 
 ```xml
@@ -26,6 +30,12 @@ Translate RSQL query to org.springframework.data.jpa.domain.Specification or com
 			<artifactId>querydsl-core</artifactId>
 			<version>x.y.z</version>
 		</dependency>
+```
+
+## Import Configuration
+
+```java
+@Import(io.github.perplexhub.rsql.RSQLConfig.class)
 ```
 
 ## Add JpaSpecificationExecutor and QuerydslPredicateExecutor to your JPA repository class
@@ -89,10 +99,9 @@ filter = "company.code=='demo' and company.id>100"; //and
 filter = "company.code=='demo',company.id>100"; //or
 filter = "company.code=='demo' or company.id>100"; //or
 ```
-Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
-Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
 
-## Obtain the Specification from RSQLSupport.toSpecification(rsqlQuery) using RSQL syntax
+## Spring Data JPA Specification
+
 ```java
 Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
@@ -112,7 +121,8 @@ repository.findAll(toSpecification(filter, true)); // select distinct
 repository.findAll(toSpecification(filter, true), pageable);
 ```
 
-## Obtain the QueryDSL predicate (BooleanExpression) from RSQLSupport.toPredicate(rsqlQuery, com.querydsl.core.types.Path) using RSQL syntax
+## QueryDSL Predicate (BooleanExpression)
+
 ```java
 Pageable pageable = PageRequest.of(0, 5); //page 1 and page size is 5
 
@@ -125,7 +135,3 @@ import static io.github.perplexhub.rsql.RSQLSupport.*;
 repository.findAll(toPredicate(filter, QUser.user));
 repository.findAll(toPredicate(filter, QUser.user), pageable);
 ```
-
-## Maven
-
-https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-jpa-specification
