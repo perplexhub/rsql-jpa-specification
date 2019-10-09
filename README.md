@@ -61,9 +61,9 @@ filter = "id=nb=(2,4)";// id<2 || id>4 //not between
 filter = "company.code=like=em"; //like %em%
 filter = "company.code=ilike=EM"; //ignore case like %EM%
 filter = "company.code=icase=EM"; //ignore case equal EM
-filter = "company.code=like=e*m"; //like %e*m%
-filter = "company.code=ilike=E*M"; //ignore case like %E*M%
-filter = "company.code=icase=E^^M"; //ignore case equal E^^M
+filter = "company.code=ke=e*m"; //like %e*m%
+filter = "company.code=ik=E*M"; //ignore case like %E*M%
+filter = "company.code=ic=E^^M"; //ignore case equal E^^M
 filter = "company.code==demo"; //equal
 filter = "company.code=='demo'"; //equal
 filter = "company.code==''"; //equal to empty string
