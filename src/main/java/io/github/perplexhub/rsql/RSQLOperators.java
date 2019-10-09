@@ -21,7 +21,7 @@ public class RSQLOperators {
 			NOT_NULL = new ComparisonOperator("=nn=", "=notnull=", "=isnotnull="),
 			LIKE = new ComparisonOperator("=ke=", "=like="),
 			IGNORE_CASE = new ComparisonOperator("=ic=", "=icase="),
-			IGNORE_CASE_LIKE = new ComparisonOperator("ik", "=ilike="),
+			IGNORE_CASE_LIKE = new ComparisonOperator("=ik=", "=ilike="),
 			BETWEEN = new ComparisonOperator("=bt=", "=between=", true),
 			NOT_BETWEEN = new ComparisonOperator("=nb=", "=notbetween=", true);
 
