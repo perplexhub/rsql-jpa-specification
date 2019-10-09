@@ -133,6 +133,18 @@ public class RSQLToSpecificationTest {
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(10l));
+
+		rsql = "userRoles.id.roleId>='2'";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+
+		rsql = "userRoles.role.id>='2'";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
 	}
 
 	@Test
@@ -397,6 +409,36 @@ public class RSQLToSpecificationTest {
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(7l));
+	}
+
+	@Test
+	public final void testBetween() {
+		String rsql = "id=bt=('2', '4')";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+
+		rsql = "company.id=bt=(2,'5')";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(10l));
+	}
+
+	@Test
+	public final void testNotBetween() {
+		String rsql = "id=nb=('2', '4')";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(9l));
+
+		rsql = "company.id=nb=(2,'5')";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(2l));
 	}
 
 }

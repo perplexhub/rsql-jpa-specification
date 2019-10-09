@@ -13,12 +13,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 
 import com.querydsl.core.types.Path;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CollectionPathBase;
-import com.querydsl.core.types.dsl.ComparableEntityPath;
-import com.querydsl.core.types.dsl.EnumPath;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.*;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
@@ -103,8 +98,21 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			}
 			if (op.equals(IN)) {
 				return Expressions.path(type, entityClass, property).in(listObject);
-			} else {
+			}
+			if (op.equals(NOT_IN)) {
 				return Expressions.path(type, entityClass, property).notIn(listObject);
+			}
+			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
+				Comparable from = (Comparable) conversionService.convert(listObject.get(0), type);
+				Comparable to = (Comparable) conversionService.convert(listObject.get(1), type);
+				ComparableEntityPath comparableEntityPath = getComparableEntityPath(type, entityClass, property);
+				return comparableEntityPath.between(from, to);
+			}
+			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
+				Comparable from = (Comparable) conversionService.convert(listObject.get(0), type);
+				Comparable to = (Comparable) conversionService.convert(listObject.get(1), type);
+				ComparableEntityPath comparableEntityPath = getComparableEntityPath(type, entityClass, property);
+				return comparableEntityPath.notBetween(from, to);
 			}
 		} else {
 			if (op.equals(IS_NULL)) {
