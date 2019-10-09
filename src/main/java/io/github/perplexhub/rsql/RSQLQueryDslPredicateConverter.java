@@ -132,6 +132,10 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
 				return stringExpression.like("%" + argument.toString() + "%");
 			}
+			if (op.equals(NOT_LIKE)) {
+				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
+				return stringExpression.like("%" + argument.toString() + "%").not();
+			}
 			if (op.equals(IGNORE_CASE)) {
 				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
 				return stringExpression.equalsIgnoreCase(argument.toString());
@@ -139,6 +143,10 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			if (op.equals(IGNORE_CASE_LIKE)) {
 				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
 				return stringExpression.likeIgnoreCase("%" + argument.toString() + "%");
+			}
+			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
+				StringExpression stringExpression = getStringExpression(entityClass, property, isEnumPath(entityClass, property));
+				return stringExpression.likeIgnoreCase("%" + argument.toString() + "%").not();
 			}
 			if (op.equals(EQUAL)) {
 				if (type.equals(String.class)) {

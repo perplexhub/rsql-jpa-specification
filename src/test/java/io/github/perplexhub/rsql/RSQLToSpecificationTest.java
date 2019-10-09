@@ -328,6 +328,21 @@ public class RSQLToSpecificationTest {
 	}
 
 	@Test
+	public final void testNotLike() {
+		String rsql = "name=notlike='ber'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(8l));
+
+		rsql = "company.name=notlike='Inc'";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(6l));
+	}
+
+	@Test
 	public final void testEqualsIgnoreCase() {
 		String rsql = "name=icase='may'";
 		List<User> users = userRepository.findAll(toSpecification(rsql));
@@ -379,6 +394,21 @@ public class RSQLToSpecificationTest {
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(0l));
+	}
+
+	@Test
+	public final void testNotLikeIgnoreCase() {
+		String rsql = "name=inotlike='BER'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(8l));
+
+		rsql = "company.name=inotlike='INC'";
+		users = userRepository.findAll(toSpecification(rsql));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(6l));
 	}
 
 	@Test
