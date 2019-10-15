@@ -4,7 +4,9 @@ import static io.github.perplexhub.rsql.RSQLSupport.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -469,6 +471,60 @@ public class RSQLToSpecificationTest {
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(2l));
+	}
+
+	@Test
+	public final void testPropertyPathMapper() {
+		Map<String, String> propertyPathMapper = new HashMap<>();
+		propertyPathMapper.put("i", "id");
+		propertyPathMapper.put("ci", "company.id");
+		propertyPathMapper.put("n", "name");
+		propertyPathMapper.put("urir", "userRoles.id.roleId");
+		propertyPathMapper.put("urrc", "userRoles.role.code");
+		String rsql = "i==2";
+		List<User> users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, users.get(0).getName(), equalTo("February"));
+
+		rsql = "i=='2'";
+		List<Company> companys = companyRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		count = companys.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, companys.get(0).getName(), equalTo("World Inc"));
+
+		rsql = "ci=='2'";
+		users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(4l));
+		assertThat(rsql, users.get(0).getName(), equalTo("March"));
+		assertThat(rsql, users.get(1).getName(), equalTo("April"));
+		assertThat(rsql, users.get(2).getName(), equalTo("May"));
+		assertThat(rsql, users.get(3).getName(), equalTo("June"));
+		assertThat(rsql, users.get(0).getCompany().getName(), equalTo("World Inc"));
+
+		rsql = "n==''";
+		companys = companyRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		count = companys.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, companys.get(0).getCode(), equalTo("empty"));
+		assertThat(rsql, companys.get(0).getName(), equalTo(""));
+
+		rsql = "urir=='2'";
+		users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+
+		rsql = "urrc=='admin'";
+		users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
 	}
 
 }

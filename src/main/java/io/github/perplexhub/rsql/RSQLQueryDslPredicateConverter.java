@@ -4,6 +4,7 @@ import static io.github.perplexhub.rsql.RSQLOperators.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.persistence.metamodel.Attribute;
@@ -19,16 +20,19 @@ import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpression, Path> {
 
 	private final ConversionService conversionService = new DefaultConversionService();
+
+	public RSQLQueryDslPredicateConverter(Map<String, String> propertyPathMapper) {
+		super();
+		setPropertyPathMapper(propertyPathMapper);
+	}
 
 	@SneakyThrows
 	RSQLQueryDslContext findPropertyPath(String propertyPath, Path entityClass) {
@@ -81,7 +85,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		log.debug("visit(node:{},path:{})", node, path);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLQueryDslContext holder = findPropertyPath(node.getSelector(), path);
+		RSQLQueryDslContext holder = findPropertyPath(mapPropertyPath(node.getSelector()), path);
 		Attribute attribute = holder.getAttribute();
 		String property = holder.getPropertyPath();
 		Path entityClass = holder.getEntityClass();

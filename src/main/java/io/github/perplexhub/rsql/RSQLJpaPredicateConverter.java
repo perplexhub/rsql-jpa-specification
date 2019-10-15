@@ -8,12 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.From;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.ManagedType;
 
@@ -24,17 +19,21 @@ import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> {
 
 	private final CriteriaBuilder builder;
 	private final ConversionService conversionService = new DefaultConversionService();
 	private final Map<String, Path> cachedJoins = new HashMap<>();
+
+	public RSQLJpaPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
+		super();
+		this.builder = builder;
+		setPropertyPathMapper(propertyPathMapper);
+	}
 
 	<T> RSQLJpaContext findPropertyPath(String propertyPath, Path startRoot) {
 		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
@@ -92,7 +91,7 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLJpaContext holder = findPropertyPath(node.getSelector(), root);
+		RSQLJpaContext holder = findPropertyPath(mapPropertyPath(node.getSelector()), root);
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();

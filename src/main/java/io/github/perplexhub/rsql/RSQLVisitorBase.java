@@ -8,13 +8,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
 
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
@@ -25,6 +20,7 @@ import javax.persistence.metamodel.PluralAttribute;
 import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
+	private @Setter Map<String, String> propertyPathMapper;
 	static final Map<Class, Class> primitiveToWrapper;
 
 	static {
@@ -48,7 +45,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		primitiveToWrapper = Collections.unmodifiableMap(map);
 	}
 
-	Object castDynamicClass(Class dynamicClass, String value) {
+	protected Object castDynamicClass(Class dynamicClass, String value) {
 		log.debug("castDynamicClass(dynamicClass:{},value:{})", dynamicClass, value);
 
 		Object object = null;
@@ -89,7 +86,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return null;
 	}
 
-	static <T> Class<?> findPropertyType(String property, ManagedType<T> classMetadata) {
+	protected <T> Class<?> findPropertyType(String property, ManagedType<T> classMetadata) {
 		Class<?> propertyType = null;
 		if (classMetadata.getAttribute(property).isCollection()) {
 			propertyType = ((PluralAttribute) classMetadata.getAttribute(property)).getBindableJavaType();
@@ -100,7 +97,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	}
 
 	@SneakyThrows(Exception.class)
-	static <T> ManagedType<T> getManagedType(Class<T> cls) {
+	protected <T> ManagedType<T> getManagedType(Class<T> cls) {
 		Exception ex = null;
 		if (getEntityManagerMap().size() > 0) {
 			ManagedType<T> managedType = getManagedTypeMap().get(cls);
@@ -126,19 +123,30 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		throw ex != null ? ex : new IllegalStateException("No entity manager bean found in application context");
 	}
 
-	static String mapProperty(String selector, Class<?> entityClass) {
+	protected String mapPropertyPath(String propertyPath) {
+		if (propertyPathMapper != null && !propertyPathMapper.isEmpty()) {
+			String property = propertyPathMapper.get(propertyPath);
+			if (StringUtils.hasText(property)) {
+				log.debug("Map propertyPath [{}] to [{}]", propertyPath, property);
+				return property;
+			}
+		}
+		return propertyPath;
+	}
+
+	protected String mapProperty(String selector, Class<?> entityClass) {
 		if (!getPropertyRemapping().isEmpty()) {
 			Map<String, String> map = getPropertyRemapping().get(entityClass);
 			String property = (map != null) ? map.get(selector) : null;
-			if (property != null) {
-				log.debug("Map [{}] to [{}] for [{}]", selector, property, entityClass);
+			if (StringUtils.hasText(property)) {
+				log.debug("Map property [{}] to [{}] for [{}]", selector, property, entityClass);
 				return property;
 			}
 		}
 		return selector;
 	}
 
-	static <T> boolean hasPropertyName(String property, ManagedType<T> classMetadata) {
+	protected <T> boolean hasPropertyName(String property, ManagedType<T> classMetadata) {
 		Set<Attribute<? super T, ?>> names = classMetadata.getAttributes();
 		for (Attribute<? super T, ?> name : names) {
 			if (name.getName().equals(property))
@@ -147,11 +155,11 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return false;
 	}
 
-	static <T> boolean isEmbeddedType(String property, ManagedType<T> classMetadata) {
+	protected <T> boolean isEmbeddedType(String property, ManagedType<T> classMetadata) {
 		return classMetadata.getAttribute(property).getPersistentAttributeType() == PersistentAttributeType.EMBEDDED;
 	}
 
-	static <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
+	protected <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
 		return classMetadata.getAttribute(property).isAssociation();
 	}
 

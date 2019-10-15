@@ -57,12 +57,16 @@ public class RSQLSupport {
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery) {
-		log.debug("toSpecification({})", rsqlQuery);
+		return toSpecification(rsqlQuery, null);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final Map<String, String> propertyPathMapper) {
+		log.debug("toSpecification({},propertyPathMapper:{})", rsqlQuery, propertyPathMapper);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLJpaPredicateConverter(cb), root);
+					return rsql.accept(new RSQLJpaPredicateConverter(cb, propertyPathMapper), root);
 				} else
 					return null;
 			}
@@ -76,7 +80,7 @@ public class RSQLSupport {
 				query.distinct(distinct);
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLJpaPredicateConverter(cb), root);
+					return rsql.accept(new RSQLJpaPredicateConverter(cb, null), root);
 				} else
 					return null;
 			}
@@ -84,11 +88,15 @@ public class RSQLSupport {
 	}
 
 	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz) {
-		log.debug("toPredicate({},qClazz:{})", rsqlQuery, qClazz);
+		return toPredicate(rsqlQuery, qClazz, null);
+	}
+
+	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz, final Map<String, String> propertyPathMapper) {
+		log.debug("toPredicate({},qClazz:{},propertyPathMapper:{})", rsqlQuery, qClazz);
 		if (StringUtils.hasText(rsqlQuery)) {
 			return new RSQLParser(RSQLOperators.supportedOperators())
 					.parse(rsqlQuery)
-					.accept(new RSQLQueryDslPredicateConverter(), qClazz);
+					.accept(new RSQLQueryDslPredicateConverter(propertyPathMapper), qClazz);
 		} else {
 			return null;
 		}
