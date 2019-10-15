@@ -16,8 +16,10 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import io.github.perplexhub.rsql.model.Company;
+import io.github.perplexhub.rsql.model.TrunkGroup;
 import io.github.perplexhub.rsql.model.User;
 import io.github.perplexhub.rsql.repository.CompanyRepository;
+import io.github.perplexhub.rsql.repository.TrunkGroupRepository;
 import io.github.perplexhub.rsql.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +33,17 @@ public class RSQLToSpecificationTest {
 
 	@Autowired
 	private CompanyRepository companyRepository;
+
+	@Autowired
+	private TrunkGroupRepository trunkGroupRepository;
+
+	@Test
+	public final void testDoubleAssociation() {
+		String rsql = "sites.trunks.id==2";
+		List<TrunkGroup> trunkGroups = trunkGroupRepository.findAll(toSpecification(rsql));
+		long count = trunkGroups.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+	}
 
 	@Test
 	public final void testNull() {

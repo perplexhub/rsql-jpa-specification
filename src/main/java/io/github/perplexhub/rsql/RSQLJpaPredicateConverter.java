@@ -57,21 +57,17 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
 					String previousClass = classMetadata.getJavaType().getName();
 					classMetadata = getManagedType(associationType);
-					log.debug("Create a join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
 
-					if (root instanceof Join) {
-						root = root.get(mappedProperty);
+					String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+					log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+					if (cachedJoins.containsKey(keyJoin)) {
+						root = cachedJoins.get(keyJoin);
 					} else {
-						String keyJoin = startRoot.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
-						if (cachedJoins.containsKey(keyJoin)) {
-							root = cachedJoins.get(keyJoin);
-						} else {
-							root = ((From) root).join(mappedProperty);
-							cachedJoins.put(keyJoin, root);
-						}
+						root = ((From) root).join(mappedProperty);
+						cachedJoins.put(keyJoin, root);
 					}
 				} else {
-					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
+					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
 					root = root.get(mappedProperty);
 
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
