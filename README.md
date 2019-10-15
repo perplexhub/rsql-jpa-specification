@@ -5,7 +5,7 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
 
 Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 
-Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples), [RSQL for JPA](https://github.com/tennaito/rsql-jpa#examples-of-rsql) and [Dynamic-Specification-RSQL](https://github.com/srigalamilitan/Dynamic-Specification-RSQL#implementation-rsql-in-services-layer)
+Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples)
 
 ## Maven
 
