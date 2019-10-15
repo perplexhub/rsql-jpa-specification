@@ -123,6 +123,16 @@ repository.findAll(toSpecification(filter), pageable);
 
 repository.findAll(toSpecification(filter, true)); // select distinct
 repository.findAll(toSpecification(filter, true), pageable);
+
+// property path remap
+filter = "compCode=='demo';compId>100"; // "company.code=='demo';company.id>100" -  protect our domain model #10
+
+Map<String, String> propertyPathMapper = new HashMap<>();
+propertyPathMapper.put("compId", "company.id");
+propertyPathMapper.put("compCode", "company.code");
+
+repository.findAll(toSpecification(filter, propertyPathMapper));
+repository.findAll(toSpecification(filter, propertyPathMapper), pageable);
 ```
 
 ## QueryDSL Predicate (BooleanExpression)
@@ -138,4 +148,14 @@ import static io.github.perplexhub.rsql.RSQLSupport.*;
 
 repository.findAll(toPredicate(filter, QUser.user));
 repository.findAll(toPredicate(filter, QUser.user), pageable);
+
+// property path remap
+filter = "compCode=='demo';compId>100"; // "company.code=='demo';company.id>100" - protect our domain model #10
+
+Map<String, String> propertyPathMapper = new HashMap<>();
+propertyPathMapper.put("compId", "company.id");
+propertyPathMapper.put("compCode", "company.code");
+
+repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper));
+repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable);
 ```
