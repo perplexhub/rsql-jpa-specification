@@ -39,6 +39,20 @@ public class RSQLSupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testToComplexMultiValueMap() {
+		String rsql = "sites.trunks.id==2,id=na=2,company.id=='2',id=na=3,name==''";
+		Map<String, MultiValueMap<String, String>> map = toComplexMultiValueMap(rsql);
+		log.info("Map<String, MultiValueMap<String, String>> map:{}", map);
+		long count = map.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat("ComplexMultiValueMap", count, is(4l));
+		assertThat("ComplexMultiValueMap", map.get("company.id").get("==").size(), is(1));
+		assertThat("ComplexMultiValueMap", map.get("id").get("=null=").size(), is(2));
+		assertThat("ComplexMultiValueMap", map.get("id").get("=isnull=").size(), is(2));
+		assertThat("ComplexMultiValueMap", map.get("id").get("=na=").size(), is(2));
+	}
+
+	@Test
 	public final void testToMultiValueMap() {
 		String rsql = "sites.trunks.id==2,id==2,company.id=='2',id==3,name==''";
 		MultiValueMap<String, String> map = toMultiValueMap(rsql);

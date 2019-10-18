@@ -108,6 +108,13 @@ public class RSQLSupport {
 		return map;
 	}
 
+	public static Map<String, MultiValueMap<String, String>> toComplexMultiValueMap(final String rsqlQuery) {
+		log.debug("toComplexMultiValueMap(rsqlQuery:{})", rsqlQuery);
+		Map<String, MultiValueMap<String, String>> map = new HashMap<>();
+		new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery).accept(new RSQLComplexConverter(), map);
+		return map;
+	}
+
 	/**
 	 * Returns a single entity matching the given {@link Specification} or {@link Optional#empty()} if none found.
 	 *
