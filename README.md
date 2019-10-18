@@ -5,8 +5,6 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
 
 Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 
-Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples)
-
 ## Maven
 
 https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-jpa-specification
@@ -53,7 +51,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 }
 ```
 
-## RSQL syntax reference
+## RSQL Syntax Reference
 
 ```java
 filter = "id=bt=(2,4)";// id>=2 && id<=4 //between
@@ -103,6 +101,8 @@ filter = "company.code=='demo' and company.id>100"; //and
 filter = "company.code=='demo',company.id>100"; //or
 filter = "company.code=='demo' or company.id>100"; //or
 ```
+
+Syntax Reference: [RSQL / FIQL parser](https://github.com/jirutka/rsql-parser#examples)
 
 ## Spring Data JPA Specification
 
