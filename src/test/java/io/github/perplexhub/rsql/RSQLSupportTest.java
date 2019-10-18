@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.MultiValueMap;
 
 import io.github.perplexhub.rsql.model.Company;
 import io.github.perplexhub.rsql.model.TrunkGroup;
@@ -26,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, webEnvironment = WebEnvironment.NONE)
-public class RSQLToSpecificationTest {
+public class RSQLSupportTest {
 
 	@Autowired
 	private UserRepository userRepository;
@@ -38,11 +39,23 @@ public class RSQLToSpecificationTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testToMultiValueMap() {
+		String rsql = "sites.trunks.id==2,id==2,company.id=='2',id==3,name==''";
+		MultiValueMap<String, String> map = toMultiValueMap(rsql);
+		log.info("MultiValueMap<String,String> map:{}", map);
+		long count = map.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat("MultiValueMap", count, is(4l));
+		assertThat("MultiValueMap", map.get("id").size(), is(2));
+	}
+
+	@Test
 	public final void testDoubleAssociation() {
 		String rsql = "sites.trunks.id==2";
 		List<TrunkGroup> trunkGroups = trunkGroupRepository.findAll(toSpecification(rsql));
 		long count = trunkGroups.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat("DoubleAssociation", count, is(0l));
 	}
 
 	@Test

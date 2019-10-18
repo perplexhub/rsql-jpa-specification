@@ -1,9 +1,6 @@
 package io.github.perplexhub.rsql;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -21,6 +18,8 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.lang.Nullable;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.RSQLParser;
@@ -100,6 +99,13 @@ public class RSQLSupport {
 		} else {
 			return null;
 		}
+	}
+
+	public static MultiValueMap<String, String> toMultiValueMap(final String rsqlQuery) {
+		log.debug("toMultiValueMap(rsqlQuery:{})", rsqlQuery);
+		MultiValueMap<String, String> map = CollectionUtils.toMultiValueMap(new HashMap<>());
+		new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery).accept(new RSQLSimpleConverter(), map);
+		return map;
 	}
 
 	/**
