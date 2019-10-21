@@ -104,14 +104,18 @@ public class RSQLSupport {
 	public static MultiValueMap<String, String> toMultiValueMap(final String rsqlQuery) {
 		log.debug("toMultiValueMap(rsqlQuery:{})", rsqlQuery);
 		MultiValueMap<String, String> map = CollectionUtils.toMultiValueMap(new HashMap<>());
-		new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery).accept(new RSQLSimpleConverter(), map);
+		if (StringUtils.hasText(rsqlQuery)) {
+			new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery).accept(new RSQLSimpleConverter(), map);
+		}
 		return map;
 	}
 
 	public static Map<String, MultiValueMap<String, String>> toComplexMultiValueMap(final String rsqlQuery) {
 		log.debug("toComplexMultiValueMap(rsqlQuery:{})", rsqlQuery);
 		Map<String, MultiValueMap<String, String>> map = new HashMap<>();
-		new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery).accept(new RSQLComplexConverter(), map);
+		if (StringUtils.hasText(rsqlQuery)) {
+			new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery).accept(new RSQLComplexConverter(), map);
+		}
 		return map;
 	}
 
