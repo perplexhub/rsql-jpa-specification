@@ -22,6 +22,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
+
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
 import lombok.Getter;
@@ -86,11 +88,11 @@ public class RSQLSupport {
 		};
 	}
 
-	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz) {
+	public static BooleanExpression toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz) {
 		return toPredicate(rsqlQuery, qClazz, null);
 	}
 
-	public static com.querydsl.core.types.Predicate toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz, final Map<String, String> propertyPathMapper) {
+	public static BooleanExpression toPredicate(final String rsqlQuery, final com.querydsl.core.types.Path qClazz, final Map<String, String> propertyPathMapper) {
 		log.debug("toPredicate({},qClazz:{},propertyPathMapper:{})", rsqlQuery, qClazz);
 		if (StringUtils.hasText(rsqlQuery)) {
 			return new RSQLParser(RSQLOperators.supportedOperators())
