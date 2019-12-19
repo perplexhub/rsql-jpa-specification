@@ -1,217 +1,233 @@
 package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.RSQLOperators.*;
+import cz.jirutka.rsql.parser.ast.AndNode;
+import cz.jirutka.rsql.parser.ast.ComparisonNode;
+import cz.jirutka.rsql.parser.ast.ComparisonOperator;
+import cz.jirutka.rsql.parser.ast.OrNode;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 
+import javax.persistence.criteria.*;
+import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.ManagedType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.persistence.criteria.*;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.ManagedType;
-
-import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
-
-import cz.jirutka.rsql.parser.ast.AndNode;
-import cz.jirutka.rsql.parser.ast.ComparisonNode;
-import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import cz.jirutka.rsql.parser.ast.OrNode;
-import lombok.extern.slf4j.Slf4j;
+import static io.github.perplexhub.rsql.RSQLOperators.*;
 
 @Slf4j
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> {
 
-	private final CriteriaBuilder builder;
-	private final ConversionService conversionService = new DefaultConversionService();
-	private final Map<String, Path> cachedJoins = new HashMap<>();
+    private final CriteriaBuilder builder;
+    private final ConversionService conversionService = new DefaultConversionService();
+    private final Map<String, Path> cachedJoins = new HashMap<>();
 
-	public RSQLJpaPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
-		super();
-		this.builder = builder;
-		setPropertyPathMapper(propertyPathMapper);
-	}
+    @Getter
+    private boolean needsDistinct;
 
-	<T> RSQLJpaContext findPropertyPath(String propertyPath, Path startRoot) {
-		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
-		Path<?> root = startRoot;
-		Attribute<?, ?> attribute = null;
+    public RSQLJpaPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
+        super();
+        this.builder = builder;
+        setPropertyPathMapper(propertyPathMapper);
+    }
 
-		String[] properties = propertyPath.split("\\.");
+    <T> RSQLJpaContext findPropertyPath(String propertyPath, Path startRoot) {
+        ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
+        Path<?> root = startRoot;
+        Attribute<?, ?> attribute = null;
 
-		for (String property : properties) {
-			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
-			if (!mappedProperty.equals(property)) {
-				RSQLJpaContext context = findPropertyPath(mappedProperty, root);
-				root = context.getPath();
-				attribute = context.getAttribute();
-			} else {
-				if (!hasPropertyName(mappedProperty, classMetadata)) {
-					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
-				}
+        String[] properties = propertyPath.split("\\.");
 
-				if (isAssociationType(mappedProperty, classMetadata)) {
-					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
-					String previousClass = classMetadata.getJavaType().getName();
-					classMetadata = getManagedType(associationType);
+        for (String property : properties) {
+            String mappedProperty = mapProperty(property, classMetadata.getJavaType());
+            if (!mappedProperty.equals(property)) {
+                RSQLJpaContext context = findPropertyPath(mappedProperty, root);
+                root = context.getPath();
+                attribute = context.getAttribute();
+            } else {
+                if (!hasPropertyName(mappedProperty, classMetadata)) {
+                    throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+                }
 
-					String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
-					log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-					if (cachedJoins.containsKey(keyJoin)) {
-						root = cachedJoins.get(keyJoin);
-					} else {
-						root = ((From) root).join(mappedProperty);
-						cachedJoins.put(keyJoin, root);
-					}
-				} else {
-					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
-					root = root.get(mappedProperty);
+                if (isAssociationType(mappedProperty, classMetadata)) {
+                    Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
+                    String previousClass = classMetadata.getJavaType().getName();
+                    classMetadata = getManagedType(associationType);
 
-					if (isEmbeddedType(mappedProperty, classMetadata)) {
-						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
-						classMetadata = getManagedType(embeddedType);
-					} else {
-						attribute = classMetadata.getAttribute(property);
-					}
-				}
-			}
-		}
-		return RSQLJpaContext.of(root, attribute);
-	}
+                    String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+                    log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+                    if (cachedJoins.containsKey(keyJoin)) {
+                        root = cachedJoins.get(keyJoin);
+                    } else {
+                        root = ((From) root).join(mappedProperty);
+                        cachedJoins.put(keyJoin, root);
+                    }
+                } else if (isElementCollectionType(mappedProperty, classMetadata)) {
+                    // TODO: don't know how to get the class of the element of collection - works currently only with strings
+                    attribute = new CollectionAttribute(mappedProperty, String.class);
+                    this.needsDistinct = true;
 
-	@Override
-	public Predicate visit(ComparisonNode node, Root root) {
-		log.debug("visit(node:{},root:{})", node, root);
+                    String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+                    log.debug("Create a join for collection [{}] within [{}] using key [{}]", property, classMetadata.getJavaType().getName(), keyJoin);
+                    if (cachedJoins.containsKey(keyJoin)) {
+                        root = cachedJoins.get(keyJoin);
+                    } else {
+                        root = ((From) root).join(mappedProperty);
+                        cachedJoins.put(keyJoin, root);
+                    }
+                } else {
+                    log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
+                    root = root.get(mappedProperty);
 
-		ComparisonOperator op = node.getOperator();
-		RSQLJpaContext holder = findPropertyPath(mapPropertyPath(node.getSelector()), root);
-		Path attrPath = holder.getPath();
-		Attribute attribute = holder.getAttribute();
-		Class type = attribute.getJavaType();
-		if (type.isPrimitive()) {
-			type = primitiveToWrapper.get(type);
-		} else if (RSQLSupport.getValueTypeMap().containsKey(type)) {
-			type = RSQLSupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
-		}
+                    if (isEmbeddedType(mappedProperty, classMetadata)) {
+                        Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
+                        classMetadata = getManagedType(embeddedType);
+                    } else {
+                        attribute = classMetadata.getAttribute(property);
+                    }
+                }
+            }
+        }
+        return RSQLJpaContext.of(root, attribute);
+    }
 
-		if (node.getArguments().size() > 1) {
-			List<Object> listObject = new ArrayList<>();
-			for (String argument : node.getArguments()) {
-				listObject.add(castDynamicClass(type, argument));
-			}
-			if (op.equals(IN)) {
-				return attrPath.in(listObject);
-			}
-			if (op.equals(NOT_IN)) {
-				return attrPath.in(listObject).not();
-			}
-			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
-			}
-			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
-			}
-		} else {
-			if (op.equals(IS_NULL)) {
-				return builder.isNull(attrPath);
-			}
-			if (op.equals(NOT_NULL)) {
-				return builder.isNotNull(attrPath);
-			}
-			Object argument = castDynamicClass(type, node.getArguments().get(0));
-			if (op.equals(IN)) {
-				return builder.equal(attrPath, argument);
-			}
-			if (op.equals(NOT_IN)) {
-				return builder.notEqual(attrPath, argument);
-			}
-			if (op.equals(LIKE)) {
-				return builder.like(attrPath, "%" + argument.toString() + "%");
-			}
-			if (op.equals(NOT_LIKE)) {
-				return builder.like(attrPath, "%" + argument.toString() + "%").not();
-			}
-			if (op.equals(IGNORE_CASE)) {
-				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
-			}
-			if (op.equals(IGNORE_CASE_LIKE)) {
-				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%");
-			}
-			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%").not();
-			}
-			if (op.equals(EQUAL)) {
-				if (type.equals(String.class)) {
-					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return builder.like(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
-					} else if (argument.toString().contains("*")) {
-						return builder.like(attrPath, argument.toString().replace('*', '%'));
-					} else if (argument.toString().contains("^")) {
-						return builder.equal(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
-					} else {
-						return builder.equal(attrPath, argument);
-					}
-				} else if (argument == null) {
-					return builder.isNull(attrPath);
-				} else {
-					return builder.equal(attrPath, argument);
-				}
-			}
-			if (op.equals(NOT_EQUAL)) {
-				if (type.equals(String.class)) {
-					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return builder.notLike(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
-					} else if (argument.toString().contains("*")) {
-						return builder.notLike(attrPath, argument.toString().replace('*', '%'));
-					} else if (argument.toString().contains("^")) {
-						return builder.notEqual(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
-					} else {
-						return builder.notEqual(attrPath, argument);
-					}
-				} else if (argument == null) {
-					return builder.isNotNull(attrPath);
-				} else {
-					return builder.notEqual(attrPath, argument);
-				}
-			}
-			if (!Comparable.class.isAssignableFrom(type)) {
-				log.error("Operator {} can be used only for Comparables", op);
-				throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
-			}
-			Comparable comparable = (Comparable) conversionService.convert(argument, type);
+    @Override
+    public Predicate visit(ComparisonNode node, Root root) {
+        log.debug("visit(node:{},root:{})", node, root);
 
-			if (op.equals(GREATER_THAN)) {
-				return builder.greaterThan(attrPath, comparable);
-			}
-			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return builder.greaterThanOrEqualTo(attrPath, comparable);
-			}
-			if (op.equals(LESS_THAN)) {
-				return builder.lessThan(attrPath, comparable);
-			}
-			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return builder.lessThanOrEqualTo(attrPath, comparable);
-			}
-		}
-		log.error("Unknown operator: {}", op);
-		throw new IllegalArgumentException("Unknown operator: " + op);
-	}
+        ComparisonOperator op = node.getOperator();
+        RSQLJpaContext holder = findPropertyPath(mapPropertyPath(node.getSelector()), root);
+        Path attrPath = holder.getPath();
+        Attribute attribute = holder.getAttribute();
+        Class type = attribute.getJavaType();
+        if (type.isPrimitive()) {
+            type = primitiveToWrapper.get(type);
+        } else if (RSQLSupport.getValueTypeMap().containsKey(type)) {
+            type = RSQLSupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
+        }
 
-	@Override
-	public Predicate visit(AndNode node, Root root) {
-		log.debug("visit(node:{},root:{})", node, root);
+        if (node.getArguments().size() > 1) {
+            List<Object> listObject = new ArrayList<>();
+            for (String argument : node.getArguments()) {
+                listObject.add(castDynamicClass(type, argument));
+            }
+            if (op.equals(IN)) {
+                return attrPath.in(listObject);
+            }
+            if (op.equals(NOT_IN)) {
+                return attrPath.in(listObject).not();
+            }
+            if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
+                return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
+            }
+            if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
+                return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
+            }
+        } else {
+            if (op.equals(IS_NULL)) {
+                return builder.isNull(attrPath);
+            }
+            if (op.equals(NOT_NULL)) {
+                return builder.isNotNull(attrPath);
+            }
 
-		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::and)).get();
-	}
+            Object argument = castDynamicClass(type, node.getArguments().get(0));
+            if (op.equals(IN)) {
+                return builder.equal(attrPath, argument);
+            }
+            if (op.equals(NOT_IN)) {
+                return builder.notEqual(attrPath, argument);
+            }
+            if (op.equals(LIKE)) {
+                return builder.like(attrPath, "%" + argument.toString() + "%");
+            }
+            if (op.equals(NOT_LIKE)) {
+                return builder.like(attrPath, "%" + argument.toString() + "%").not();
+            }
+            if (op.equals(IGNORE_CASE)) {
+                return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
+            }
+            if (op.equals(IGNORE_CASE_LIKE)) {
+                return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%");
+            }
+            if (op.equals(IGNORE_CASE_NOT_LIKE)) {
+                return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%").not();
+            }
+            if (op.equals(EQUAL)) {
+                if (type.equals(String.class)) {
+                    if (argument.toString().contains("*") && argument.toString().contains("^")) {
+                        return builder.like(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
+                    } else if (argument.toString().contains("*")) {
+                        return builder.like(attrPath, argument.toString().replace('*', '%'));
+                    } else if (argument.toString().contains("^")) {
+                        return builder.equal(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
+                    } else {
+                        return builder.equal(attrPath, argument);
+                    }
+                } else if (argument == null) {
+                    return builder.isNull(attrPath);
+                } else {
+                    return builder.equal(attrPath, argument);
+                }
+            }
+            if (op.equals(NOT_EQUAL)) {
+                if (type.equals(String.class)) {
+                    if (argument.toString().contains("*") && argument.toString().contains("^")) {
+                        return builder.notLike(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
+                    } else if (argument.toString().contains("*")) {
+                        return builder.notLike(attrPath, argument.toString().replace('*', '%'));
+                    } else if (argument.toString().contains("^")) {
+                        return builder.notEqual(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
+                    } else {
+                        return builder.notEqual(attrPath, argument);
+                    }
+                } else if (argument == null) {
+                    return builder.isNotNull(attrPath);
+                } else {
+                    return builder.notEqual(attrPath, argument);
+                }
+            }
+            if (!Comparable.class.isAssignableFrom(type)) {
+                log.error("Operator {} can be used only for Comparables", op);
+                throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
+            }
+            Comparable comparable = (Comparable) conversionService.convert(argument, type);
 
-	@Override
-	public Predicate visit(OrNode node, Root root) {
-		log.debug("visit(node:{},root:{})", node, root);
+            if (op.equals(GREATER_THAN)) {
+                return builder.greaterThan(attrPath, comparable);
+            }
+            if (op.equals(GREATER_THAN_OR_EQUAL)) {
+                return builder.greaterThanOrEqualTo(attrPath, comparable);
+            }
+            if (op.equals(LESS_THAN)) {
+                return builder.lessThan(attrPath, comparable);
+            }
+            if (op.equals(LESS_THAN_OR_EQUAL)) {
+                return builder.lessThanOrEqualTo(attrPath, comparable);
+            }
+        }
+        log.error("Unknown operator: {}", op);
+        throw new IllegalArgumentException("Unknown operator: " + op);
+    }
 
-		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
-	}
+    @Override
+    public Predicate visit(AndNode node, Root root) {
+        log.debug("visit(node:{},root:{})", node, root);
+
+        return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::and)).get();
+    }
+
+    @Override
+    public Predicate visit(OrNode node, Root root) {
+        log.debug("visit(node:{},root:{})", node, root);
+
+        return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
+    }
 
 }

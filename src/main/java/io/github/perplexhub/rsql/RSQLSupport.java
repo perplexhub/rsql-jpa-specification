@@ -67,7 +67,12 @@ public class RSQLSupport {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLJpaPredicateConverter(cb, propertyPathMapper), root);
+					RSQLJpaPredicateConverter visitor = new RSQLJpaPredicateConverter(cb, propertyPathMapper);
+					Predicate predicate = rsql.accept(visitor, root);
+					if (visitor.isNeedsDistinct()) {
+						query.distinct(true);
+					}
+					return predicate;
 				} else
 					return null;
 			}
