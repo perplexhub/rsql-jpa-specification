@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.ManagedType;
+import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -64,6 +65,17 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 						path = (Path) ((CollectionPathBase) path).any();
 					}
 					mappedPropertyPath = "";
+				} else if (isElementCollectionType(mappedProperty, classMetadata)) {
+					String previousClass = classMetadata.getJavaType().getName();
+					attribute = classMetadata.getAttribute(property);
+					classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
+
+					log.debug("Create an element collection join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
+					path = (Path) path.getClass().getDeclaredField(mappedProperty).get(path);
+					if (path instanceof CollectionPathBase) {
+						path = (Path) ((CollectionPathBase) path).any();
+					}
+					mappedPropertyPath = "";
 				} else {
 					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
@@ -90,6 +102,9 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		String property = holder.getPropertyPath();
 		Path entityClass = holder.getEntityClass();
 		Class type = attribute.getJavaType();
+		if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
+			type = getElementCollectionGenericType(type, attribute);
+		}
 		if (type.isPrimitive()) {
 			type = primitiveToWrapper.get(type);
 		} else if (RSQLSupport.getValueTypeMap().containsKey(type)) {

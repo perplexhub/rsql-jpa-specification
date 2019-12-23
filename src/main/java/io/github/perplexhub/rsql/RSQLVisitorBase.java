@@ -2,7 +2,7 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLSupport.*;
 
-import java.lang.reflect.Constructor;
+import java.lang.reflect.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -123,6 +123,28 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		throw ex != null ? ex : new IllegalStateException("No entity manager bean found in application context");
 	}
 
+	protected <T> ManagedType<T> getManagedElementCollectionType(String mappedProperty, ManagedType<T> classMetadata) {
+		try {
+			Class<?> cls = findPropertyType(mappedProperty, classMetadata);
+			if (!cls.isPrimitive() && !cls.equals(String.class) && getEntityManagerMap().size() > 0) {
+				ManagedType<T> managedType = getManagedTypeMap().get(cls);
+				if (managedType != null) {
+					log.debug("Found managed type [{}] in cache", cls);
+					return managedType;
+				}
+				for (Entry<String, EntityManager> entityManagerEntry : getEntityManagerMap().entrySet()) {
+					managedType = (ManagedType<T>) entityManagerEntry.getValue().getMetamodel().managedType(cls);
+					getManagedTypeMap().put(cls, managedType);
+					log.info("Found managed type [{}] in EntityManager [{}]", cls, entityManagerEntry.getKey());
+					return managedType;
+				}
+			}
+		} catch (Exception e) {
+			log.warn("Unable to get the managed type of [{}]", mappedProperty, e);
+		}
+		return classMetadata;
+	}
+
 	protected String mapPropertyPath(String propertyPath) {
 		if (propertyPathMapper != null && !propertyPathMapper.isEmpty()) {
 			String property = propertyPathMapper.get(propertyPath);
@@ -159,8 +181,28 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return classMetadata.getAttribute(property).getPersistentAttributeType() == PersistentAttributeType.EMBEDDED;
 	}
 
+	protected <T> boolean isElementCollectionType(String property, ManagedType<T> classMetadata) {
+		return classMetadata.getAttribute(property).getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION;
+	}
+
 	protected <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
 		return classMetadata.getAttribute(property).isAssociation();
+	}
+
+	@SneakyThrows
+	protected Class getElementCollectionGenericType(Class type, Attribute attribute) {
+		Member member = attribute.getJavaMember();
+		if (member instanceof Field) {
+			Field field = (Field) member;
+			Type genericType = field.getGenericType();
+			if (genericType instanceof ParameterizedType) {
+				ParameterizedType rawType = (ParameterizedType) genericType;
+				Class elementCollectionClass = Class.forName(rawType.getActualTypeArguments()[0].getTypeName());
+				log.info("Map element collection generic type [{}] to [{}]", attribute.getName(), elementCollectionClass);
+				return elementCollectionClass;
+			}
+		}
+		return type;
 	}
 
 }

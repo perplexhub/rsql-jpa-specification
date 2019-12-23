@@ -39,6 +39,21 @@ public class RSQLSupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testElementCollection() {
+		String rsql = "tags=='tech'";
+		List<Company> companys = companyRepository.findAll(toSpecification(rsql));
+		long count = companys.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(4l));
+
+		rsql = "bigTags.tag=='tech'";
+		companys = companyRepository.findAll(toSpecification(rsql));
+		count = companys.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(4l));
+	}
+
+	@Test
 	public final void testToComplexMultiValueMap() {
 		String rsql = "sites.trunks.id==2,id=na=2,company.id=='2',id=na=3,name==''";
 		Map<String, MultiValueMap<String, String>> map = toComplexMultiValueMap(rsql);

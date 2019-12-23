@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.persistence.criteria.*;
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
 
 import org.springframework.core.convert.ConversionService;
@@ -60,12 +61,15 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 
 					String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
 					log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-					if (cachedJoins.containsKey(keyJoin)) {
-						root = cachedJoins.get(keyJoin);
-					} else {
-						root = ((From) root).join(mappedProperty);
-						cachedJoins.put(keyJoin, root);
-					}
+					root = join(keyJoin, root, mappedProperty);
+				} else if (isElementCollectionType(mappedProperty, classMetadata)) {
+					String previousClass = classMetadata.getJavaType().getName();
+					attribute = classMetadata.getAttribute(property);
+					classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
+
+					String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+					log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+					root = join(keyJoin, root, mappedProperty);
 				} else {
 					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
 					root = root.get(mappedProperty);
@@ -82,6 +86,16 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 		return RSQLJpaContext.of(root, attribute);
 	}
 
+	protected Path<?> join(String keyJoin, Path<?> root, String mappedProperty) {
+		if (cachedJoins.containsKey(keyJoin)) {
+			root = cachedJoins.get(keyJoin);
+		} else {
+			root = ((From) root).join(mappedProperty);
+			cachedJoins.put(keyJoin, root);
+		}
+		return root;
+	}
+
 	@Override
 	public Predicate visit(ComparisonNode node, Root root) {
 		log.debug("visit(node:{},root:{})", node, root);
@@ -91,6 +105,9 @@ public class RSQLJpaPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 		Class type = attribute.getJavaType();
+		if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
+			type = getElementCollectionGenericType(type, attribute);
+		}
 		if (type.isPrimitive()) {
 			type = primitiveToWrapper.get(type);
 		} else if (RSQLSupport.getValueTypeMap().containsKey(type)) {
