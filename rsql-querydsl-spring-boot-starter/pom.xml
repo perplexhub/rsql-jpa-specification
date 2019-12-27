@@ -12,7 +12,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>io.github.perplexhub</groupId>
-			<artifactId>rsql-querydsl</artifactId>
+			<artifactId>rsql-support</artifactId>
 			<version>5.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
