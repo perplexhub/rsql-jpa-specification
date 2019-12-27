@@ -33,11 +33,12 @@
 		<h2.version>1.4.200</h2.version>
 	</properties>
 	<modules>
-		<module>rsql-spring</module>
-		<module>rsql-jpa-common</module>
-		<module>rsql-jpa-specification</module>
-		<module>rsql-jpa-querydsl</module>
-		<module>rsql-jpa-support</module>
+		<module>rsql-common</module>
+		<module>rsql-jpa</module>
+		<module>rsql-querydsl</module>
+		<module>rsql-support</module>
+		<module>rsql-jpa-spring-boot-starter</module>
+		<module>rsql-querydsl-spring-boot-starter</module>
 	</modules>
 	<scm>
 		<url>https://github.com/perplexhub/rsql-jpa-specification</url>
