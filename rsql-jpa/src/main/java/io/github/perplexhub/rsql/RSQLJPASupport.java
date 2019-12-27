@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
+import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
@@ -29,6 +30,10 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 
 	public RSQLJPASupport() {
 		super();
+	}
+
+	public RSQLJPASupport(Map<String, EntityManager> entityManagerMap) {
+		super(entityManagerMap);
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {

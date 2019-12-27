@@ -3,6 +3,8 @@ package io.github.perplexhub.rsql;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.persistence.EntityManager;
+
 import org.springframework.util.StringUtils;
 
 import com.querydsl.core.types.Path;
@@ -17,6 +19,10 @@ public class RSQLQueryDslSupport extends RSQLJPASupport {
 
 	public RSQLQueryDslSupport() {
 		super();
+	}
+
+	public RSQLQueryDslSupport(Map<String, EntityManager> entityManagerMap) {
+		super(entityManagerMap);
 	}
 
 	public static BooleanExpression toPredicate(final String rsqlQuery, final Path qClazz) {
