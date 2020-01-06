@@ -6,7 +6,7 @@ Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jp
 
 ## Maven Repository
 
-<https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-jpa-specification>
+<https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql*>
 
 ## Add rsql-jpa-spring-boot-starter for RSQL to Spring JPA translation
 
