@@ -75,7 +75,6 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 						if (path instanceof CollectionPathBase) {
 							path = (Path) ((CollectionPathBase) path).any();
 						}
-						mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + mappedProperty;
 					} else {
 						log.debug("Create an element collection join between [{}] and [{}].", previousClass, classMetadata.getJavaType().getName());
 						path = (Path) path.getClass().getDeclaredField(mappedProperty).get(path);
@@ -257,6 +256,9 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 
 	@SneakyThrows
 	StringExpression getStringExpression(Path entityClass, String property, boolean isEnumPath) {
+		if (entityClass instanceof StringExpression && (property == null || property.isEmpty())) {
+			return (StringExpression) entityClass;
+		}
 		if (isEnumPath) {
 			return ((EnumPath) entityClass.getClass().getDeclaredField(property).get(entityClass)).stringValue();
 		}

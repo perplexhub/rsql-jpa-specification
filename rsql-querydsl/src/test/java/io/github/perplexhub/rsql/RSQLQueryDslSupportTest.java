@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,13 +36,17 @@ public class RSQLQueryDslSupportTest {
 	@Autowired
 	private TrunkGroupRepository trunkGroupRepository;
 
-	@Ignore
 	@Test
 	public final void testElementCollection1() {
-		// not support yet
 		String rsql = "tags=='tech'";
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		long count = companys.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(4l));
+
+		rsql = "tags=like='ec'";
+		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
+		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(4l));
 	}
