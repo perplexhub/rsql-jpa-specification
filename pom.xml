@@ -36,9 +36,9 @@
 		<module>rsql-common</module>
 		<module>rsql-jpa</module>
 		<module>rsql-querydsl</module>
-		<module>rsql-support</module>
 		<module>rsql-jpa-spring-boot-starter</module>
 		<module>rsql-querydsl-spring-boot-starter</module>
+		<module>rsql-support</module>
 	</modules>
 	<scm>
 		<url>https://github.com/perplexhub/rsql-jpa-specification</url>

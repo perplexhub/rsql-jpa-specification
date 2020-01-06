@@ -6,7 +6,7 @@
 		<artifactId>rsql</artifactId>
 		<version>5.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>rsql-support</artifactId>
+	<artifactId>rsql-jpa-specification</artifactId>
 	<packaging>jar</packaging>
 	<name>io.github.perplexhub - RSQL JPA Specification and QueryDSL Support</name>
 	<dependencies>
@@ -14,6 +14,16 @@
 			<groupId>io.github.perplexhub</groupId>
 			<artifactId>rsql-querydsl</artifactId>
 			<version>5.0.0-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.querydsl</groupId>
+					<artifactId>querydsl-jpa</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.querydsl</groupId>
+					<artifactId>querydsl-core</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>

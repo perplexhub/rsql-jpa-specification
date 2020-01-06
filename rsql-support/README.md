@@ -1,52 +1,42 @@
 # rsql-jpa-specification
 
+This sub-module is mainly for backward compatibility purpose.
+
 Translate RSQL query into org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate and support entities association query.
 
 Supported Operators: [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 
-## Maven Repository
+## Maven
 
 <https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-jpa-specification>
 
-## Add rsql-jpa-spring-boot-starter for RSQL to Spring JPA translation
-
-### Maven dependency for rsql-jpa-spring-boot-starter
+## Add spring-data-jpa to your pom.xml
 
 ```xml
   <dependency>
-    <groupId>io.github.perplexhub</groupId>
-    <artifactId>rsql-jpa-spring-boot-starter</artifactId>
-    <version>5.0.0</version>
+    <groupId>org.springframework.data</groupId>
+    <artifactId>spring-data-jpa</artifactId>
+    <version>x.y.z</version>
   </dependency>
 ```
 
-### Add JpaSpecificationExecutor to your JPA repository interface classes
+## Add querydsl-core to your pom.xml if you plan to use RSQLSupport.toPredicate
+
+```xml
+  <dependency>
+    <groupId>com.querydsl</groupId>
+    <artifactId>querydsl-core</artifactId>
+    <version>x.y.z</version>
+  </dependency>
+```
+
+## Import Configuration
 
 ```java
-package com.perplexhub.repository;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-
-import com.perplexhub.model.User;
-
-public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
-}
+@Import(io.github.perplexhub.rsql.RSQLConfig.class)
 ```
 
-## Add rsql-querydsl-spring-boot-starter for RSQL to Spring JPA and QueryDSL translation
-
-### Maven dependency for rsql-querydsl-spring-boot-starter
-
-```xml
-  <dependency>
-    <groupId>io.github.perplexhub</groupId>
-    <artifactId>rsql-querydsl-spring-boot-starter</artifactId>
-    <version>5.0.0</version>
-  </dependency>
-```
-
-### Add JpaSpecificationExecutor and QuerydslPredicateExecutor to your JPA repository interface classes
+## Add JpaSpecificationExecutor and QuerydslPredicateExecutor to your JPA repository class
 
 ```java
 package com.perplexhub.repository;
@@ -59,16 +49,6 @@ import com.perplexhub.model.User;
 
 public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User>, QuerydslPredicateExecutor<User> {
 }
-```
-
-## Use below properties to control the version of Spring Boot, Spring Data and QueryDSL
-
-```xml
-  <properties>
-    <spring-boot.version>2.0.0.RELEASE</spring-boot.version>
-    <spring-data-releasetrain.version>Kay-RELEASE</spring-data-releasetrain.version>
-    <querydsl.version>4.1.4</querydsl.version>
-  </properties>
 ```
 
 ## RSQL Syntax Reference
