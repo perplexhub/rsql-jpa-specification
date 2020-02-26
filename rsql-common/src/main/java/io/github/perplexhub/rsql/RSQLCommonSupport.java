@@ -23,7 +23,6 @@ public class RSQLCommonSupport {
 
 	private @Getter static final Map<String, EntityManager> entityManagerMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
-	private @Getter static final Map<String, String> propertyPathMapper = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, Class> valueTypeMap = new ConcurrentHashMap<>();
@@ -40,7 +39,6 @@ public class RSQLCommonSupport {
 		}
 		RSQLVisitorBase.setEntityManagerMap(getEntityManagerMap());
 		RSQLVisitorBase.setManagedTypeMap(getManagedTypeMap());
-		RSQLVisitorBase.setPropertyPathMapper(getPropertyPathMapper());
 		RSQLVisitorBase.setPropertyRemapping(getPropertyRemapping());
 		RSQLVisitorBase.setValueParserMap(getValueParserMap());
 		log.info("RSQLCommonSupport {}is initialized", getVersion());

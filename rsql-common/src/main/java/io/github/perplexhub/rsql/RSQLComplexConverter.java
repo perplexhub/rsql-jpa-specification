@@ -47,7 +47,7 @@ public class RSQLComplexConverter extends RSQLVisitorBase<Void, Map<String, Mult
 	}
 
 	@Override
-	public Map<String, String> getInlinePropertyPathMapper() {
+	public Map<String, String> getPropertyPathMapper() {
 		return Collections.emptyMap();
 	}
 

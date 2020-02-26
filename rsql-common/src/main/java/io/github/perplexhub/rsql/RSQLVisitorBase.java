@@ -9,8 +9,6 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
@@ -32,7 +30,6 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	protected static @Setter Map<Class, ManagedType> managedTypeMap;
 	protected static @Setter Map<String, EntityManager> entityManagerMap;
 	protected static final Map<Class, Class> primitiveToWrapper;
-	protected static @Setter Map<String, String> propertyPathMapper;
 	protected static @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
 	protected static @Setter Map<Class, Function<String, Object>> valueParserMap;
 
@@ -44,15 +41,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return entityManagerMap != null ? entityManagerMap : Collections.emptyMap();
 	}
 
-	public abstract Map<String, String> getInlinePropertyPathMapper();
-
-	public Map<String, String> getPropertyPathMapper() {
-		Map<String, String> inlinePropertyPathMapper = getInlinePropertyPathMapper() != null ? getInlinePropertyPathMapper() : Collections.emptyMap();
-		Map<String, String> staticPropertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
-		return Stream.of(inlinePropertyPathMapper, staticPropertyPathMapper)
-				.flatMap(mapper -> mapper.entrySet().stream())
-				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (i, s) -> i));
-	}
+	abstract Map<String, String> getPropertyPathMapper();
 
 	public Map<Class<?>, Map<String, String>> getPropertyRemapping() {
 		return propertyRemapping != null ? propertyRemapping : Collections.emptyMap();

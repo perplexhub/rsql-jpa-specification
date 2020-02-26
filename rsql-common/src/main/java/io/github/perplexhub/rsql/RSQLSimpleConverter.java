@@ -39,7 +39,7 @@ public class RSQLSimpleConverter extends RSQLVisitorBase<Void, MultiValueMap<Str
 	}
 
 	@Override
-	public Map<String, String> getInlinePropertyPathMapper() {
+	public Map<String, String> getPropertyPathMapper() {
 		return Collections.emptyMap();
 	}
 

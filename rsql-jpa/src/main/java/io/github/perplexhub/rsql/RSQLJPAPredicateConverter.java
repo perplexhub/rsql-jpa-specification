@@ -2,10 +2,7 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.persistence.criteria.*;
@@ -24,19 +21,18 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Getter
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> {
 
 	private final CriteriaBuilder builder;
 	private final ConversionService conversionService = new DefaultConversionService();
 	private final Map<String, Path> cachedJoins = new HashMap<>();
-	private final Map<String, String> inlinePropertyPathMapper;
+	private final @Getter Map<String, String> propertyPathMapper;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
 		super();
 		this.builder = builder;
-		this.inlinePropertyPathMapper = propertyPathMapper;
+		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 	}
 
 	<T> RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {

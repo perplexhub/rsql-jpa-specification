@@ -3,6 +3,7 @@ package io.github.perplexhub.rsql;
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,16 +27,15 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Getter
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpression, Path> {
 
 	private final ConversionService conversionService = new DefaultConversionService();
-	private final Map<String, String> inlinePropertyPathMapper;
+	private final @Getter Map<String, String> propertyPathMapper;
 
 	public RSQLQueryDslPredicateConverter(Map<String, String> propertyPathMapper) {
 		super();
-		this.inlinePropertyPathMapper = propertyPathMapper;
+		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 	}
 
 	@SneakyThrows
