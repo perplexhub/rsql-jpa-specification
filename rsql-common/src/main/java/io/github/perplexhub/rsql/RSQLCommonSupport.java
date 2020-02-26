@@ -1,8 +1,6 @@
 package io.github.perplexhub.rsql;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -26,6 +24,8 @@ public class RSQLCommonSupport {
 	private @Getter static final Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, Class> valueTypeMap = new ConcurrentHashMap<>();
+	private @Getter static final Map<Class<?>, List<String>> propertyWhitelist = new ConcurrentHashMap<>();
+	private @Getter static final Map<Class<?>, List<String>> propertyBlacklist = new ConcurrentHashMap<>();
 
 	public RSQLCommonSupport() {
 	}
@@ -41,7 +41,25 @@ public class RSQLCommonSupport {
 		RSQLVisitorBase.setManagedTypeMap(getManagedTypeMap());
 		RSQLVisitorBase.setPropertyRemapping(getPropertyRemapping());
 		RSQLVisitorBase.setValueParserMap(getValueParserMap());
+		RSQLVisitorBase.setPropertyWhitelist(getPropertyWhitelist());
+		RSQLVisitorBase.setPropertyBlacklist(getPropertyBlacklist());
 		log.info("RSQLCommonSupport {}is initialized", getVersion());
+	}
+
+	public static void addPropertyWhitelist(Class<?> entityClass, List<String> propertyList) {
+		propertyWhitelist.computeIfAbsent(entityClass, entityClazz -> new ArrayList<>()).addAll(propertyList);
+	}
+
+	public static void addPropertyWhitelist(Class<?> entityClass, String property) {
+		propertyWhitelist.computeIfAbsent(entityClass, entityClazz -> new ArrayList<>()).add(property);
+	}
+
+	public static void addPropertyBlacklist(Class<?> entityClass, List<String> propertyList) {
+		propertyBlacklist.computeIfAbsent(entityClass, entityClazz -> new ArrayList<>()).addAll(propertyList);
+	}
+
+	public static void addPropertyBlacklist(Class<?> entityClass, String property) {
+		propertyBlacklist.computeIfAbsent(entityClass, entityClazz -> new ArrayList<>()).add(property);
 	}
 
 	public static MultiValueMap<String, String> toMultiValueMap(final String rsqlQuery) {

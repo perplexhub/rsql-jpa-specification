@@ -32,6 +32,8 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	protected static final Map<Class, Class> primitiveToWrapper;
 	protected static @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
 	protected static @Setter Map<Class, Function<String, Object>> valueParserMap;
+	protected static @Setter Map<Class<?>, List<String>> propertyWhitelist;
+	protected static @Setter Map<Class<?>, List<String>> propertyBlacklist;
 
 	protected Map<Class, ManagedType> getManagedTypeMap() {
 		return managedTypeMap != null ? managedTypeMap : Collections.emptyMap();
@@ -104,6 +106,22 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 			log.error("Parsing [{}] with [{}] causing [{}], add your value parser via RSQLSupport.addEntityAttributeParser(Type.class, Type::valueOf)", value, dynamicClass.getName(), e.getMessage(), e);
 		}
 		return null;
+	}
+
+	protected void accessControl(Class type, String name) {
+		log.info("accessControl(type:{},name:{})", type, name);
+
+		if (propertyWhitelist != null && propertyWhitelist.containsKey(type)) {
+			if (!propertyWhitelist.get(type).contains(name)) {
+				throw new IllegalArgumentException("Property " + type.getName() + "." + name + " is not on whitelist");
+			}
+		}
+
+		if (propertyBlacklist != null && propertyBlacklist.containsKey(type)) {
+			if (propertyBlacklist.get(type).contains(name)) {
+				throw new IllegalArgumentException("Property " + type.getName() + "." + name + " is on blacklist");
+			}
+		}
 	}
 
 	protected String mapPropertyPath(String propertyPath) {

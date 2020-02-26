@@ -1,5 +1,6 @@
 package io.github.perplexhub.rsql;
 
+import static io.github.perplexhub.rsql.RSQLCommonSupport.*;
 import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -8,15 +9,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.dao.DataAccessException;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.MultiValueMap;
 
 import io.github.perplexhub.rsql.model.Company;
+import io.github.perplexhub.rsql.model.Role;
 import io.github.perplexhub.rsql.model.TrunkGroup;
 import io.github.perplexhub.rsql.model.User;
 import io.github.perplexhub.rsql.repository.jpa.CompanyRepository;
@@ -583,6 +587,54 @@ public class RSQLSpecificationSupportTest {
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(3l));
+	}
+
+	@Test(expected = DataAccessException.class)
+	public final void testWhitelist() {
+		addPropertyWhitelist(User.class, "id");
+		addPropertyWhitelist(Role.class, "id");
+		Map<String, String> propertyPathMapper = new HashMap<>();
+		propertyPathMapper.put("i", "id");
+		propertyPathMapper.put("urrc", "userRoles.role.code");
+		String rsql = "i==2";
+		List<User> users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, users.get(0).getName(), equalTo("February"));
+
+		rsql = "urrc=='admin'";
+		users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+	}
+
+	@Test(expected = DataAccessException.class)
+	public final void testBlacklist() {
+		addPropertyBlacklist(User.class, "name");
+		addPropertyBlacklist(Role.class, "code");
+		Map<String, String> propertyPathMapper = new HashMap<>();
+		propertyPathMapper.put("i", "id");
+		propertyPathMapper.put("urrc", "userRoles.role.code");
+		String rsql = "i==2";
+		List<User> users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, users.get(0).getName(), equalTo("February"));
+
+		rsql = "urrc=='admin'";
+		users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+	}
+
+	@Before
+	public void setUp() throws Exception {
+		getPropertyWhitelist().clear();
+		getPropertyBlacklist().clear();
 	}
 
 }
