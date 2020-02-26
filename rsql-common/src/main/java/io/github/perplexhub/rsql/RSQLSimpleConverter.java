@@ -1,5 +1,8 @@
 package io.github.perplexhub.rsql;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.springframework.util.MultiValueMap;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
@@ -33,6 +36,11 @@ public class RSQLSimpleConverter extends RSQLVisitorBase<Void, MultiValueMap<Str
 		log.debug("visit(node:{},map:{})", node, map);
 		node.getChildren().forEach(n -> n.accept(this, map));
 		return null;
+	}
+
+	@Override
+	public Map<String, String> getInlinePropertyPathMapper() {
+		return Collections.emptyMap();
 	}
 
 }

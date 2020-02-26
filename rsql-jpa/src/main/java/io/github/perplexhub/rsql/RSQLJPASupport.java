@@ -37,38 +37,41 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
-		return toSpecification(rsqlQuery);
+		return toSpecification(rsqlQuery, false, null);
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery, final boolean distinct) {
-		return toSpecification(rsqlQuery, distinct);
+		return toSpecification(rsqlQuery, distinct, null);
+	}
+
+	public static <T> Specification<T> rsql(final String rsqlQuery, final Map<String, String> propertyPathMapper) {
+		return toSpecification(rsqlQuery, false, propertyPathMapper);
+	}
+
+	public static <T> Specification<T> rsql(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper) {
+		return toSpecification(rsqlQuery, distinct, propertyPathMapper);
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery) {
-		return toSpecification(rsqlQuery, null);
+		return toSpecification(rsqlQuery, false, null);
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final Map<String, String> propertyPathMapper) {
-		log.debug("toSpecification({},propertyPathMapper:{})", rsqlQuery, propertyPathMapper);
-		return new Specification<T>() {
-			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-				if (StringUtils.hasText(rsqlQuery)) {
-					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper), root);
-				} else
-					return null;
-			}
-		};
+		return toSpecification(rsqlQuery, false, propertyPathMapper);
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct) {
-		log.debug("toSpecification({},distinct:{})", rsqlQuery, distinct);
+		return toSpecification(rsqlQuery, distinct, null);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper) {
+		log.debug("toSpecification({},distinct:{},propertyPathMapper:{})", rsqlQuery, distinct, propertyPathMapper);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				query.distinct(distinct);
 				if (StringUtils.hasText(rsqlQuery)) {
 					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLJPAPredicateConverter(cb, null), root);
+					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper), root);
 				} else
 					return null;
 			}

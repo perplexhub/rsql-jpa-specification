@@ -20,20 +20,23 @@ import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> {
 
 	private final CriteriaBuilder builder;
 	private final ConversionService conversionService = new DefaultConversionService();
 	private final Map<String, Path> cachedJoins = new HashMap<>();
+	private final Map<String, String> inlinePropertyPathMapper;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
 		super();
 		this.builder = builder;
-		setPropertyPathMapper(propertyPathMapper);
+		this.inlinePropertyPathMapper = propertyPathMapper;
 	}
 
 	<T> RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {

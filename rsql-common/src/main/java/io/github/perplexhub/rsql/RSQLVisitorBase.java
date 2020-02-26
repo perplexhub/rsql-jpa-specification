@@ -9,12 +9,14 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.PluralAttribute;
-import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 
 import org.springframework.util.StringUtils;
 
@@ -42,8 +44,14 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return entityManagerMap != null ? entityManagerMap : Collections.emptyMap();
 	}
 
+	public abstract Map<String, String> getInlinePropertyPathMapper();
+
 	public Map<String, String> getPropertyPathMapper() {
-		return propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
+		Map<String, String> inlinePropertyPathMapper = getInlinePropertyPathMapper() != null ? getInlinePropertyPathMapper() : Collections.emptyMap();
+		Map<String, String> staticPropertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
+		return Stream.of(inlinePropertyPathMapper, staticPropertyPathMapper)
+				.flatMap(mapper -> mapper.entrySet().stream())
+				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (i, s) -> i));
 	}
 
 	public Map<Class<?>, Map<String, String>> getPropertyRemapping() {

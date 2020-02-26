@@ -1,5 +1,6 @@
 package io.github.perplexhub.rsql;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,6 +44,11 @@ public class RSQLComplexConverter extends RSQLVisitorBase<Void, Map<String, Mult
 		log.debug("visit(node:{},map:{})", node, map);
 		node.getChildren().forEach(n -> n.accept(this, map));
 		return null;
+	}
+
+	@Override
+	public Map<String, String> getInlinePropertyPathMapper() {
+		return Collections.emptyMap();
 	}
 
 }

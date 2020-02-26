@@ -21,18 +21,21 @@ import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpression, Path> {
 
 	private final ConversionService conversionService = new DefaultConversionService();
+	private final Map<String, String> inlinePropertyPathMapper;
 
 	public RSQLQueryDslPredicateConverter(Map<String, String> propertyPathMapper) {
 		super();
-		setPropertyPathMapper(propertyPathMapper);
+		this.inlinePropertyPathMapper = propertyPathMapper;
 	}
 
 	@SneakyThrows
