@@ -31,6 +31,7 @@ public class RSQLCommonSupport {
 	private @Getter static final ConfigurableConversionService conversionService = new DefaultConversionService();
 
 	public RSQLCommonSupport() {
+		init();
 	}
 
 	public RSQLCommonSupport(Map<String, EntityManager> entityManagerMap) {
@@ -40,13 +41,18 @@ public class RSQLCommonSupport {
 		} else {
 			log.warn("No EntityManager beans are found");
 		}
+		init();
+	}
+
+	protected void init() {
+		conversionService.removeConvertible(Object.class, Object.class);
 		RSQLVisitorBase.setEntityManagerMap(getEntityManagerMap());
 		RSQLVisitorBase.setManagedTypeMap(getManagedTypeMap());
 		RSQLVisitorBase.setPropertyRemapping(getPropertyRemapping());
 		RSQLVisitorBase.setPropertyWhitelist(getPropertyWhitelist());
 		RSQLVisitorBase.setPropertyBlacklist(getPropertyBlacklist());
 		RSQLVisitorBase.setDefaultConversionService(getConversionService());
-		log.info("RSQLCommonSupport {}is initialized", getVersion());
+		log.info("RSQLCommonSupport {} is initialized", getVersion());
 	}
 
 	public static void addConverter(Converter<?, ?> converter) {
@@ -58,9 +64,9 @@ public class RSQLCommonSupport {
 		conversionService.addConverter(String.class, targetType, converter);
 	}
 
-	public static <T> void addConverter(Class<T> targetType, Function<String, ? extends T> converter) {
-		log.info("Adding entity converter for {}", targetType);
-		conversionService.addConverter(String.class, targetType, s -> converter.apply(s));
+	public static <T> void removeConverter(Class<T> targetType) {
+		log.info("Removing entity converter for {}", targetType);
+		conversionService.removeConvertible(String.class, targetType);
 	}
 
 	public static void addPropertyWhitelist(Class<?> entityClass, List<String> propertyList) {
@@ -110,7 +116,7 @@ public class RSQLCommonSupport {
 	public static <T> void addEntityAttributeParser(Class<T> valueClass, Function<String, ? extends T> function) {
 		log.info("Adding entity attribute parser for {}", valueClass);
 		if (valueClass != null && function != null) {
-			addConverter(valueClass, function);
+			addConverter(valueClass, s -> function.apply(s));
 		}
 	}
 

@@ -16,7 +16,7 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
   <dependency>
     <groupId>io.github.perplexhub</groupId>
     <artifactId>rsql-jpa-spring-boot-starter</artifactId>
-    <version>5.0.1</version>
+    <version>5.0.3</version>
   </dependency>
 ```
 
@@ -42,7 +42,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
   <dependency>
     <groupId>io.github.perplexhub</groupId>
     <artifactId>rsql-querydsl-spring-boot-starter</artifactId>
-    <version>5.0.1</version>
+    <version>5.0.3</version>
   </dependency>
 ```
 
@@ -178,4 +178,17 @@ propertyPathMapper.put("compCode", "company.code");
 
 repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper));
 repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable);
+```
+
+# Custom Value Converter
+
+```java
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		RSQLJPASupport.addConverter(Date.class, s -> {
+			try {
+				return sdf.parse(s);
+			} catch (ParseException e) {
+				return null;
+			}
+		});
 ```

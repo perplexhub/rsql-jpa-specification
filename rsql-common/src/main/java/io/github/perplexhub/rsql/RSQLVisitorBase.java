@@ -15,8 +15,7 @@ import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.PluralAttribute;
 
-import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
@@ -34,7 +33,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	protected static volatile @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
 	protected static volatile @Setter Map<Class<?>, List<String>> propertyWhitelist;
 	protected static volatile @Setter Map<Class<?>, List<String>> propertyBlacklist;
-	protected static volatile @Setter ConversionService defaultConversionService = DefaultConversionService.getSharedInstance();
+	protected static volatile @Setter ConfigurableConversionService defaultConversionService;
 
 	protected Map<Class, ManagedType> getManagedTypeMap() {
 		return managedTypeMap != null ? managedTypeMap : Collections.emptyMap();

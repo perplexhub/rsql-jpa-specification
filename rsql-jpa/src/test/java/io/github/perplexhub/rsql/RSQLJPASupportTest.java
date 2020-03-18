@@ -5,6 +5,9 @@ import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -503,6 +506,33 @@ public class RSQLJPASupportTest {
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(7l));
+	}
+
+	@Test
+	public final void testBetweenDate() {
+		String rsql = "createDate=bt=('2018-01-01', '2018-10-31')";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(10l));
+	}
+
+	@Test
+	public final void testBetweenDateTime() {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		RSQLJPASupport.addConverter(Date.class, s -> {
+			try {
+				return sdf.parse(s);
+			} catch (ParseException e) {
+				return null;
+			}
+		});
+		String rsql = "createDate=bt=('2018-01-01 12:34:56', '2018-12-31 10:34:56')";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(11l));
+		RSQLJPASupport.removeConverter(Date.class);
 	}
 
 	@Test

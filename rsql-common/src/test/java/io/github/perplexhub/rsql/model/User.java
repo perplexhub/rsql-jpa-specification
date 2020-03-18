@@ -1,5 +1,6 @@
 package io.github.perplexhub.rsql.model;
 
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.*;
@@ -26,5 +27,8 @@ public class User {
 
 	@OneToMany(mappedBy = "id.userId")
 	private List<UserRole> userRoles;
+
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date createDate;
 
 }
