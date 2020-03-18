@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.perplexhub</groupId>
 	<artifactId>rsql</artifactId>
-	<version>5.0.3</version>
+	<version>5.0.4-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>io.github.perplexhub - RSQL</name>
 	<inceptionYear>2018</inceptionYear>
@@ -43,7 +43,7 @@
 		<url>https://github.com/perplexhub/rsql-jpa-specification</url>
 		<connection>scm:git:ssh://git@github.com/perplexhub/rsql-jpa-specification.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com/perplexhub/rsql-jpa-specification.git</developerConnection>
-		<tag>rsql-5.0.3</tag>
+		<tag>HEAD</tag>
 	</scm>
 	<dependencyManagement>
 		<dependencies>
