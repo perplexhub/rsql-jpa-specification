@@ -86,4 +86,13 @@ public class RSQLQueryDslSupportTest {
 		assertThat(rsql, count, is(3l));
 	}
 
+	@Test
+	public final void testBetweenDateTime() {
+		String rsql = "createDate=bt=('2018-01-01 12:34:56', '2018-12-31 10:34:56')";
+		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(11l));
+	}
+
 }
