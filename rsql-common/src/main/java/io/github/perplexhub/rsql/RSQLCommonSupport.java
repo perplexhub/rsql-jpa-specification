@@ -7,6 +7,9 @@ import java.util.function.Function;
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.ManagedType;
 
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.convert.support.ConfigurableConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -22,10 +25,10 @@ public class RSQLCommonSupport {
 	private @Getter static final Map<String, EntityManager> entityManagerMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class<?>, Map<String, String>> propertyRemapping = new ConcurrentHashMap<>();
-	private @Getter static final Map<Class, Function<String, Object>> valueParserMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class, Class> valueTypeMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class<?>, List<String>> propertyWhitelist = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class<?>, List<String>> propertyBlacklist = new ConcurrentHashMap<>();
+	private @Getter static final ConfigurableConversionService conversionService = new DefaultConversionService();
 
 	public RSQLCommonSupport() {
 	}
@@ -40,10 +43,24 @@ public class RSQLCommonSupport {
 		RSQLVisitorBase.setEntityManagerMap(getEntityManagerMap());
 		RSQLVisitorBase.setManagedTypeMap(getManagedTypeMap());
 		RSQLVisitorBase.setPropertyRemapping(getPropertyRemapping());
-		RSQLVisitorBase.setValueParserMap(getValueParserMap());
 		RSQLVisitorBase.setPropertyWhitelist(getPropertyWhitelist());
 		RSQLVisitorBase.setPropertyBlacklist(getPropertyBlacklist());
+		RSQLVisitorBase.setDefaultConversionService(getConversionService());
 		log.info("RSQLCommonSupport {}is initialized", getVersion());
+	}
+
+	public static void addConverter(Converter<?, ?> converter) {
+		conversionService.addConverter(converter);
+	}
+
+	public static <T> void addConverter(Class<T> targetType, Converter<String, ? extends T> converter) {
+		log.info("Adding entity converter for {}", targetType);
+		conversionService.addConverter(String.class, targetType, converter);
+	}
+
+	public static <T> void addConverter(Class<T> targetType, Function<String, ? extends T> converter) {
+		log.info("Adding entity converter for {}", targetType);
+		conversionService.addConverter(String.class, targetType, s -> converter.apply(s));
 	}
 
 	public static void addPropertyWhitelist(Class<?> entityClass, List<String> propertyList) {
@@ -90,10 +107,10 @@ public class RSQLCommonSupport {
 		propertyRemapping.computeIfAbsent(entityClass, entityClazz -> new ConcurrentHashMap<>()).put(selector, property);
 	}
 
-	public static void addEntityAttributeParser(Class valueClass, Function<String, Object> function) {
+	public static <T> void addEntityAttributeParser(Class<T> valueClass, Function<String, ? extends T> function) {
 		log.info("Adding entity attribute parser for {}", valueClass);
 		if (valueClass != null && function != null) {
-			valueParserMap.put(valueClass, function);
+			addConverter(valueClass, function);
 		}
 	}
 

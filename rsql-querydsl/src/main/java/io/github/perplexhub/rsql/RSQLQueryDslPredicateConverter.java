@@ -12,9 +12,6 @@ import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
 
-import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
-
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.*;
 
@@ -30,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpression, Path> {
 
-	private final ConversionService conversionService = new DefaultConversionService();
 	private final @Getter Map<String, String> propertyPathMapper;
 
 	public RSQLQueryDslPredicateConverter(Map<String, String> propertyPathMapper) {
@@ -124,7 +120,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
-				listObject.add(castDynamicClass(type, argument));
+				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
 				return Expressions.path(type, entityClass, property).in(listObject);
@@ -133,16 +129,12 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				return Expressions.path(type, entityClass, property).notIn(listObject);
 			}
 			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				Comparable from = (Comparable) conversionService.convert(listObject.get(0), type);
-				Comparable to = (Comparable) conversionService.convert(listObject.get(1), type);
 				ComparableEntityPath comparableEntityPath = getComparableEntityPath(type, entityClass, property);
-				return comparableEntityPath.between(from, to);
+				return comparableEntityPath.between((Comparable) listObject.get(0), (Comparable) listObject.get(1));
 			}
 			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				Comparable from = (Comparable) conversionService.convert(listObject.get(0), type);
-				Comparable to = (Comparable) conversionService.convert(listObject.get(1), type);
 				ComparableEntityPath comparableEntityPath = getComparableEntityPath(type, entityClass, property);
-				return comparableEntityPath.notBetween(from, to);
+				return comparableEntityPath.notBetween((Comparable) listObject.get(0), (Comparable) listObject.get(1));
 			}
 		} else {
 			if (op.equals(IS_NULL)) {
@@ -151,7 +143,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			if (op.equals(NOT_NULL)) {
 				return Expressions.path(type, entityClass, property).isNotNull();
 			}
-			Object argument = castDynamicClass(type, node.getArguments().get(0));
+			Object argument = convert(node.getArguments().get(0), type);
 			if (op.equals(IN)) {
 				return Expressions.path(type, entityClass, property).in(argument);
 			}
@@ -220,7 +212,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				log.error("Operator {} can be used only for Comparables", op);
 				throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
 			}
-			Comparable comparable = (Comparable) conversionService.convert(argument, type);
+			Comparable comparable = (Comparable) argument;
 			ComparableEntityPath comparableEntityPath = getComparableEntityPath(type, entityClass, property);
 
 			if (op.equals(GREATER_THAN)) {

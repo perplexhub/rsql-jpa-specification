@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class, webEnvironment = WebEnvironment.NONE)
-public class RSQLSpecificationSupportTest {
+public class RSQLJPASupportTest {
 
 	@Autowired
 	private UserRepository userRepository;

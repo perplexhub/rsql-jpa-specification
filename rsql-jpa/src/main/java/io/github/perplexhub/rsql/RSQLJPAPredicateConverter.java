@@ -10,9 +10,6 @@ import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
 
-import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
-
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
@@ -25,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> {
 
 	private final CriteriaBuilder builder;
-	private final ConversionService conversionService = new DefaultConversionService();
 	private final Map<String, Path> cachedJoins = new HashMap<>();
 	private final @Getter Map<String, String> propertyPathMapper;
 
@@ -120,7 +116,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
-				listObject.add(castDynamicClass(type, argument));
+				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
 				return attrPath.in(listObject);
@@ -141,7 +137,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 			if (op.equals(NOT_NULL)) {
 				return builder.isNotNull(attrPath);
 			}
-			Object argument = castDynamicClass(type, node.getArguments().get(0));
+			Object argument = convert(node.getArguments().get(0), type);
 			if (op.equals(IN)) {
 				return builder.equal(attrPath, argument);
 			}
@@ -201,7 +197,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 				log.error("Operator {} can be used only for Comparables", op);
 				throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
 			}
-			Comparable comparable = (Comparable) conversionService.convert(argument, type);
+			Comparable comparable = (Comparable) argument;
 
 			if (op.equals(GREATER_THAN)) {
 				return builder.greaterThan(attrPath, comparable);

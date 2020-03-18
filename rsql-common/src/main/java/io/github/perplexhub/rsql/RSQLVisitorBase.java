@@ -8,7 +8,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.function.Function;
 
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
@@ -16,6 +15,8 @@ import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.PluralAttribute;
 
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
@@ -27,13 +28,13 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
-	protected static @Setter Map<Class, ManagedType> managedTypeMap;
-	protected static @Setter Map<String, EntityManager> entityManagerMap;
+	protected static volatile @Setter Map<Class, ManagedType> managedTypeMap;
+	protected static volatile @Setter Map<String, EntityManager> entityManagerMap;
 	protected static final Map<Class, Class> primitiveToWrapper;
-	protected static @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
-	protected static @Setter Map<Class, Function<String, Object>> valueParserMap;
-	protected static @Setter Map<Class<?>, List<String>> propertyWhitelist;
-	protected static @Setter Map<Class<?>, List<String>> propertyBlacklist;
+	protected static volatile @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
+	protected static volatile @Setter Map<Class<?>, List<String>> propertyWhitelist;
+	protected static volatile @Setter Map<Class<?>, List<String>> propertyBlacklist;
+	protected static volatile @Setter ConversionService defaultConversionService = DefaultConversionService.getSharedInstance();
 
 	protected Map<Class, ManagedType> getManagedTypeMap() {
 		return managedTypeMap != null ? managedTypeMap : Collections.emptyMap();
@@ -49,61 +50,43 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return propertyRemapping != null ? propertyRemapping : Collections.emptyMap();
 	}
 
-	public Map<Class, Function<String, Object>> getValueParserMap() {
-		return valueParserMap != null ? valueParserMap : Collections.emptyMap();
-	}
-
-	static {
-		Map<Class, Class> map = new HashMap<>();
-		map.put(boolean.class, Boolean.class);
-		map.put(byte.class, Byte.class);
-		map.put(char.class, Character.class);
-		map.put(double.class, Double.class);
-		map.put(float.class, Float.class);
-		map.put(int.class, Integer.class);
-		map.put(long.class, Long.class);
-		map.put(short.class, Short.class);
-		map.put(void.class, Void.class);
-		primitiveToWrapper = Collections.unmodifiableMap(map);
-	}
-
-	protected Object castDynamicClass(Class dynamicClass, String value) {
-		log.debug("castDynamicClass(dynamicClass:{},value:{})", dynamicClass, value);
+	protected Object convert(String source, Class targetType) {
+		log.debug("convert(source:{},targetType:{})", source, targetType);
 
 		Object object = null;
 		try {
-			if (getValueParserMap().containsKey(dynamicClass)) {
-				object = getValueParserMap().get(dynamicClass).apply(value);
-			} else if (dynamicClass.equals(String.class)) {
-				object = value;
-			} else if (dynamicClass.equals(UUID.class)) {
-				object = UUID.fromString(value);
-			} else if (dynamicClass.equals(Date.class) || dynamicClass.equals(java.sql.Date.class)) {
-				object = java.sql.Date.valueOf(LocalDate.parse(value));
-			} else if (dynamicClass.equals(LocalDate.class)) {
-				object = LocalDate.parse(value);
-			} else if (dynamicClass.equals(LocalDateTime.class)) {
-				object = LocalDateTime.parse(value);
-			} else if (dynamicClass.equals(OffsetDateTime.class)) {
-				object = OffsetDateTime.parse(value);
-			} else if (dynamicClass.equals(ZonedDateTime.class)) {
-				object = ZonedDateTime.parse(value);
-			} else if (dynamicClass.equals(Character.class)) {
-				object = (!StringUtils.isEmpty(value) ? value.charAt(0) : null);
-			} else if (dynamicClass.equals(boolean.class) || dynamicClass.equals(Boolean.class)) {
-				object = Boolean.valueOf(value);
-			} else if (dynamicClass.isEnum()) {
-				object = Enum.valueOf(dynamicClass, value);
+			if (defaultConversionService.canConvert(String.class, targetType)) {
+				object = defaultConversionService.convert(source, targetType);
+			} else if (targetType.equals(String.class)) {
+				object = source;
+			} else if (targetType.equals(UUID.class)) {
+				object = UUID.fromString(source);
+			} else if (targetType.equals(Date.class) || targetType.equals(java.sql.Date.class)) {
+				object = java.sql.Date.valueOf(LocalDate.parse(source));
+			} else if (targetType.equals(LocalDate.class)) {
+				object = LocalDate.parse(source);
+			} else if (targetType.equals(LocalDateTime.class)) {
+				object = LocalDateTime.parse(source);
+			} else if (targetType.equals(OffsetDateTime.class)) {
+				object = OffsetDateTime.parse(source);
+			} else if (targetType.equals(ZonedDateTime.class)) {
+				object = ZonedDateTime.parse(source);
+			} else if (targetType.equals(Character.class)) {
+				object = (!StringUtils.isEmpty(source) ? source.charAt(0) : null);
+			} else if (targetType.equals(boolean.class) || targetType.equals(Boolean.class)) {
+				object = Boolean.valueOf(source);
+			} else if (targetType.isEnum()) {
+				object = Enum.valueOf(targetType, source);
 			} else {
-				Constructor<?> cons = (Constructor<?>) dynamicClass.getConstructor(new Class<?>[] { String.class });
-				object = cons.newInstance(new Object[] { value });
+				Constructor<?> cons = (Constructor<?>) targetType.getConstructor(new Class<?>[] { String.class });
+				object = cons.newInstance(new Object[] { source });
 			}
 
 			return object;
 		} catch (DateTimeParseException | IllegalArgumentException e) {
-			log.debug("Parsing [{}] with [{}] causing [{}], skip", value, dynamicClass.getName(), e.getMessage());
+			log.debug("Parsing [{}] with [{}] causing [{}], skip", source, targetType.getName(), e.getMessage());
 		} catch (Exception e) {
-			log.error("Parsing [{}] with [{}] causing [{}], add your value parser via RSQLSupport.addEntityAttributeParser(Type.class, Type::valueOf)", value, dynamicClass.getName(), e.getMessage(), e);
+			log.error("Parsing [{}] with [{}] causing [{}], add your parser via RSQLSupport.addConverter(Type.class, Type::valueOf)", source, targetType.getName(), e.getMessage(), e);
 		}
 		return null;
 	}
@@ -241,6 +224,20 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 	protected <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
 		return classMetadata.getAttribute(property).isAssociation();
+	}
+
+	static {
+		Map<Class, Class> map = new HashMap<>();
+		map.put(boolean.class, Boolean.class);
+		map.put(byte.class, Byte.class);
+		map.put(char.class, Character.class);
+		map.put(double.class, Double.class);
+		map.put(float.class, Float.class);
+		map.put(int.class, Integer.class);
+		map.put(long.class, Long.class);
+		map.put(short.class, Short.class);
+		map.put(void.class, Void.class);
+		primitiveToWrapper = Collections.unmodifiableMap(map);
 	}
 
 }
