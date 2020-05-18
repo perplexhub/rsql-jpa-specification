@@ -165,6 +165,15 @@ public class RSQLQueryDslSupportTest {
 	}
 
 	@Test
+	public final void testGreaterThanCreateDate() {
+		String rsql = "createDate=gt=2018-10-20";
+		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(2l));
+	}
+
+	@Test
 	public final void testGreaterThanOrEqual() {
 		String rsql = "id>='2'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
