@@ -225,6 +225,11 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return classMetadata.getAttribute(property).isAssociation();
 	}
 
+	protected <T> boolean isOneToOneAssociationType(String property, ManagedType<T> classMetadata) {
+		return classMetadata.getAttribute(property).isAssociation()
+				&& PersistentAttributeType.ONE_TO_ONE == classMetadata.getAttribute(property).getPersistentAttributeType();
+	}
+
 	static {
 		Map<Class, Class> map = new HashMap<>();
 		map.put(boolean.class, Boolean.class);
