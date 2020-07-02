@@ -1,9 +1,7 @@
 package io.github.perplexhub.rsql;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -21,6 +19,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.RSQLParser;
+import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.Node;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,6 +51,10 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 		return toSpecification(rsqlQuery, distinct, propertyPathMapper);
 	}
 
+	public static <T> Specification<T> rsql(final String rsqlQuery, final List<RSQLCustomPredicate<?>> customPredicates) {
+		return toSpecification(rsqlQuery, customPredicates);
+	}
+
 	public static <T> Specification<T> toSpecification(final String rsqlQuery) {
 		return toSpecification(rsqlQuery, false, null);
 	}
@@ -65,13 +68,25 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper) {
+		return toSpecification(rsqlQuery, distinct, propertyPathMapper, null);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final List<RSQLCustomPredicate<?>> customPredicates) {
+		return toSpecification(rsqlQuery, false, null, customPredicates);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper, final List<RSQLCustomPredicate<?>> customPredicates) {
 		log.debug("toSpecification({},distinct:{},propertyPathMapper:{})", rsqlQuery, distinct, propertyPathMapper);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				query.distinct(distinct);
 				if (StringUtils.hasText(rsqlQuery)) {
-					Node rsql = new RSQLParser(RSQLOperators.supportedOperators()).parse(rsqlQuery);
-					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper), root);
+					Set<ComparisonOperator> supportedOperators = RSQLOperators.supportedOperators();
+					if (customPredicates != null) {
+						supportedOperators.addAll(customPredicates.stream().map(RSQLCustomPredicate::getOperator).filter(Objects::nonNull).collect(Collectors.toSet()));
+					}
+					Node rsql = new RSQLParser(supportedOperators).parse(rsqlQuery);
+					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates), root);
 				} else
 					return null;
 			}

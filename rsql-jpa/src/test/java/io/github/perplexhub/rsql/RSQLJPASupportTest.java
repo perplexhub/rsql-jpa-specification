@@ -7,10 +7,9 @@ import static org.junit.Assert.*;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import javax.persistence.criteria.Expression;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +21,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.MultiValueMap;
 
+import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import io.github.perplexhub.rsql.model.Company;
 import io.github.perplexhub.rsql.model.Role;
 import io.github.perplexhub.rsql.model.TrunkGroup;
@@ -44,6 +44,25 @@ public class RSQLJPASupportTest {
 
 	@Autowired
 	private TrunkGroupRepository trunkGroupRepository;
+
+	@Test
+	public final void testCustomPredicate() {
+		String rsql = "createDate=dayofweek='2'";
+		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=dayofweek="), Long.class, input -> {
+			Expression<Long> function = input.getCriteriaBuilder().function("DAY_OF_WEEK", Long.class, input.getPath());
+			return input.getCriteriaBuilder().lessThan(function, (Long) input.getArguments().get(0));
+		});
+		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(2l));
+
+		rsql = "createDate=dayofweek='3'";
+		users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(4l));
+	}
 
 	@Test
 	public final void testElementCollection1() {

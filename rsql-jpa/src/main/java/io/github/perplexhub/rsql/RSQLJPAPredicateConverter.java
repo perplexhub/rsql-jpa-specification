@@ -3,6 +3,7 @@ package io.github.perplexhub.rsql;
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.persistence.criteria.*;
@@ -24,11 +25,17 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 	private final CriteriaBuilder builder;
 	private final Map<String, Path> cachedJoins = new HashMap<>();
 	private final @Getter Map<String, String> propertyPathMapper;
+	private final @Getter Map<ComparisonOperator, RSQLCustomPredicate<?>> customPredicates;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
+		this(builder, propertyPathMapper, null);
+	}
+
+	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates) {
 		super();
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
+		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
 	}
 
 	<T> RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
@@ -126,6 +133,15 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 			type = primitiveToWrapper.get(type);
 		} else if (RSQLJPASupport.getValueTypeMap().containsKey(type)) {
 			type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
+		}
+
+		if (customPredicates.containsKey(op)) {
+			RSQLCustomPredicate<?> customPredicate = customPredicates.get(op);
+			List<Object> arguments = new ArrayList<>();
+			for (String argument : node.getArguments()) {
+				arguments.add(convert(argument, customPredicate.getType()));
+			}
+			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, arguments));
 		}
 
 		if (node.getArguments().size() > 1) {
