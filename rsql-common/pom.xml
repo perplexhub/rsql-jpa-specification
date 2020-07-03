@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>io.github.perplexhub</groupId>
 		<artifactId>rsql</artifactId>
-		<version>5.0.5</version>
+		<version>5.0.6-SNAPSHOT</version>
 	</parent>
 	<artifactId>rsql-common</artifactId>
 	<packaging>jar</packaging>
