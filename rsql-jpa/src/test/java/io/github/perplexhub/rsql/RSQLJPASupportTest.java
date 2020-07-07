@@ -65,6 +65,27 @@ public class RSQLJPASupportTest {
 	}
 
 	@Test
+	public final void testCustomPredicateSimilar() {
+		String rsql = "name=around='May'";
+		RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=around="), String.class, input -> {
+			if ("May".equals(input.getArguments().get(0))) {
+				return input.getPath().in(Arrays.asList("April", "May", "June"));
+			}
+			return input.getCriteriaBuilder().equal(input.getPath(), (String) input.getArguments().get(0));
+		});
+		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+
+		rsql = "name=around='June'";
+		users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+		count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+	}
+
+	@Test
 	public final void testElementCollection1() {
 		String rsql = "tags=='tech'";
 		List<Company> companys = companyRepository.findAll(toSpecification(rsql));

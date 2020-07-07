@@ -4,6 +4,8 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
 
 [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/rsql-common/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 
+[Since version 5.0.5, you can define your own operators and customize the logic via RSQLCustomPredicate.](https://github.com/perplexhub/rsql-jpa-specification/blob/master/rsql-jpa/src/test/java/io/github/perplexhub/rsql/RSQLJPASupportTest.java)
+
 ## Maven Repository
 
 <https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql*>
@@ -16,7 +18,7 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
   <dependency>
     <groupId>io.github.perplexhub</groupId>
     <artifactId>rsql-jpa-spring-boot-starter</artifactId>
-    <version>5.0.3</version>
+    <version>5.0.5</version>
   </dependency>
 ```
 
@@ -42,7 +44,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
   <dependency>
     <groupId>io.github.perplexhub</groupId>
     <artifactId>rsql-querydsl-spring-boot-starter</artifactId>
-    <version>5.0.3</version>
+    <version>5.0.5</version>
   </dependency>
 ```
 
@@ -191,4 +193,26 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable
 				return null;
 			}
 		});
+```
+
+# Custom Operator & Predicate
+
+```java
+		String rsql = "createDate=dayofweek='2'";
+		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=dayofweek="), Long.class, input -> {
+			Expression<Long> function = input.getCriteriaBuilder().function("DAY_OF_WEEK", Long.class, input.getPath());
+			return input.getCriteriaBuilder().lessThan(function, (Long) input.getArguments().get(0));
+		});
+		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+```
+
+```java
+		String rsql = "name=around='May'";
+		RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=around="), String.class, input -> {
+			if ("May".equals(input.getArguments().get(0))) {
+				return input.getPath().in(Arrays.asList("April", "May", "June"));
+			}
+			return input.getCriteriaBuilder().equal(input.getPath(), (String) input.getArguments().get(0));
+		});
+		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
