@@ -31,4 +31,7 @@ public class User {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date createDate;
 
+	@Enumerated(EnumType.STRING)
+	private Status status = Status.STARTED;
+
 }

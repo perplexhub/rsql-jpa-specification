@@ -37,6 +37,16 @@ public class RSQLQueryDslSupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testEnumILike() {
+		RSQLJPASupport.addEntityAttributeTypeMap(Status.class, String.class);
+		String rsql = "status==*A*";
+		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(10l));
+	}
+
+	@Test
 	public final void testElementCollection1() {
 		String rsql = "tags=='tech'";
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
