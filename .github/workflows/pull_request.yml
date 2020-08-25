@@ -16,11 +16,5 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Build and publish snapshot with Maven
-      uses: perplexhub/action-maven-publish-snapshot@master
-      with:
-        maven_goals_phases: clean install
-        gpg_private_key: ${{ secrets.gpg_private_key }}
-        gpg_passphrase: ${{ secrets.gpg_passphrase }}
-        nexus_username: ${{ secrets.nexus_username }}
-        nexus_password: ${{ secrets.nexus_password }}
+    - name: build with maven
+      run: mvn -B clean install
