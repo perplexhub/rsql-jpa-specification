@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
@@ -87,6 +88,34 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 					}
 					Node rsql = new RSQLParser(supportedOperators).parse(rsqlQuery);
 					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates), root);
+				} else
+					return null;
+			}
+		};
+	}
+
+	public static <T> Specification<T> toSort(@Nullable final String sortQuery) {
+		return toSort(sortQuery, new HashMap<>());
+	}
+
+	/**
+	 * Add orderBy(s) to {@code CriteriaQuery}.
+	 * Example: {@code "field1,asc;field2,desc;field3.subfield1,asc"}
+	 *
+	 * @param sortQuery - sort query
+	 * @param propertyPathMapper - property remapping
+	 * @param <T>
+	 * @return {@code Specification} with specified order by
+	 */
+	public static <T> Specification<T> toSort(@Nullable final String sortQuery, final Map<String, String> propertyPathMapper) {
+		log.debug("toSort({},propertyPathMapper:{})", sortQuery, propertyPathMapper);
+		return new Specification<T>() {
+			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+				if (StringUtils.hasText(sortQuery)) {
+					final List<Order> orders = SortUtils.parseSort(sortQuery, propertyPathMapper, root, cb);
+					query.orderBy(orders);
+
+					return cb.conjunction();
 				} else
 					return null;
 			}

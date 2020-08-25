@@ -157,6 +157,35 @@ repository.findAll(toSpecification(filter, propertyPathMapper));
 repository.findAll(toSpecification(filter, propertyPathMapper), pageable);
 ```
 
+## Sort Syntax
+
+```java
+sort = "id,asc"; // order by id asc
+sort = "id,asc;company.id,desc"; // order by id asc, company.id desc
+```
+
+## Sort with JPA Specifications
+
+```java
+repository.findAll(RSQLSupport.toSort("id,asc;company.id,desc"));
+
+// sort with custom field mapping
+Map<String, String> propertyMapping = new HashMap<>();
+propertyMapping.put("userID", "id");
+propertyMapping.put("companyID", "company.id");
+
+repository.findAll(RSQLSupport.toSort("userID,asc;companyID,desc", propertyMapping)); // same as id,asc;company.id,desc
+
+```
+
+## Filtering and Sorting with JPA Specification
+```java
+Specification<?> specification = RSQLSupport.toSpecification("company.name==name")
+    .and(RSQLSupport.toSort("company.name,asc,user.id,desc"));
+
+repository.findAll(specification);
+```
+
 ## QueryDSL Predicate (BooleanExpression)
 
 ```java

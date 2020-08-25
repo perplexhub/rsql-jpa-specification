@@ -11,6 +11,7 @@ import java.util.*;
 
 import javax.persistence.criteria.Expression;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,6 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.MultiValueMap;
 
@@ -699,6 +703,53 @@ public class RSQLJPASupportTest {
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(3l));
+	}
+
+	@Test
+	public void testWithNullSort() {
+		Page<User> users = userRepository.findAll(toSort(null), PageRequest.of(0, 5));
+		Assertions.assertThat(users.getContent())
+			.extracting(User::getId)
+			.containsExactly(1, 2, 3, 4, 5);
+	}
+
+	@Test
+	public void testSortUsersByIdDesc() {
+		Page<User> users = userRepository.findAll(toSort("id,desc"), PageRequest.of(0, 5));
+		Assertions.assertThat(users.getContent())
+			.extracting(User::getId)
+			.containsExactly(12, 11, 10, 9, 8);
+	}
+
+	@Test
+	public void testSortMultipleFields() {
+		List<User> users = userRepository.findAll(toSort("status,desc;company.id,desc"));
+		Assertions.assertThat(users)
+			.extracting(User::getId)
+			.containsExactly(3, 4, 5, 1, 2, 10, 11, 12, 9, 7, 8, 6);
+	}
+
+	@Test
+	public void testSortAndFilter() {
+		Specification<User> specification = RSQLJPASupport.<User>toSpecification("status==ACTIVE")
+			.and(toSort("company.name,desc"));
+
+		List<User> users = userRepository.findAll(specification);
+		Assertions.assertThat(users)
+			.extracting(User::getId)
+			.containsExactly(6, 9, 7, 8);
+	}
+
+	@Test
+	public void testSortWithCustomPropertyMapping() {
+		Map<String, String> propertyMapping = new HashMap<String, String>(){{
+			put("userStatus", "status");
+			put("companyId", "company.id");
+		}};
+		List<User> users = userRepository.findAll(toSort("userStatus,desc;companyId,desc", propertyMapping));
+		Assertions.assertThat(users)
+			.extracting(User::getId)
+			.containsExactly(3, 4, 5, 1, 2, 10, 11, 12, 9, 7, 8, 6);
 	}
 
 	@Before
