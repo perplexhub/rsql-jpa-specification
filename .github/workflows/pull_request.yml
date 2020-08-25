@@ -1,0 +1,26 @@
+name: Java Pull Request CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    if: "!contains(github.event.head_commit.message, '[maven-release-plugin] prepare release')"
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Build and publish snapshot with Maven
+      uses: perplexhub/action-maven-publish-snapshot@master
+      with:
+        maven_goals_phases: clean install
+        gpg_private_key: ${{ secrets.gpg_private_key }}
+        gpg_passphrase: ${{ secrets.gpg_passphrase }}
+        nexus_username: ${{ secrets.nexus_username }}
+        nexus_password: ${{ secrets.nexus_password }}
