@@ -1,3 +1,5 @@
+TEST
+
 # rsql-jpa-specification
 
 Translate RSQL query into org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate and support entities association query.
