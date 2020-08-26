@@ -18,7 +18,7 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
   <dependency>
     <groupId>io.github.perplexhub</groupId>
     <artifactId>rsql-jpa-spring-boot-starter</artifactId>
-    <version>5.0.5</version>
+    <version>5.0.6</version>
   </dependency>
 ```
 
@@ -44,7 +44,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
   <dependency>
     <groupId>io.github.perplexhub</groupId>
     <artifactId>rsql-querydsl-spring-boot-starter</artifactId>
-    <version>5.0.5</version>
+    <version>5.0.6</version>
   </dependency>
 ```
 
