@@ -705,6 +705,17 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, count, is(3l));
 	}
 
+	@Test(expected = DataAccessException.class)
+	public final void testUnknownPropertyCauseException() {
+		String rsql = "i==2";
+		try {
+			userRepository.findAll(toSpecification(rsql));
+		} catch (DataAccessException e) {
+			log.info("Expected exception", e);
+			throw e;
+		}
+	}
+
 	@Test
 	public void testWithNullSort() {
 		Page<User> users = userRepository.findAll(toSort(null), PageRequest.of(0, 5));

@@ -597,4 +597,15 @@ public class RSQLQueryDslSupportTest {
 		assertThat(rsql, count, is(3l));
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public final void testUnknownPropertyCauseException() {
+		String rsql = "i==2";
+		try {
+			userRepository.findAll(toPredicate(rsql, QUser.user));
+		} catch (IllegalArgumentException e) {
+			log.info("Expected exception", e);
+			throw e;
+		}
+	}
+
 }
