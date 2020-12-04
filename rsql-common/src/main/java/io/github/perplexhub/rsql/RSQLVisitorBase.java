@@ -1,5 +1,6 @@
 package io.github.perplexhub.rsql;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,6 +11,8 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import javax.persistence.EntityManager;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.ManagedType;
@@ -234,6 +237,28 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return classMetadata.getAttribute(property).isAssociation()
 				&& PersistentAttributeType.ONE_TO_MANY == classMetadata.getAttribute(property).getPersistentAttributeType();
 	}
+
+  protected <T> boolean isAssociationOptional(String property, ManagedType<T> classMetadata) {
+    if (classMetadata.getAttribute(property).isAssociation()) {
+      Annotation[] annotations = null;
+      Member member = classMetadata.getAttribute(property).getJavaMember();
+      if (member instanceof Field) {
+        annotations = ((Field) member).getAnnotations();
+      } else if (member instanceof Method) {
+        annotations = ((Method) member).getAnnotations();
+      }
+      if (annotations != null) {
+        for (Annotation a : annotations) {
+          if (a.annotationType().equals(OneToOne.class)) {
+            return ((OneToOne) a).optional();
+          } else if (a.annotationType().equals(ManyToOne.class)) {
+            return ((ManyToOne) a).optional();
+          }
+        }
+      }
+    }
+    return false;
+  }
 
 	static {
 		Map<Class, Class> map = new HashMap<>();

@@ -58,6 +58,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 				}
 
 				if (isAssociationType(mappedProperty, classMetadata)) {
+				  boolean isAssociationOptional = isAssociationOptional(mappedProperty, classMetadata);
 					boolean isOneToAssociationType = isOneToOneAssociationType(mappedProperty, classMetadata) || isOneToManyAssociationType(mappedProperty, classMetadata);
 					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
 					type = associationType;
@@ -66,7 +67,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 
 					String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
 					log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-					root = isOneToAssociationType ? joinLeft(keyJoin, root, mappedProperty) : join(keyJoin, root, mappedProperty);
+					root = isAssociationOptional || isOneToAssociationType ? joinLeft(keyJoin, root, mappedProperty) : join(keyJoin, root, mappedProperty);
 				} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 					String previousClass = classMetadata.getJavaType().getName();
 					attribute = classMetadata.getAttribute(property);
