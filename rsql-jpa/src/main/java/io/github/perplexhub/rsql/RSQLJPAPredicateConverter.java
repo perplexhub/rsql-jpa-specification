@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> {
+public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> {
 
 	private final CriteriaBuilder builder;
 	private final Map<String, Path> cachedJoins = new HashMap<>();
@@ -119,7 +119,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 	}
 
 	@Override
-	public Predicate visit(ComparisonNode node, Root root) {
+	public Predicate visit(ComparisonNode node, From root) {
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
@@ -249,14 +249,14 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 	}
 
 	@Override
-	public Predicate visit(AndNode node, Root root) {
+	public Predicate visit(AndNode node, From root) {
 		log.debug("visit(node:{},root:{})", node, root);
 
 		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::and)).get();
 	}
 
 	@Override
-	public Predicate visit(OrNode node, Root root) {
+	public Predicate visit(OrNode node, From root) {
 		log.debug("visit(node:{},root:{})", node, root);
 
 		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
