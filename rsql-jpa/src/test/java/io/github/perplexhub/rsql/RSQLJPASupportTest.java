@@ -765,7 +765,7 @@ public class RSQLJPASupportTest {
 
 	@Test
 	public void testFindingUserByProjectImplAttribute() {
-		Specification specification = RSQLJPASupport.toSpecification("projects.departmentName==someDepartmentName");
+		Specification specification = RSQLJPASupport.toSpecification("projects.departmentName==someDepartmentName", true);
 		List<User> foundUsers = userRepository.findAll(specification);
 		Assertions.assertThat(foundUsers).extracting(User::getId).containsExactly(1);
 	}
