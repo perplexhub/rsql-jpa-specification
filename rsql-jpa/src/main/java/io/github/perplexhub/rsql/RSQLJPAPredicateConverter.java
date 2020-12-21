@@ -57,7 +57,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
             } else {
                 if (!hasPropertyName(mappedProperty, classMetadata)) {
                     if (Modifier.isAbstract(classMetadata.getJavaType().getModifiers())) {
-                        Optional<Class<?>> foundSubClass = (Optional<Class<?>>) new Reflections("")
+                        Optional<Class<?>> foundSubClass = (Optional<Class<?>>) new Reflections(classMetadata.getJavaType().getPackage().getName())
                                 .getSubTypesOf(classMetadata.getJavaType())
                                 .stream()
                                 .filter(subType -> hasPropertyName(mappedProperty, getManagedType(subType)))
@@ -66,7 +66,9 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
                             classMetadata = getManagedType(foundSubClass.get());
                             root = root instanceof Join ? builder.treat((Join) root, foundSubClass.get()).get(property) : builder.treat((Path) root, foundSubClass.get()).get(property);
                             attribute = classMetadata.getAttribute(property);
-                        }
+                        } else {
+							throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+						}
                     } else {
                         throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
                     }
