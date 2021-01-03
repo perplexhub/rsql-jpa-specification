@@ -1,0 +1,2 @@
+insert into project(id, user_id, type, name, department_name, company_name) values(1, 1, 'Administrative', 'someProjectName', 'someDepartmentName', null);
+insert into project(id, user_id, type, name, department_name, company_name) values(2, 1, 'Design', 'someProjectName', null, 'someCompany');

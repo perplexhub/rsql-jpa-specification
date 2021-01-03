@@ -2,6 +2,7 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.reflections.Reflections;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -46,51 +48,66 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, Root> 
 
 		String[] properties = propertyPath.split("\\.");
 
-		for (String property : properties) {
-			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
-			if (!mappedProperty.equals(property)) {
-				RSQLJPAContext context = findPropertyPath(mappedProperty, root);
-				root = context.getPath();
-				attribute = context.getAttribute();
-			} else {
-				if (!hasPropertyName(mappedProperty, classMetadata)) {
-					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
-				}
+        for (String property : properties) {
+            String mappedProperty = mapProperty(property, classMetadata.getJavaType());
+            if (!mappedProperty.equals(property)) {
+                RSQLJPAContext context = findPropertyPath(mappedProperty, root);
+                root = context.getPath();
+                attribute = context.getAttribute();
+            } else {
+                if (!hasPropertyName(mappedProperty, classMetadata)) {
+                    if (Modifier.isAbstract(classMetadata.getJavaType().getModifiers())) {
+                        Optional<Class<?>> foundSubClass = (Optional<Class<?>>) new Reflections(classMetadata.getJavaType().getPackage().getName())
+                                .getSubTypesOf(classMetadata.getJavaType())
+                                .stream()
+                                .filter(subType -> hasPropertyName(mappedProperty, getManagedType(subType)))
+                                .findFirst();
+                        if (foundSubClass.isPresent()) {
+                            classMetadata = getManagedType(foundSubClass.get());
+                            root = root instanceof Join ? builder.treat((Join) root, foundSubClass.get()).get(property) : builder.treat((Path) root, foundSubClass.get()).get(property);
+                            attribute = classMetadata.getAttribute(property);
+                        } else {
+							throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+						}
+                    } else {
+                        throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+                    }
+                } else {
+                    if (isAssociationType(mappedProperty, classMetadata)) {
+                        boolean isOneToAssociationType = isOneToOneAssociationType(mappedProperty, classMetadata) || isOneToManyAssociationType(mappedProperty, classMetadata);
+                        Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
+                        type = associationType;
+                        String previousClass = classMetadata.getJavaType().getName();
+                        classMetadata = getManagedType(associationType);
 
-				if (isAssociationType(mappedProperty, classMetadata)) {
-					boolean isOneToAssociationType = isOneToOneAssociationType(mappedProperty, classMetadata) || isOneToManyAssociationType(mappedProperty, classMetadata);
-					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
-					type = associationType;
-					String previousClass = classMetadata.getJavaType().getName();
-					classMetadata = getManagedType(associationType);
+                        String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+                        log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+                        root = isOneToAssociationType ? joinLeft(keyJoin, root, mappedProperty) : join(keyJoin, root, mappedProperty);
+                    } else if (isElementCollectionType(mappedProperty, classMetadata)) {
+                        String previousClass = classMetadata.getJavaType().getName();
+                        attribute = classMetadata.getAttribute(property);
+                        classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
 
-					String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
-					log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-					root = isOneToAssociationType ? joinLeft(keyJoin, root, mappedProperty) : join(keyJoin, root, mappedProperty);
-				} else if (isElementCollectionType(mappedProperty, classMetadata)) {
-					String previousClass = classMetadata.getJavaType().getName();
-					attribute = classMetadata.getAttribute(property);
-					classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
+                        String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
+                        log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+                        root = join(keyJoin, root, mappedProperty);
+                    } else {
+                        log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
+                        root = root.get(mappedProperty);
 
-					String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
-					log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-					root = join(keyJoin, root, mappedProperty);
-				} else {
-					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
-					root = root.get(mappedProperty);
-
-					if (isEmbeddedType(mappedProperty, classMetadata)) {
-						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
-						type = embeddedType;
-						classMetadata = getManagedType(embeddedType);
-					} else {
-						attribute = classMetadata.getAttribute(property);
-					}
-				}
-			}
-		}
-		accessControl(type, attribute.getName());
-		return RSQLJPAContext.of(root, attribute);
+                        if (isEmbeddedType(mappedProperty, classMetadata)) {
+                            Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
+                            type = embeddedType;
+                            classMetadata = getManagedType(embeddedType);
+                        } else {
+                            attribute = classMetadata.getAttribute(property);
+                        }
+                    }
+                }
+            }
+        }
+        accessControl(type, attribute.getName());
+        return RSQLJPAContext.of(root, attribute);
 	}
 
 	protected Path<?> join(String keyJoin, Path<?> root, String mappedProperty) {

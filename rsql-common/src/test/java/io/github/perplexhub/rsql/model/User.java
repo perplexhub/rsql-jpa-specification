@@ -34,4 +34,7 @@ public class User {
 	@Enumerated(EnumType.STRING)
 	private Status status = Status.STARTED;
 
+	@JoinColumn(name = "user_id")
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<Project> projects;
 }

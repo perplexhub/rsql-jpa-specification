@@ -10,6 +10,11 @@
 	<name>io.github.perplexhub - RSQL-Common</name>
 	<dependencies>
 		<dependency>
+			<groupId>org.reflections</groupId>
+			<artifactId>reflections</artifactId>
+			<version>0.9.12</version>
+		</dependency>
+		<dependency>
 			<groupId>cz.jirutka.rsql</groupId>
 			<artifactId>rsql-parser</artifactId>
 		</dependency>

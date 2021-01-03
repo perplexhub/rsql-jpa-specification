@@ -763,6 +763,13 @@ public class RSQLJPASupportTest {
 			.containsExactly(3, 4, 5, 1, 2, 10, 11, 12, 9, 7, 8, 6);
 	}
 
+	@Test
+	public void testFindingUserByProjectImplAttribute() {
+		Specification specification = RSQLJPASupport.toSpecification("projects.departmentName==someDepartmentName", true);
+		List<User> foundUsers = userRepository.findAll(specification);
+		Assertions.assertThat(foundUsers).extracting(User::getId).containsExactly(1);
+	}
+
 	@Before
 	public void setUp() throws Exception {
 		getPropertyWhitelist().clear();
