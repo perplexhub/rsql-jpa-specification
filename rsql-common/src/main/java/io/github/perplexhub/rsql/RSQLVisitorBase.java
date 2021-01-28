@@ -43,7 +43,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return entityManagerMap != null ? entityManagerMap : Collections.emptyMap();
 	}
 
-	abstract Map<String, String> getPropertyPathMapper();
+	protected abstract Map<String, String> getPropertyPathMapper();
 
 	public Map<Class<?>, Map<String, String>> getPropertyRemapping() {
 		return propertyRemapping != null ? propertyRemapping : Collections.emptyMap();
