@@ -91,7 +91,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	}
 
 	protected void accessControl(Class type, String name) {
-		log.info("accessControl(type:{},name:{})", type, name);
+		log.debug("accessControl(type:{},name:{})", type, name);
 
 		if (propertyWhitelist != null && propertyWhitelist.containsKey(type)) {
 			if (!propertyWhitelist.get(type).contains(name)) {
