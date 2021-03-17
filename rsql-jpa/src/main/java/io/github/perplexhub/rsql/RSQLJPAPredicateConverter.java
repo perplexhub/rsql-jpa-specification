@@ -111,7 +111,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	protected Path<?> join(String keyJoin, Path<?> root, String mappedProperty) {
-		log.info("join(keyJoin:{},root:{},mappedProperty:{})", keyJoin, root, mappedProperty);
+		log.debug("join(keyJoin:{},root:{},mappedProperty:{})", keyJoin, root, mappedProperty);
 
 		if (cachedJoins.containsKey(keyJoin)) {
 			root = cachedJoins.get(keyJoin);
@@ -123,7 +123,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	protected Path<?> joinLeft(String keyJoin, Path<?> root, String mappedProperty) {
-		log.info("joinLeft(keyJoin:{},root:{},mappedProperty:{})", keyJoin, root, mappedProperty);
+		log.debug("joinLeft(keyJoin:{},root:{},mappedProperty:{})", keyJoin, root, mappedProperty);
 
 		if (cachedJoins.containsKey(keyJoin)) {
 			root = cachedJoins.get(keyJoin);
