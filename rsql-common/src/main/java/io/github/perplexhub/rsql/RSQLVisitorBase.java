@@ -152,7 +152,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 				try {
 					managedType = entityManagerEntry.getValue().getMetamodel().managedType(cls);
 					getManagedTypeMap().put(cls, managedType);
-					log.info("Found managed type [{}] in EntityManager [{}]", cls, entityManagerEntry.getKey());
+					log.debug("Found managed type [{}] in EntityManager [{}]", cls, entityManagerEntry.getKey());
 					return managedType;
 				} catch (Exception e) {
 					if (e != null) {
