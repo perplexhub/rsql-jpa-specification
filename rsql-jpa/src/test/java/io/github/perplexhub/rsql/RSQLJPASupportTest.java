@@ -50,6 +50,19 @@ public class RSQLJPASupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testCustomPredicateBetween() {
+		String rsql = "company.id=between=(2,3)";
+		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=between=", true), Long.class, input -> {
+			Expression<Long> function = input.getCriteriaBuilder().function("BETWEEN", Long.class, input.getPath());
+			return input.getCriteriaBuilder().between(input.getPath().as(Long.class), (Long) input.getArguments().get(0), (Long) input.getArguments().get(1));
+		});
+		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(6l));
+	}
+
+	@Test
 	public final void testCustomPredicate() {
 		String rsql = "createDate=dayofweek='2'";
 		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=dayofweek="), Long.class, input -> {
