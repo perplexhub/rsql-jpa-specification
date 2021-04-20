@@ -106,7 +106,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
                 }
             }
         }
-        accessControl(type, attribute.getName());
+
+        if (attribute != null) {
+            accessControl(type, attribute.getName());
+        }
+
         return RSQLJPAContext.of(root, attribute);
 	}
 
