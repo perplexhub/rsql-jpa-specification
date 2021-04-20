@@ -94,7 +94,11 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				}
 			}
 		}
-		accessControl(path.getType(), attribute.getName());
+
+		if (attribute != null) {
+			accessControl(path.getType(), attribute.getName());
+		}
+
 		return RSQLQueryDslContext.of(mappedPropertyPath, attribute, path);
 	}
 
