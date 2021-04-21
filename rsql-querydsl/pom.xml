@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>io.github.perplexhub</groupId>
 		<artifactId>rsql</artifactId>
-		<version>5.0.15-SNAPSHOT</version>
+		<version>5.0.15</version>
 	</parent>
 	<artifactId>rsql-querydsl</artifactId>
 	<packaging>jar</packaging>
@@ -12,12 +12,12 @@
 		<dependency>
 			<groupId>io.github.perplexhub</groupId>
 			<artifactId>rsql-jpa</artifactId>
-			<version>5.0.15-SNAPSHOT</version>
+			<version>5.0.15</version>
 		</dependency>
 		<dependency>
 			<groupId>io.github.perplexhub</groupId>
 			<artifactId>rsql-common</artifactId>
-			<version>5.0.15-SNAPSHOT</version>
+			<version>5.0.15</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
