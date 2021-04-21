@@ -261,3 +261,11 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable
 		});
 		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
+
+```java
+		String rsql = "city=notAssigned=''";
+		RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=notAssigned="), String.class, input -> {
+			return input.getCriteriaBuilder().isNull(input.getRoot().get("city"));
+		});
+		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+```

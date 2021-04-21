@@ -1,4 +1,4 @@
-insert into users(id, name, company_id, create_date, status) values(1, 'January', 1, '2018-01-01', 'STARTED');
+insert into users(id, name, company_id, create_date, status, city_id) values(1, 'January', 1, '2018-01-01', 'STARTED', 1);
 insert into users(id, name, company_id, create_date, status) values(2, 'February', 1, '2018-02-01', 'STARTED');
 insert into users(id, name, company_id, create_date, status) values(3, 'March', 2, '2018-03-01', 'STARTED');
 insert into users(id, name, company_id, create_date, status) values(4, 'April', 2, '2018-04-01', 'STARTED');

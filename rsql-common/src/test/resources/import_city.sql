@@ -1,0 +1,1 @@
+insert into city(id, name) values(1, 'Moon');

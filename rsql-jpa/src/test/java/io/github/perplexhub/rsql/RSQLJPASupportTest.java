@@ -50,6 +50,18 @@ public class RSQLJPASupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testCustomPredicateIsNull() {
+		String rsql = "city=notAssigned=''";
+		RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=notAssigned="), String.class, input -> {
+			return input.getCriteriaBuilder().isNull(input.getRoot().get("city"));
+		});
+		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(11l));
+	}
+
+	@Test
 	public final void testCustomPredicateBetween() {
 		String rsql = "company.id=between=(2,3)";
 		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=between=", true), Long.class, input -> {

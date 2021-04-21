@@ -25,6 +25,10 @@ public class User {
 	@JoinColumn(name = "companyId", referencedColumnName = "id")
 	private Company company;
 
+	@ManyToOne(optional = true)
+	@JoinColumn(name = "cityId", referencedColumnName = "id", nullable = true)
+	private City city;
+
 	@OneToMany(mappedBy = "id.userId")
 	private List<UserRole> userRoles;
 
