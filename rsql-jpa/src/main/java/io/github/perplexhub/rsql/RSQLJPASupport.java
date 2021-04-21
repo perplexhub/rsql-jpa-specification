@@ -4,11 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,27 +53,39 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery) {
-		return toSpecification(rsqlQuery, false, null);
+		return toSpecification(rsqlQuery, false, null, null, null);
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final Map<String, String> propertyPathMapper) {
-		return toSpecification(rsqlQuery, false, propertyPathMapper);
+		return toSpecification(rsqlQuery, false, propertyPathMapper, null, null);
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct) {
-		return toSpecification(rsqlQuery, distinct, null);
+		return toSpecification(rsqlQuery, distinct, null, null, null);
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper) {
-		return toSpecification(rsqlQuery, distinct, propertyPathMapper, null);
+		return toSpecification(rsqlQuery, distinct, propertyPathMapper, null, null);
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final List<RSQLCustomPredicate<?>> customPredicates) {
-		return toSpecification(rsqlQuery, false, null, customPredicates);
+		return toSpecification(rsqlQuery, false, null, customPredicates, null);
 	}
 
-	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper, final List<RSQLCustomPredicate<?>> customPredicates) {
-		log.debug("toSpecification({},distinct:{},propertyPathMapper:{})", rsqlQuery, distinct, propertyPathMapper);
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final Map<String, String> propertyPathMapper, final Map<String, JoinType> joinHints) {
+		return toSpecification(rsqlQuery, false, propertyPathMapper, null, joinHints);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper, final Map<String, JoinType> joinHints) {
+		return toSpecification(rsqlQuery, distinct, propertyPathMapper, null, joinHints);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final Map<String, String> propertyPathMapper, final List<RSQLCustomPredicate<?>> customPredicates, final Map<String, JoinType> joinHints) {
+		return toSpecification(rsqlQuery, false, propertyPathMapper, customPredicates, joinHints);
+	}
+
+	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper, final List<RSQLCustomPredicate<?>> customPredicates, final Map<String, JoinType> joinHints) {
+		log.debug("toSpecification({},distinct:{},propertyPathMapper:{},joinHints:{})", rsqlQuery, distinct, propertyPathMapper, joinHints);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				query.distinct(distinct);
@@ -87,7 +95,7 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 						supportedOperators.addAll(customPredicates.stream().map(RSQLCustomPredicate::getOperator).filter(Objects::nonNull).collect(Collectors.toSet()));
 					}
 					Node rsql = new RSQLParser(supportedOperators).parse(rsqlQuery);
-					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates), root);
+					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates, joinHints), root);
 				} else
 					return null;
 			}

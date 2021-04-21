@@ -28,16 +28,22 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private final Map<String, Path> cachedJoins = new HashMap<>();
 	private final @Getter Map<String, String> propertyPathMapper;
 	private final @Getter Map<ComparisonOperator, RSQLCustomPredicate<?>> customPredicates;
+	private final @Getter Map<String, JoinType> joinHints;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
-		this(builder, propertyPathMapper, null);
+		this(builder, propertyPathMapper, null, null);
 	}
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates) {
+		this(builder, propertyPathMapper, customPredicates, null);
+	}
+
+	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints) {
 		super();
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
+		this.joinHints = joinHints != null ? joinHints : Collections.emptyMap();
 	}
 
 	<T> RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
@@ -81,13 +87,22 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 						classMetadata = getManagedType(associationType);
 
 						String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
-						log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-						root = isOneToAssociationType ? joinLeft(keyJoin, root, mappedProperty) : join(keyJoin, root, mappedProperty);
+						if (isOneToAssociationType) {
+							if (joinHints.containsKey(keyJoin)) {
+								log.debug("Create a join between [{}] and [{}] using key [{}] with supplied hints", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+								root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
+							} else {
+								log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+								root = join(keyJoin, root, mappedProperty, JoinType.LEFT);
+							}
+						} else {
+							log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+							root = join(keyJoin, root, mappedProperty);
+						}
 					} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 						String previousClass = classMetadata.getJavaType().getName();
 						attribute = classMetadata.getAttribute(property);
 						classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
-
 						String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
 						log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
 						root = join(keyJoin, root, mappedProperty);
@@ -114,25 +129,25 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		return RSQLJPAContext.of(root, attribute);
 	}
 
-	protected Path<?> join(String keyJoin, Path<?> root, String mappedProperty) {
-		log.debug("join(keyJoin:{},root:{},mappedProperty:{})", keyJoin, root, mappedProperty);
-
-		if (cachedJoins.containsKey(keyJoin)) {
-			root = cachedJoins.get(keyJoin);
-		} else {
-			root = ((From) root).join(mappedProperty);
-			cachedJoins.put(keyJoin, root);
-		}
-		return root;
+	private String getKeyJoin(Path<?> root, String mappedProperty) {
+		return root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
 	}
 
-	protected Path<?> joinLeft(String keyJoin, Path<?> root, String mappedProperty) {
-		log.debug("joinLeft(keyJoin:{},root:{},mappedProperty:{})", keyJoin, root, mappedProperty);
+	protected Path<?> join(String keyJoin, Path<?> root, String mappedProperty) {
+		return join(keyJoin, root, mappedProperty, null);
+	}
+
+	protected Path<?> join(String keyJoin, Path<?> root, String mappedProperty, JoinType joinType) {
+		log.debug("join(keyJoin:{},root:{},mappedProperty:{},joinType:{})", keyJoin, root, mappedProperty, joinType);
 
 		if (cachedJoins.containsKey(keyJoin)) {
 			root = cachedJoins.get(keyJoin);
 		} else {
-			root = ((From) root).join(mappedProperty, JoinType.LEFT);
+			if (joinType == null) {
+				root = ((From) root).join(mappedProperty);
+			} else {
+				root = ((From) root).join(mappedProperty, joinType);
+			}
 			cachedJoins.put(keyJoin, root);
 		}
 		return root;
