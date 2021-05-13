@@ -10,17 +10,13 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "Type")
-public abstract class Project {
+public class ProjectTag {
 
     @Id
     private Integer id;
 
-    private String name;
-
     @ManyToOne(optional = true)
-    @JoinColumn(name = "projectTagId", referencedColumnName = "id", nullable = true)
-    private ProjectTag projectTag;
+    @JoinColumn(name = "localTagId", referencedColumnName = "id", nullable = true)
+    private LocalTag localTag;
 
 }

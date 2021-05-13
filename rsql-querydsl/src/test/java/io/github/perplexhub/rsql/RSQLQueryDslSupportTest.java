@@ -37,6 +37,16 @@ public class RSQLQueryDslSupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testQueryMultiLevelAttribute() {
+		String rsql = "projects.projectTag.localTag.description=='Local Tag 1'";
+		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, users.get(0).getId(), equalTo(1));
+	}
+
+		@Test
 	public final void testEnumILike() {
 		RSQLJPASupport.addEntityAttributeTypeMap(Status.class, String.class);
 		String rsql = "status==*A*";
