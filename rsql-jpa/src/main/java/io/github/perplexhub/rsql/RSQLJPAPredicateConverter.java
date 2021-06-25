@@ -97,7 +97,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 							}
 						} else {
 							log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-							root = join(keyJoin, root, mappedProperty);
+							root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
 						}
 					} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 						String previousClass = classMetadata.getJavaType().getName();
