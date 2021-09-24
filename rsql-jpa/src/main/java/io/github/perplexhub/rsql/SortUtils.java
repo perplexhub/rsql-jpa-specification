@@ -36,7 +36,10 @@ class SortUtils {
         final String direction = parts[1];
 
         final String propertyPath = propertyMapper.getOrDefault(property, property);
-        final Expression<?> propertyExpression = pathToExpression(root, propertyPath);
+        Expression<?> propertyExpression = pathToExpression(root, propertyPath);
+        if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2]) && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
+            propertyExpression = cb.lower((Expression<String>) propertyExpression);
+        }
         return direction.equalsIgnoreCase("asc") ? cb.asc(propertyExpression) : cb.desc(propertyExpression);
     }
 

@@ -806,6 +806,27 @@ public class RSQLJPASupportTest {
 	}
 
 	@Test
+	public void testSortIgnoreCase() {
+		List<Company> companies = companyRepository.findAll(toSort("code,desc,ic"));
+		Assertions.assertThat(companies)
+				.extracting(Company::getId)
+				.containsExactly(2, 4, 7, 1, 5, 6, 3);
+
+		companies = companyRepository.findAll(toSort("code,desc"));
+		Assertions.assertThat(companies)
+				.extracting(Company::getId)
+				.containsExactly(7, 1, 5, 6, 3, 2, 4);
+	}
+
+	@Test
+	public void testSortIgnoreCaseOnNonStringField() {
+		List<Company> companies = companyRepository.findAll(toSort("id,desc,ic"));
+		Assertions.assertThat(companies)
+				.extracting(Company::getId)
+				.containsExactly(7, 6, 5, 4, 3, 2, 1);
+	}
+
+	@Test
 	public void testFindingUserByProjectImplAttribute() {
 		Specification specification = RSQLJPASupport.toSpecification("projects.departmentName==someDepartmentName", true);
 		List<User> foundUsers = userRepository.findAll(specification);

@@ -170,6 +170,7 @@ repository.findAll(toSpecification(filter, propertyPathMapper), pageable);
 ```java
 sort = "id,asc"; // order by id asc
 sort = "id,asc;company.id,desc"; // order by id asc, company.id desc
+sort = "name,asc,ic"  // order by name ascending ignore case
 ```
 
 ## Sort with JPA Specifications
@@ -189,7 +190,7 @@ repository.findAll(RSQLSupport.toSort("userID,asc;companyID,desc", propertyMappi
 ## Filtering and Sorting with JPA Specification
 ```java
 Specification<?> specification = RSQLSupport.toSpecification("company.name==name")
-    .and(RSQLSupport.toSort("company.name,asc,user.id,desc"));
+    .and(RSQLSupport.toSort("company.name,asc,ic;user.id,desc"));
 
 repository.findAll(specification);
 ```
