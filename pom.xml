@@ -30,7 +30,6 @@
 		<lombok.version>1.18.10</lombok.version>
 		<hamcrest.version>2.2</hamcrest.version>
 		<h2.version>1.4.200</h2.version>
-		<toolchain.version>3.0.0</toolchain.version>
 	</properties>
 	<modules>
 		<module>rsql-common</module>
@@ -100,26 +99,6 @@
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 					<stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
 				</configuration>
-			</plugin>
-			<plugin>
-			  <groupId>org.apache.maven.plugins</groupId>
-			  <artifactId>maven-toolchains-plugin</artifactId>
-			  <version>${toolchain.version}</version>
-			  <executions>
-				<execution>
-				  <goals>
-					<goal>toolchain</goal>
-				  </goals>
-				</execution>
-			  </executions>
-			  <configuration>
-				<toolchains>
-				  <jdk>
-					<version>1.8</version>
-					<vendor>openjdk</vendor>
-				  </jdk>
-				</toolchains>
-			  </configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
