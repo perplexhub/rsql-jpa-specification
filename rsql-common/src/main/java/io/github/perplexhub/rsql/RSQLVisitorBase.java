@@ -31,9 +31,13 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	protected static volatile @Setter Map<String, EntityManager> entityManagerMap;
 	protected static final Map<Class, Class> primitiveToWrapper;
 	protected static volatile @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
-	protected static volatile @Setter Map<Class<?>, List<String>> propertyWhitelist;
-	protected static volatile @Setter Map<Class<?>, List<String>> propertyBlacklist;
+	protected static volatile @Setter Map<Class<?>, List<String>> globalPropertyWhitelist;
+	protected static volatile @Setter Map<Class<?>, List<String>> globalPropertyBlacklist;
 	protected static volatile @Setter ConfigurableConversionService defaultConversionService;
+
+	protected @Setter Map<Class<?>, List<String>> propertyWhitelist;
+
+	protected @Setter Map<Class<?>, List<String>> propertyBlacklist;
 
 	protected Map<Class, ManagedType> getManagedTypeMap() {
 		return managedTypeMap != null ? managedTypeMap : Collections.emptyMap();
@@ -95,13 +99,29 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 		if (propertyWhitelist != null && propertyWhitelist.containsKey(type)) {
 			if (!propertyWhitelist.get(type).contains(name)) {
-				throw new IllegalArgumentException("Property " + type.getName() + "." + name + " is not on whitelist");
+				String msg = "Property " + type.getName() + "." + name + " is not on whitelist";
+				log.debug(msg);
+				throw new IllegalArgumentException(msg);
+			}
+		} else if (globalPropertyWhitelist != null && globalPropertyWhitelist.containsKey(type)) {
+			if (!globalPropertyWhitelist.get(type).contains(name)) {
+				String msg = "Property " + type.getName() + "." + name + " is not on global whitelist";
+				log.debug(msg);
+				throw new IllegalArgumentException(msg);
 			}
 		}
 
 		if (propertyBlacklist != null && propertyBlacklist.containsKey(type)) {
 			if (propertyBlacklist.get(type).contains(name)) {
-				throw new IllegalArgumentException("Property " + type.getName() + "." + name + " is on blacklist");
+				String msg = "Property " + type.getName() + "." + name + " is on blacklist";
+				log.debug(msg);
+				throw new IllegalArgumentException(msg);
+			}
+		} else if (globalPropertyBlacklist != null && globalPropertyBlacklist.containsKey(type)) {
+			if (globalPropertyBlacklist.get(type).contains(name)) {
+				String msg = "Property " + type.getName() + "." + name + " is on global blacklist";
+				log.debug(msg);
+				throw new IllegalArgumentException(msg);
 			}
 		}
 	}

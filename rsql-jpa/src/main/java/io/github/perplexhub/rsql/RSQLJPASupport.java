@@ -85,7 +85,29 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public static <T> Specification<T> toSpecification(final String rsqlQuery, final boolean distinct, final Map<String, String> propertyPathMapper, final List<RSQLCustomPredicate<?>> customPredicates, final Map<String, JoinType> joinHints) {
-		log.debug("toSpecification({},distinct:{},propertyPathMapper:{},joinHints:{})", rsqlQuery, distinct, propertyPathMapper, joinHints);
+		return toSpecification(rsqlQuery, distinct, propertyPathMapper, customPredicates, joinHints, null, null);
+	}
+
+	public static <T> Specification<T> toSpecification(
+			final String rsqlQuery,
+			final Map<String, String> propertyPathMapper,
+			final List<RSQLCustomPredicate<?>> customPredicates,
+			final Map<String, JoinType> joinHints,
+			final Map<Class<?>, List<String>> propertyWhitelist,
+			final Map<Class<?>, List<String>> propertyBlacklist) {
+		return toSpecification(rsqlQuery, false, propertyPathMapper, customPredicates, joinHints, propertyWhitelist, propertyBlacklist);
+	}
+
+	public static <T> Specification<T> toSpecification(
+			final String rsqlQuery,
+			final boolean distinct,
+			final Map<String, String> propertyPathMapper,
+			final List<RSQLCustomPredicate<?>> customPredicates,
+			final Map<String, JoinType> joinHints,
+			final Map<Class<?>, List<String>> propertyWhitelist,
+			final Map<Class<?>, List<String>> propertyBlacklist) {
+		log.debug("toSpecification({},distinct:{},propertyPathMapper:{},customPredicates:{},joinHints:{},propertyWhitelist:{},propertyBlacklist:{})",
+				rsqlQuery, distinct, propertyPathMapper, customPredicates==null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist);
 		return new Specification<T>() {
 			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
 				query.distinct(distinct);
@@ -95,7 +117,10 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 						supportedOperators.addAll(customPredicates.stream().map(RSQLCustomPredicate::getOperator).filter(Objects::nonNull).collect(Collectors.toSet()));
 					}
 					Node rsql = new RSQLParser(supportedOperators).parse(rsqlQuery);
-					return rsql.accept(new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates, joinHints), root);
+					RSQLJPAPredicateConverter visitor = new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates, joinHints);
+					visitor.setPropertyWhitelist(propertyWhitelist);
+					visitor.setPropertyBlacklist(propertyBlacklist);
+					return rsql.accept(visitor, root);
 				} else
 					return null;
 			}

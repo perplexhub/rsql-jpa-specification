@@ -720,10 +720,7 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
 		rsql = "urrc=='admin'";
-		users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
-		count = users.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		userRepository.findAll(toSpecification(rsql, propertyPathMapper));
 	}
 
 	@Test(expected = DataAccessException.class)
@@ -741,10 +738,48 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
 		rsql = "urrc=='admin'";
-		users = userRepository.findAll(toSpecification(rsql, propertyPathMapper));
-		count = users.size();
+		userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+	}
+
+	@Test(expected = DataAccessException.class)
+	public final void testInlineWhitelist() {
+		addPropertyWhitelist(User.class, "urrc");
+		addPropertyWhitelist(Role.class, "code");
+		Map<String, String> propertyPathMapper = new HashMap<>();
+		propertyPathMapper.put("i", "id");
+		propertyPathMapper.put("urrc", "userRoles.role.code");
+		String rsql = "i==2";
+		Map<Class<?>, List<String>> propertyWhitelist = new HashMap<>();
+		propertyWhitelist.put(User.class, Collections.singletonList("id"));
+		propertyWhitelist.put(Role.class, Collections.singletonList("id")); // overwrite global whitelist with our supplied whitelist
+		List<User> users = userRepository.findAll(toSpecification(rsql, propertyPathMapper, null, null, propertyWhitelist, null));
+		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, users.get(0).getName(), equalTo("February"));
+
+		rsql = "urrc=='admin'";
+		userRepository.findAll(toSpecification(rsql, propertyPathMapper, null, null, propertyWhitelist, null));
+	}
+
+	@Test(expected = DataAccessException.class)
+	public final void testInlineBlacklist() {
+		addPropertyBlacklist(User.class, "name");
+		addPropertyBlacklist(Role.class, "name");
+		Map<String, String> propertyPathMapper = new HashMap<>();
+		propertyPathMapper.put("i", "id");
+		propertyPathMapper.put("urrc", "userRoles.role.code");
+		String rsql = "i==2";
+		Map<Class<?>, List<String>> propertyBlacklist = new HashMap<>();
+		propertyBlacklist.put(Role.class, Collections.singletonList("code")); // overwrite global whitelist with our supplied whitelist
+		List<User> users = userRepository.findAll(toSpecification(rsql, propertyPathMapper, null, null, null, propertyBlacklist));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1l));
+		assertThat(rsql, users.get(0).getName(), equalTo("February"));
+
+		rsql = "urrc=='admin'";
+		userRepository.findAll(toSpecification(rsql, propertyPathMapper, null, null, null, propertyBlacklist));
 	}
 
 	@Test(expected = DataAccessException.class)

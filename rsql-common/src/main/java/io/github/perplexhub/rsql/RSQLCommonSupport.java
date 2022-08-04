@@ -49,8 +49,8 @@ public class RSQLCommonSupport {
 		RSQLVisitorBase.setEntityManagerMap(getEntityManagerMap());
 		RSQLVisitorBase.setManagedTypeMap(getManagedTypeMap());
 		RSQLVisitorBase.setPropertyRemapping(getPropertyRemapping());
-		RSQLVisitorBase.setPropertyWhitelist(getPropertyWhitelist());
-		RSQLVisitorBase.setPropertyBlacklist(getPropertyBlacklist());
+		RSQLVisitorBase.setGlobalPropertyWhitelist(getPropertyWhitelist());
+		RSQLVisitorBase.setGlobalPropertyBlacklist(getPropertyBlacklist());
 		RSQLVisitorBase.setDefaultConversionService(getConversionService());
 		log.info("RSQLCommonSupport {} is initialized", getVersion());
 	}
