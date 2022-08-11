@@ -98,6 +98,17 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 		return toSpecification(rsqlQuery, false, propertyPathMapper, customPredicates, joinHints, propertyWhitelist, propertyBlacklist);
 	}
 
+	public static <T> Specification<T> toSpecification(final QuerySupport querySupport) {
+		return toSpecification(
+				querySupport.getRsqlQuery(),
+				querySupport.isDistinct(),
+				querySupport.getPropertyPathMapper(),
+				querySupport.getCustomPredicates(),
+				querySupport.getJoinHints(),
+				querySupport.getPropertyWhitelist(),
+				querySupport.getPropertyBlacklist());
+	}
+
 	public static <T> Specification<T> toSpecification(
 			final String rsqlQuery,
 			final boolean distinct,
