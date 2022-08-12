@@ -51,6 +51,26 @@ public class RSQLJPASupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
+	public final void testQuerySupport() {
+		QuerySupport querySupport = QuerySupport.builder().rsqlQuery("id==2").build();
+		List<User> users = userRepository.findAll(toSpecification(querySupport));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", querySupport.getRsqlQuery(), count);
+		assertThat(querySupport.getRsqlQuery(), count, is(1l));
+		assertThat(querySupport.getRsqlQuery(), users.get(0).getName(), equalTo("February"));
+	}
+
+	@Test
+	public final void testQuerySupportShorthand() {
+		QuerySupport querySupport = Q.rsql("id==2").build();
+		List<User> users = userRepository.findAll(toSpecification(querySupport));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", querySupport.getRsqlQuery(), count);
+		assertThat(querySupport.getRsqlQuery(), count, is(1l));
+		assertThat(querySupport.getRsqlQuery(), users.get(0).getName(), equalTo("February"));
+	}
+
+	@Test
 	public final void testJoinHints() {
 		// use left join by default for one to many
 		String rsql = "projects.departmentName==someDepartmentName";
