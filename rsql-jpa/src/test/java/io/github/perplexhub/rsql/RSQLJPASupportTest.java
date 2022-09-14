@@ -13,6 +13,7 @@ import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.JoinType;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
@@ -879,6 +881,35 @@ public class RSQLJPASupportTest {
 		Assertions.assertThat(companies)
 				.extracting(Company::getId)
 				.containsExactly(7, 6, 5, 4, 3, 2, 1);
+	}
+
+	@Test
+	@Transactional // required to get values from lazy collections
+	public void testSortByPropertyWithOneToManyRelation() {
+		List<Company> companies = companyRepository.findAll(toSort("users.userRoles.role.code,asc;id,asc"));
+
+		Assertions.assertThat(companies)
+			.extracting(
+				company -> company.getUsers().get(0).getUserRoles().get(0).getRole().getCode(),
+				Company::getId
+			)
+			// NOTE: in this case we got duplicates for company
+			// spring-data pending issue when applying sorting for nested collection property
+			// https://github.com/spring-projects/spring-data-jpa/issues/1115
+			.containsExactly(
+				Tuple.tuple("admin", 5),
+				Tuple.tuple("admin", 5),
+				Tuple.tuple("admin", 5),
+				Tuple.tuple("user", 1),
+				Tuple.tuple("user", 1),
+				Tuple.tuple("user", 2),
+				Tuple.tuple("user", 2),
+				Tuple.tuple("user", 2),
+				Tuple.tuple("user", 2),
+				Tuple.tuple("user", 3),
+				Tuple.tuple("user", 3),
+				Tuple.tuple("user", 4)
+			);
 	}
 
 	@Test

@@ -52,7 +52,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		Class type = startRoot.getJavaType();
 		Attribute<?, ?> attribute = null;
 
-		String[] properties = propertyPath.split("\\.");
+		String[] properties = mapPropertyPath(propertyPath).split("\\.");
 
 		for (String property : properties) {
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
@@ -158,7 +158,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLJPAContext holder = findPropertyPath(mapPropertyPath(node.getSelector()), root);
+		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root);
 		Path attrPath = holder.getPath();
 
 		if (customPredicates.containsKey(op)) {
