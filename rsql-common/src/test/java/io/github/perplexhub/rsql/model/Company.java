@@ -30,4 +30,7 @@ public class Company {
 	@CollectionTable(name = "company_tags", joinColumns = @JoinColumn(name = "id"))
 	private List<BigTag> bigTags;
 
+	@OneToMany(mappedBy = "company")
+	private List<User> users;
+
 }

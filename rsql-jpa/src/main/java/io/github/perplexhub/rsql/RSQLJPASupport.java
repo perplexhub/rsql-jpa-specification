@@ -158,10 +158,8 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 				if (StringUtils.hasText(sortQuery)) {
 					final List<Order> orders = SortUtils.parseSort(sortQuery, propertyPathMapper, root, cb);
 					query.orderBy(orders);
-
-					return cb.conjunction();
-				} else
-					return null;
+				}
+				return null;
 			}
 		};
 	}
