@@ -168,6 +168,7 @@ repository.findAll(toSpecification(filter, propertyPathMapper), pageable);
 ## Sort Syntax
 
 ```java
+sort = "id"; // order by id asc
 sort = "id,asc"; // order by id asc
 sort = "id,asc;company.id,desc"; // order by id asc, company.id desc
 sort = "name,asc,ic"  // order by name ascending ignore case

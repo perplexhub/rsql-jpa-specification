@@ -32,7 +32,7 @@ class SortUtils {
     @SuppressWarnings("unchecked")
     private static Order sortToJpaOrder(final String[] parts, final Map<String, String> propertyMapper, final Root<?> root, final CriteriaBuilder cb) {
         final String property = parts[0];
-        final String direction = parts[1];
+        final String direction = parts.length > 1 ? parts[1] : "asc";
 
         final RSQLJPAPredicateConverter rsqljpaPredicateConverter = new RSQLJPAPredicateConverter(cb, propertyMapper);
         final RSQLJPAContext rsqljpaContext = rsqljpaPredicateConverter.findPropertyPath(property, root);
