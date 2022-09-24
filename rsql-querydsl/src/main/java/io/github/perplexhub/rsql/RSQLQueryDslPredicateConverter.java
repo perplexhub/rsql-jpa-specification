@@ -51,7 +51,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 				mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + holder.getPropertyPath();
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
-					throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+					throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
 				}
 
 				if (isAssociationType(mappedProperty, classMetadata)) {
@@ -214,7 +214,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
-				throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
+				throw new RSQLException(String.format("Operator %s can be used only for Comparables", op));
 			}
 			Comparable comparable = (Comparable) argument;
 			ComparableEntityPath comparableEntityPath = getComparableEntityPath(type, entityClass, property);
@@ -233,7 +233,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			}
 		}
 		log.error("Unknown operator: {}", op);
-		throw new IllegalArgumentException("Unknown operator: " + op);
+		throw new RSQLException("Unknown operator: " + op);
 	}
 
 	@Override

@@ -2,6 +2,7 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLCommonSupport.*;
 import static io.github.perplexhub.rsql.RSQLJPASupport.*;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -727,7 +729,7 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, count, is(3l));
 	}
 
-	@Test(expected = DataAccessException.class)
+	@Test
 	public final void testWhitelist() {
 		addPropertyWhitelist(User.class, "id");
 		addPropertyWhitelist(Role.class, "id");
@@ -741,11 +743,16 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, count, is(1l));
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
-		rsql = "urrc=='admin'";
-		userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		String rsql2 = "urrc=='admin'";
+		assertThatExceptionOfType(PropertyNotWhitelistedException.class)
+				.isThrownBy(() -> userRepository.findAll(toSpecification(rsql2, propertyPathMapper)))
+				.satisfies(e -> {
+					assertEquals(e.getName(), "code");
+					assertEquals(e.getType(), Role.class);
+				});
 	}
 
-	@Test(expected = DataAccessException.class)
+	@Test
 	public final void testBlacklist() {
 		addPropertyBlacklist(User.class, "name");
 		addPropertyBlacklist(Role.class, "code");
@@ -759,11 +766,16 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, count, is(1l));
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
-		rsql = "urrc=='admin'";
-		userRepository.findAll(toSpecification(rsql, propertyPathMapper));
+		String rsql2 = "urrc=='admin'";
+		assertThatExceptionOfType(PropertyBlacklistedException.class)
+				.isThrownBy(() -> userRepository.findAll(toSpecification(rsql2, propertyPathMapper)))
+				.satisfies(e -> {
+					assertEquals(e.getName(), "code");
+					assertEquals(e.getType(), Role.class);
+				});
 	}
 
-	@Test(expected = DataAccessException.class)
+	@Test
 	public final void testInlineWhitelist() {
 		addPropertyWhitelist(User.class, "urrc");
 		addPropertyWhitelist(Role.class, "code");
@@ -780,11 +792,16 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, count, is(1l));
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
-		rsql = "urrc=='admin'";
-		userRepository.findAll(toSpecification(rsql, propertyPathMapper, null, null, propertyWhitelist, null));
+		String rsql2 = "urrc=='admin'";
+		assertThatExceptionOfType(PropertyNotWhitelistedException.class)
+				.isThrownBy(() -> userRepository.findAll(toSpecification(rsql2, propertyPathMapper, null, null, propertyWhitelist, null)))
+				.satisfies(e -> {
+					assertEquals(e.getName(), "code");
+					assertEquals(e.getType(), Role.class);
+				});
 	}
 
-	@Test(expected = DataAccessException.class)
+	@Test
 	public final void testInlineBlacklist() {
 		addPropertyBlacklist(User.class, "name");
 		addPropertyBlacklist(Role.class, "name");
@@ -800,19 +817,13 @@ public class RSQLJPASupportTest {
 		assertThat(rsql, count, is(1l));
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
-		rsql = "urrc=='admin'";
-		userRepository.findAll(toSpecification(rsql, propertyPathMapper, null, null, null, propertyBlacklist));
-	}
-
-	@Test(expected = DataAccessException.class)
-	public final void testUnknownPropertyCauseException() {
-		String rsql = "i==2";
-		try {
-			userRepository.findAll(toSpecification(rsql));
-		} catch (DataAccessException e) {
-			log.info("Expected exception", e);
-			throw e;
-		}
+		String rsql2 = "urrc=='admin'";
+		assertThatExceptionOfType(PropertyBlacklistedException.class)
+				.isThrownBy(() -> userRepository.findAll(toSpecification(rsql2, propertyPathMapper, null, null, null, propertyBlacklist)))
+				.satisfies(e -> {
+					assertEquals(e.getName(), "code");
+					assertEquals(e.getType(), Role.class);
+				});
 	}
 
 	@Test
@@ -917,6 +928,18 @@ public class RSQLJPASupportTest {
 		Specification specification = RSQLJPASupport.toSpecification("projects.departmentName==someDepartmentName", true);
 		List<User> foundUsers = userRepository.findAll(specification);
 		Assertions.assertThat(foundUsers).extracting(User::getId).containsExactly(1);
+	}
+
+	@Test
+	public void testThrowUnknownPropertyException() {
+		Specification<User> spec = RSQLJPASupport.toSpecification("abc==1");
+		
+		assertThatExceptionOfType(UnknownPropertyException.class)
+				.isThrownBy(() -> userRepository.findAll(spec))
+				.satisfies(e -> {
+					assertEquals("abc", e.getName());
+					assertEquals(User.class, e.getType());
+				});
 	}
 
 	@Before

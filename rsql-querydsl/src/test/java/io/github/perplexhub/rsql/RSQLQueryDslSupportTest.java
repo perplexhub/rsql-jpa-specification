@@ -2,6 +2,7 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static io.github.perplexhub.rsql.RSQLQueryDslSupport.*;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
@@ -14,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import io.github.perplexhub.rsql.model.*;
@@ -607,15 +609,14 @@ public class RSQLQueryDslSupportTest {
 		assertThat(rsql, count, is(3l));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public final void testUnknownPropertyCauseException() {
-		String rsql = "i==2";
-		try {
-			userRepository.findAll(toPredicate(rsql, QUser.user));
-		} catch (IllegalArgumentException e) {
-			log.info("Expected exception", e);
-			throw e;
-		}
+	@Test
+	public void testThrowUnknownPropertyException() {
+		assertThatExceptionOfType(UnknownPropertyException.class)
+				.isThrownBy(() -> userRepository.findAll(toPredicate("abc==1", QUser.user)))
+				.satisfies(e -> {
+					assertEquals("abc", e.getName());
+					assertEquals(User.class, e.getType());
+				});
 	}
 
 }

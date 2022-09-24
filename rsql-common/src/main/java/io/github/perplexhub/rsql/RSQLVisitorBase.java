@@ -101,13 +101,13 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 			if (!propertyWhitelist.get(type).contains(name)) {
 				String msg = "Property " + type.getName() + "." + name + " is not on whitelist";
 				log.debug(msg);
-				throw new IllegalArgumentException(msg);
+				throw new PropertyNotWhitelistedException(name, type, msg);
 			}
 		} else if (globalPropertyWhitelist != null && globalPropertyWhitelist.containsKey(type)) {
 			if (!globalPropertyWhitelist.get(type).contains(name)) {
 				String msg = "Property " + type.getName() + "." + name + " is not on global whitelist";
 				log.debug(msg);
-				throw new IllegalArgumentException(msg);
+				throw new PropertyNotWhitelistedException(name, type, msg);
 			}
 		}
 
@@ -115,13 +115,13 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 			if (propertyBlacklist.get(type).contains(name)) {
 				String msg = "Property " + type.getName() + "." + name + " is on blacklist";
 				log.debug(msg);
-				throw new IllegalArgumentException(msg);
+				throw new PropertyBlacklistedException(name, type, msg);
 			}
 		} else if (globalPropertyBlacklist != null && globalPropertyBlacklist.containsKey(type)) {
 			if (globalPropertyBlacklist.get(type).contains(name)) {
 				String msg = "Property " + type.getName() + "." + name + " is on global blacklist";
 				log.debug(msg);
-				throw new IllegalArgumentException(msg);
+				throw new PropertyBlacklistedException(name, type, msg);
 			}
 		}
 	}
