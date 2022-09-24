@@ -1,7 +1,9 @@
 package io.github.perplexhub.rsql;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.*;
@@ -125,7 +127,11 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 				if (StringUtils.hasText(rsqlQuery)) {
 					Set<ComparisonOperator> supportedOperators = RSQLOperators.supportedOperators();
 					if (customPredicates != null) {
-						supportedOperators.addAll(customPredicates.stream().map(RSQLCustomPredicate::getOperator).filter(Objects::nonNull).collect(Collectors.toSet()));
+						Stream<ComparisonOperator> customOperators = customPredicates.stream()
+										.map(RSQLCustomPredicate::getOperator)
+										.filter(Objects::nonNull);
+
+						supportedOperators = Stream.concat(supportedOperators.stream(), customOperators).collect(toSet());
 					}
 					Node rsql = new RSQLParser(supportedOperators).parse(rsqlQuery);
 					RSQLJPAPredicateConverter visitor = new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates, joinHints);
