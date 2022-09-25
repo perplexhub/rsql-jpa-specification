@@ -1,9 +1,9 @@
 package io.github.perplexhub.rsql;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -15,16 +15,16 @@ import org.springframework.lang.Nullable;
 
 class SortUtils {
 
-    private static final String MULTIPLE_SORT_SEPARATOR = ";";
-    private static final String SORT_SEPARATOR = ",";
+    private static final Pattern MULTIPLE_SORT_SEPARATOR = Pattern.compile(";");
+    private static final Pattern SORT_SEPARATOR = Pattern.compile(",");
 
     static List<Order> parseSort(@Nullable final String sort, final Map<String, String> propertyMapper, final Root<?> root, final CriteriaBuilder cb) {
         if (sort == null) {
             return new ArrayList<>();
         }
 
-        return Arrays.stream(sort.split(MULTIPLE_SORT_SEPARATOR))
-            .map(item -> item.split(SORT_SEPARATOR))
+        return MULTIPLE_SORT_SEPARATOR.splitAsStream(sort)
+            .map(SORT_SEPARATOR::split)
             .map(parts -> sortToJpaOrder(parts, propertyMapper, root, cb))
             .collect(Collectors.toList());
     }
