@@ -1,6 +1,7 @@
 package io.github.perplexhub.rsql;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,11 +27,16 @@ public class RSQLOperators {
 			BETWEEN = new ComparisonOperator("=bt=", "=between=", true),
 			NOT_BETWEEN = new ComparisonOperator("=nb=", "=notbetween=", true);
 
-	public static Set<ComparisonOperator> supportedOperators() {
-		return new HashSet<>(Arrays.asList(EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL,
-				LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NULL, NOT_NULL,
-				LIKE, NOT_LIKE, IGNORE_CASE, IGNORE_CASE_LIKE, IGNORE_CASE_NOT_LIKE,
-				BETWEEN, NOT_BETWEEN));
-	}
+  private static final Set<ComparisonOperator> OPERATORS = Collections.unmodifiableSet(
+      new HashSet<>(Arrays.asList(EQUAL, NOT_EQUAL,
+          GREATER_THAN, GREATER_THAN_OR_EQUAL,
+          LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NULL, NOT_NULL,
+          LIKE, NOT_LIKE, IGNORE_CASE, IGNORE_CASE_LIKE, IGNORE_CASE_NOT_LIKE,
+          BETWEEN, NOT_BETWEEN))
+  );
+
+  public static Set<ComparisonOperator> supportedOperators() {
+    return OPERATORS;
+  }
 
 }
