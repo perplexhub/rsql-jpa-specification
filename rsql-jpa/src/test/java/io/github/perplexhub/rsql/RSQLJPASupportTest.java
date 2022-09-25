@@ -860,6 +860,17 @@ public class RSQLJPASupportTest {
 			.extracting(User::getId)
 			.containsExactly(6, 9, 7, 8);
 	}
+	
+	@Test
+	public void testSortDefaultAsc() {
+		Specification<User> specification = toSort("name");
+
+		List<User> users = userRepository.findAll(specification);
+
+		Assertions.assertThat(users)
+			.extracting(User::getName)
+			.isSortedAccordingTo(String::compareTo); // asc
+	}
 
 	@Test
 	public void testSortWithCustomPropertyMapping() {
