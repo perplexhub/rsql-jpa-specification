@@ -12,6 +12,7 @@ import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Root;
 
 import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 class SortUtils {
 
@@ -24,9 +25,16 @@ class SortUtils {
         }
 
         return MULTIPLE_SORT_SEPARATOR.splitAsStream(sort)
-            .map(SORT_SEPARATOR::split)
+            .map(SortUtils::split)
+            .filter(parts -> parts.length > 0)
             .map(parts -> sortToJpaOrder(parts, propertyMapper, root, cb))
             .collect(Collectors.toList());
+    }
+
+    private static String[] split(String sort) {
+        return SORT_SEPARATOR.splitAsStream(sort)
+            .filter(StringUtils::hasText)
+            .toArray(String[]::new);
     }
 
     @SuppressWarnings("unchecked")
