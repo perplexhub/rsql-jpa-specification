@@ -73,10 +73,10 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 							root = root instanceof Join ? builder.treat((Join) root, foundSubClass.get()).get(property) : builder.treat((Path) root, foundSubClass.get()).get(property);
 							attribute = classMetadata.getAttribute(property);
 						} else {
-							throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+							throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
 						}
 					} else {
-						throw new IllegalArgumentException("Unknown property: " + mappedProperty + " from entity " + classMetadata.getJavaType().getName());
+						throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
 					}
 				} else {
 					if (isAssociationType(mappedProperty, classMetadata) && !property.equals(propertyPath)) {
@@ -263,7 +263,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
-				throw new IllegalArgumentException(String.format("Operator %s can be used only for Comparables", op));
+				throw new RSQLException(String.format("Operator %s can be used only for Comparables", op));
 			}
 			Comparable comparable = (Comparable) argument;
 
@@ -281,7 +281,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			}
 		}
 		log.error("Unknown operator: {}", op);
-		throw new IllegalArgumentException("Unknown operator: " + op);
+		throw new RSQLException("Unknown operator: " + op);
 	}
 
 	@Override
