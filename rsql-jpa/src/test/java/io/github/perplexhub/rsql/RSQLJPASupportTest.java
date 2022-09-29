@@ -833,6 +833,15 @@ public class RSQLJPASupportTest {
 			.extracting(User::getId)
 			.containsExactly(1, 2, 3, 4, 5);
 	}
+	
+	@Test
+	public void testWithMalformedSort() {
+		Page<User> users = userRepository.findAll(toSort(";;,;,,;"), PageRequest.of(0, 1));
+
+		Assertions.assertThat(users.getContent())
+			.extracting(User::getId)
+			.containsExactly(1);
+	}
 
 	@Test
 	public void testSortUsersByIdDesc() {
