@@ -224,50 +224,50 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable
 # Custom Value Converter
 
 ```java
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-		RSQLJPASupport.addConverter(Date.class, s -> {
-			try {
-				return sdf.parse(s);
-			} catch (ParseException e) {
-				return null;
-			}
-		});
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+RSQLJPASupport.addConverter(Date.class, s -> {
+	try {
+		return sdf.parse(s);
+	} catch (ParseException e) {
+		return null;
+	}
+});
 ```
 
 # Custom Operator & Predicate
 
 ```java
-		String rsql = "createDate=dayofweek='2'";
-		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=dayofweek="), Long.class, input -> {
-			Expression<Long> function = input.getCriteriaBuilder().function("DAY_OF_WEEK", Long.class, input.getPath());
-			return input.getCriteriaBuilder().lessThan(function, (Long) input.getArguments().get(0));
-		});
-		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+String rsql = "createDate=dayofweek='2'";
+RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=dayofweek="), Long.class, input -> {
+	Expression<Long> function = input.getCriteriaBuilder().function("DAY_OF_WEEK", Long.class, input.getPath());
+	return input.getCriteriaBuilder().lessThan(function, (Long) input.getArguments().get(0));
+});
+List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
 
 ```java
-		String rsql = "name=around='May'";
-		RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=around="), String.class, input -> {
-			if ("May".equals(input.getArguments().get(0))) {
-				return input.getPath().in(Arrays.asList("April", "May", "June"));
-			}
-			return input.getCriteriaBuilder().equal(input.getPath(), (String) input.getArguments().get(0));
-		});
-		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+String rsql = "name=around='May'";
+RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=around="), String.class, input -> {
+	if ("May".equals(input.getArguments().get(0))) {
+		return input.getPath().in(Arrays.asList("April", "May", "June"));
+	}
+	return input.getCriteriaBuilder().equal(input.getPath(), (String) input.getArguments().get(0));
+});
+List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
 
 ```java
-		String rsql = "company.id=between=(2,3)";
-		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=between=", true), Long.class, input -> {
-			return input.getCriteriaBuilder().between(input.getPath().as(Long.class), (Long) input.getArguments().get(0), (Long) input.getArguments().get(1));
-		});
-		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+String rsql = "company.id=between=(2,3)";
+RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=between=", true), Long.class, input -> {
+	return input.getCriteriaBuilder().between(input.getPath().as(Long.class), (Long) input.getArguments().get(0), (Long) input.getArguments().get(1));
+});
+List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
 
 ```java
-		String rsql = "city=notAssigned=''";
-		RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=notAssigned="), String.class, input -> {
-			return input.getCriteriaBuilder().isNull(input.getRoot().get("city"));
-		});
-		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
+String rsql = "city=notAssigned=''";
+RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=notAssigned="), String.class, input -> {
+	return input.getCriteriaBuilder().isNull(input.getRoot().get("city"));
+});
+List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
