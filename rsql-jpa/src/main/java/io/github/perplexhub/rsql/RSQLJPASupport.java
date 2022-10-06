@@ -145,7 +145,7 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public static <T> Specification<T> toSort(@Nullable final String sortQuery) {
-		return toSort(sortQuery, new HashMap<>());
+		return toSort(sortQuery, Collections.emptyMap());
 	}
 
 	/**
