@@ -1,4 +1,4 @@
-name: Maven Release
+name: Java Release CI
 
 on:
   watch:
