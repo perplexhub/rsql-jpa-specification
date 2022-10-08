@@ -101,14 +101,30 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public static <T> Specification<T> toSpecification(final QuerySupport querySupport) {
-		return toSpecification(
-				querySupport.getRsqlQuery(),
-				querySupport.isDistinct(),
-				querySupport.getPropertyPathMapper(),
-				querySupport.getCustomPredicates(),
-				querySupport.getJoinHints(),
-				querySupport.getPropertyWhitelist(),
-				querySupport.getPropertyBlacklist());
+		return (root, query, cb) -> {
+			query.distinct(querySupport.isDistinct());
+			if (!StringUtils.hasText(querySupport.getRsqlQuery())) {
+				return null;
+			}
+
+			Set<ComparisonOperator> supportedOperators = RSQLOperators.supportedOperators();
+			if (querySupport.getCustomPredicates() != null) {
+				Stream<ComparisonOperator> customOperators = querySupport.getCustomPredicates().stream()
+						.map(RSQLCustomPredicate::getOperator)
+						.filter(Objects::nonNull);
+
+				supportedOperators = Stream.concat(supportedOperators.stream(), customOperators).collect(toSet());
+			}
+
+			Node rsql = new RSQLParser(supportedOperators).parse(querySupport.getRsqlQuery());
+			RSQLJPAPredicateConverter visitor = new RSQLJPAPredicateConverter(cb, querySupport.getPropertyPathMapper(),
+					querySupport.getCustomPredicates(), querySupport.getJoinHints(), querySupport.isStrictEquality());
+
+			visitor.setPropertyWhitelist(querySupport.getPropertyWhitelist());
+			visitor.setPropertyBlacklist(querySupport.getPropertyBlacklist());
+
+			return rsql.accept(visitor, root);
+		};
 	}
 
 	public static <T> Specification<T> toSpecification(
@@ -121,27 +137,14 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 			final Map<Class<?>, List<String>> propertyBlacklist) {
 		log.debug("toSpecification({},distinct:{},propertyPathMapper:{},customPredicates:{},joinHints:{},propertyWhitelist:{},propertyBlacklist:{})",
 				rsqlQuery, distinct, propertyPathMapper, customPredicates==null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist);
-		return new Specification<T>() {
-			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-				query.distinct(distinct);
-				if (StringUtils.hasText(rsqlQuery)) {
-					Set<ComparisonOperator> supportedOperators = RSQLOperators.supportedOperators();
-					if (customPredicates != null) {
-						Stream<ComparisonOperator> customOperators = customPredicates.stream()
-										.map(RSQLCustomPredicate::getOperator)
-										.filter(Objects::nonNull);
-
-						supportedOperators = Stream.concat(supportedOperators.stream(), customOperators).collect(toSet());
-					}
-					Node rsql = new RSQLParser(supportedOperators).parse(rsqlQuery);
-					RSQLJPAPredicateConverter visitor = new RSQLJPAPredicateConverter(cb, propertyPathMapper, customPredicates, joinHints);
-					visitor.setPropertyWhitelist(propertyWhitelist);
-					visitor.setPropertyBlacklist(propertyBlacklist);
-					return rsql.accept(visitor, root);
-				} else
-					return null;
-			}
-		};
+		return toSpecification(QuerySupport.builder()
+				.rsqlQuery(rsqlQuery)
+				.distinct(distinct)
+				.propertyPathMapper(propertyPathMapper)
+				.customPredicates(customPredicates)
+				.propertyWhitelist(propertyWhitelist)
+				.propertyBlacklist(propertyBlacklist)
+				.build());
 	}
 
 	public static <T> Specification<T> toSort(@Nullable final String sortQuery) {
