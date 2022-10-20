@@ -21,8 +21,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -953,13 +951,53 @@ public class RSQLJPASupportTest {
 	@Test
 	public void testThrowUnknownPropertyException() {
 		Specification<User> spec = RSQLJPASupport.toSpecification("abc==1");
-		
+
 		assertThatExceptionOfType(UnknownPropertyException.class)
 				.isThrownBy(() -> userRepository.findAll(spec))
 				.satisfies(e -> {
 					assertEquals("abc", e.getName());
 					assertEquals(User.class, e.getType());
 				});
+	}
+
+	@Test
+	@Transactional
+	public void testStrictEquality() {
+		User user = new User();
+		user.setName("^^^ Zoe ***");
+		userRepository.save(user);
+
+		List<User> result = userRepository.findAll(toSpecification(QuerySupport.builder()
+				.strictEquality(true)
+				.rsqlQuery("name=='^^^ Zoe ***'")
+				.build()));
+		
+		assertEquals(result.size(), 1);
+		assertEquals(result.get(0).getId(), user.getId());
+	}
+
+	@Test
+	@Transactional
+	public void testStrictEqualityNotEqual() {
+		User user1 = new User();
+		user1.setName("Zoe");
+		
+		User user2 = new User();
+		user2.setName("*Zoe");
+		
+		userRepository.saveAll(Arrays.asList(user1, user2));
+
+		Specification<User> spec = toSpecification(QuerySupport.builder()
+				.strictEquality(true)
+				.rsqlQuery("name!='*Zoe'")
+				.build());
+
+		List<User> result = userRepository.findAll(spec);
+
+		Assertions.assertThat(result)
+				.extracting(User::getId)
+				.doesNotContain(user2.getId())
+				.contains(user1.getId());
 	}
 
 	@Before

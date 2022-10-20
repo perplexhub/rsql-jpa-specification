@@ -29,6 +29,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private final @Getter Map<String, String> propertyPathMapper;
 	private final @Getter Map<ComparisonOperator, RSQLCustomPredicate<?>> customPredicates;
 	private final @Getter Map<String, JoinType> joinHints;
+	private final boolean strictEquality;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
 		this(builder, propertyPathMapper, null, null);
@@ -39,11 +40,18 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints) {
-		super();
+		this(builder, propertyPathMapper, customPredicates, null, false);
+	}
+	
+	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper,
+																	 List<RSQLCustomPredicate<?>> customPredicates,
+																	 Map<String, JoinType> joinHints,
+																	 boolean strictEquality) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
 		this.joinHints = joinHints != null ? joinHints : Collections.emptyMap();
+		this.strictEquality = strictEquality;
 	}
 
 	<T> RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
@@ -228,38 +236,10 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%").not();
 			}
 			if (op.equals(EQUAL)) {
-				if (type.equals(String.class)) {
-					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return builder.like(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
-					} else if (argument.toString().contains("*")) {
-						return builder.like(attrPath, argument.toString().replace('*', '%'));
-					} else if (argument.toString().contains("^")) {
-						return builder.equal(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
-					} else {
-						return builder.equal(attrPath, argument);
-					}
-				} else if (argument == null) {
-					return builder.isNull(attrPath);
-				} else {
-					return builder.equal(attrPath, argument);
-				}
+				return equalPredicate(attrPath, type, argument);
 			}
 			if (op.equals(NOT_EQUAL)) {
-				if (type.equals(String.class)) {
-					if (argument.toString().contains("*") && argument.toString().contains("^")) {
-						return builder.notLike(builder.upper(attrPath), argument.toString().replace("*", "%").replace("^", "").toUpperCase());
-					} else if (argument.toString().contains("*")) {
-						return builder.notLike(attrPath, argument.toString().replace('*', '%'));
-					} else if (argument.toString().contains("^")) {
-						return builder.notEqual(builder.upper(attrPath), argument.toString().replace("^", "").toUpperCase());
-					} else {
-						return builder.notEqual(attrPath, argument);
-					}
-				} else if (argument == null) {
-					return builder.isNotNull(attrPath);
-				} else {
-					return builder.notEqual(attrPath, argument);
-				}
+				return equalPredicate(attrPath, type, argument).not();
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
@@ -282,6 +262,30 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
+	}
+
+	private Predicate equalPredicate(Path attrPath, Class type, Object argument) {
+		if (type.equals(String.class)) {
+			String argStr = argument.toString();
+			
+			if (strictEquality) {
+				return builder.equal(attrPath, argument); 
+			} else {
+				if (argStr.contains("*") && argStr.contains("^")) {
+					return builder.like(builder.upper(attrPath), argStr.replace('*', '%').replace("^", "").toUpperCase());
+				} else if (argStr.contains("*")) {
+					return builder.like(attrPath, argStr.replace('*', '%'));
+				} else if (argStr.contains("^")) {
+					return builder.equal(builder.upper(attrPath), argStr.replace("^", "").toUpperCase());
+				} else {
+					return builder.equal(attrPath, argument);
+				}
+			}
+		} else if (argument == null) {
+			return builder.isNull(attrPath);
+		} else {
+			return builder.equal(attrPath, argument);
+		}
 	}
 
 	@Override
