@@ -209,12 +209,11 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	}
 
 	protected <T> boolean hasPropertyName(String property, ManagedType<T> classMetadata) {
-		Set<Attribute<? super T, ?>> names = classMetadata.getAttributes();
-		for (Attribute<? super T, ?> name : names) {
-			if (name.getName().equals(property))
-				return true;
+		try {
+			return classMetadata.getAttribute(property) != null;
+		} catch (IllegalArgumentException e) {
+			return false;
 		}
-		return false;
 	}
 
 	@SneakyThrows
