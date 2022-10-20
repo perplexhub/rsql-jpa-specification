@@ -140,6 +140,7 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 		return toSpecification(QuerySupport.builder()
 				.rsqlQuery(rsqlQuery)
 				.distinct(distinct)
+				.joinHints(joinHints)
 				.propertyPathMapper(propertyPathMapper)
 				.customPredicates(customPredicates)
 				.propertyWhitelist(propertyWhitelist)

@@ -90,6 +90,16 @@ public class RSQLJPASupportTest {
 	}
 
 	@Test
+	public final void testJoinHintsRelationIsNullOrRelationPropertyIsSomeValues() {
+		String rsql = "city.name=='Hong Kong Island',city.parent=na=''";
+		Map<String, JoinType> joinHints = new HashMap<String, JoinType>() {{put("User.city", JoinType.INNER);put("City.parent", JoinType.LEFT);}};
+		List<User> users = userRepository.findAll(toSpecification(rsql, true,null, joinHints));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(3l));
+	}
+
+	@Test
 	public final void testCustomPredicateIsNull() {
 		String rsql = "city=notAssigned=''";
 		RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=notAssigned="), String.class, input -> {
@@ -98,7 +108,7 @@ public class RSQLJPASupportTest {
 		List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(11l));
+		assertThat(rsql, count, is(9l));
 	}
 
 	@Test

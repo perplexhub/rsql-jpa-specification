@@ -1,3 +1,4 @@
 insert into project(id, user_id, project_tag_id, type, name, department_name, company_name) values(1, 1, 1, 'Administrative', 'someProjectName', 'someDepartmentName', null);
-insert into project(id, user_id, project_tag_id, type, name, department_name, company_name) values(2, 1, 2, 'Design', 'someProjectName', null, 'someCompany');
-insert into project(id, user_id, project_tag_id, type, name, department_name, company_name) values(3, 1, 3, 'Design', 'someProjectName', null, 'someCompany');
+insert into project(id, user_id, project_tag_id, type, name, department_name, company_name) values(2, 1, 2, 'Design', 'someProjectName 2', null, 'someCompany 2');
+insert into project(id, user_id, project_tag_id, type, name, department_name, company_name) values(3, 2, 3, 'Design', 'someProjectName 3', null, 'someCompany 3');
+insert into project(id, user_id, project_tag_id, type, name, department_name, company_name) values(4, 3, 3, 'Design', 'someProjectName 4', null, null);
