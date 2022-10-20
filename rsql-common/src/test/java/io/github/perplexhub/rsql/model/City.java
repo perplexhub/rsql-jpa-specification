@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 
 @Data
 @NoArgsConstructor
@@ -17,4 +19,9 @@ public class City {
     private Integer id;
 
     private String name;
+
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "parent_id", referencedColumnName = "id", nullable = true)
+    private City parent;
+
 }

@@ -179,14 +179,16 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 
 		Attribute attribute = holder.getAttribute();
-		Class type = attribute.getJavaType();
-		if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
-			type = getElementCollectionGenericType(type, attribute);
-		}
-		if (type.isPrimitive()) {
-			type = primitiveToWrapper.get(type);
-		} else if (RSQLJPASupport.getValueTypeMap().containsKey(type)) {
-			type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
+		Class type = attribute != null ? attribute.getJavaType() : null;
+		if (attribute != null) {
+			if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
+				type = getElementCollectionGenericType(type, attribute);
+			}
+			if (type.isPrimitive()) {
+				type = primitiveToWrapper.get(type);
+			} else if (RSQLJPASupport.getValueTypeMap().containsKey(type)) {
+				type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
+			}
 		}
 
 		if (node.getArguments().size() > 1) {
