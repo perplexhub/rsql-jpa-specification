@@ -168,6 +168,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		ComparisonOperator op = node.getOperator();
 		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root);
 		Path attrPath = holder.getPath();
+		Attribute attribute = holder.getAttribute();
 
 		if (customPredicates.containsKey(op)) {
 			RSQLCustomPredicate<?> customPredicate = customPredicates.get(op);
@@ -175,10 +176,9 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			for (String argument : node.getArguments()) {
 				arguments.add(convert(argument, customPredicate.getType()));
 			}
-			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, arguments, root));
+			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, holder.getAttribute(), arguments, root));
 		}
 
-		Attribute attribute = holder.getAttribute();
 		Class type = attribute != null ? attribute.getJavaType() : null;
 		if (attribute != null) {
 			if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
