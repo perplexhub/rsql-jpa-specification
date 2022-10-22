@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
 import javax.persistence.criteria.*;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
+import javax.persistence.metamodel.IdentifiableType;
 import javax.persistence.metamodel.ManagedType;
+import javax.persistence.metamodel.SingularAttribute;
 
 import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
@@ -54,15 +56,16 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		this.strictEquality = strictEquality;
 	}
 
-	<T> RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
-		ManagedType<?> classMetadata = getManagedType(startRoot.getJavaType());
-		Path<?> root = startRoot;
+	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
 		Class type = startRoot.getJavaType();
+		ManagedType<?> classMetadata = getManagedType(type);
+		Path<?> root = startRoot;
 		Attribute<?, ?> attribute = null;
 
 		String[] properties = mapPropertyPath(propertyPath).split("\\.");
 
-		for (String property : properties) {
+		for (int i = 0, propertiesLength = properties.length; i < propertiesLength; i++) {
+			String property = properties[i];
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
 			if (!mappedProperty.equals(property)) {
 				RSQLJPAContext context = findPropertyPath(mappedProperty, root);
@@ -104,8 +107,22 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 								root = join(keyJoin, root, mappedProperty, JoinType.LEFT);
 							}
 						} else {
-							log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-							root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
+							String lookAheadProperty = i < propertiesLength - 1 ? properties[i + 1] : null;
+							boolean lookAheadPropertyIsId = false;
+							if (classMetadata instanceof IdentifiableType && lookAheadProperty != null) {
+								final IdentifiableType identifiableType = (IdentifiableType) classMetadata;
+								final SingularAttribute id = identifiableType.getId(identifiableType.getIdType().getJavaType());
+								if (identifiableType.hasSingleIdAttribute() && id.isId() && id.getName().equals(lookAheadProperty)) {
+									lookAheadPropertyIsId = true;
+								}
+							}
+							if (lookAheadPropertyIsId || lookAheadProperty == null) {
+								log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
+								root = root.get(mappedProperty);
+							} else {
+								log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+								root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
+							}
 						}
 					} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 						String previousClass = classMetadata.getJavaType().getName();
