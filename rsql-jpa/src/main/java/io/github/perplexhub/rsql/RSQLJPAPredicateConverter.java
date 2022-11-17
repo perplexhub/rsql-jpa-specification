@@ -59,6 +59,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
 		Class type = startRoot.getJavaType();
 		ManagedType<?> classMetadata = getManagedType(type);
+		ManagedType<?> previousClassMetadata = null;
 		Path<?> root = startRoot;
 		Attribute<?, ?> attribute = null;
 
@@ -95,6 +96,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 						Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
 						type = associationType;
 						String previousClass = classMetadata.getJavaType().getName();
+						previousClassMetadata = classMetadata;
 						classMetadata = getManagedType(associationType);
 
 						String keyJoin = root.getJavaType().getSimpleName().concat(".").concat(mappedProperty);
@@ -109,7 +111,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 						} else {
 							String lookAheadProperty = i < propertiesLength - 1 ? properties[i + 1] : null;
 							boolean lookAheadPropertyIsId = false;
-							if (classMetadata instanceof IdentifiableType && lookAheadProperty != null) {
+							if (!isManyToManyAssociationType(mappedProperty, previousClassMetadata) && classMetadata instanceof IdentifiableType && lookAheadProperty != null) {
 								final IdentifiableType identifiableType = (IdentifiableType) classMetadata;
 								final SingularAttribute id = identifiableType.getId(identifiableType.getIdType().getJavaType());
 								if (identifiableType.hasSingleIdAttribute() && id.isId() && id.getName().equals(lookAheadProperty)) {
