@@ -254,6 +254,11 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 				&& PersistentAttributeType.ONE_TO_MANY == classMetadata.getAttribute(property).getPersistentAttributeType();
 	}
 
+	protected <T> boolean isManyToManyAssociationType(String property, ManagedType<T> classMetadata) {
+		return classMetadata.getAttribute(property).isAssociation()
+				&& PersistentAttributeType.MANY_TO_MANY == classMetadata.getAttribute(property).getPersistentAttributeType();
+	}
+
 	static {
 		Map<Class, Class> map = new HashMap<>();
 		map.put(boolean.class, Boolean.class);
