@@ -3,7 +3,7 @@ package io.github.perplexhub.rsql;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import org.springframework.util.StringUtils;
 

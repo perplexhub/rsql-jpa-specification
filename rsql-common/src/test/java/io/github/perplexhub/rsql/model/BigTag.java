@@ -1,6 +1,6 @@
 package io.github.perplexhub.rsql.model;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Embeddable;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

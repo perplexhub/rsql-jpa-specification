@@ -1,6 +1,6 @@
 package io.github.perplexhub.rsql.model;
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 
 public enum Status {
 

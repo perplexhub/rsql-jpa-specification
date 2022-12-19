@@ -4,27 +4,28 @@ import static io.github.perplexhub.rsql.RSQLCommonSupport.*;
 import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.JoinType;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
@@ -39,7 +40,7 @@ import io.github.perplexhub.rsql.repository.jpa.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = Application.class, webEnvironment = WebEnvironment.NONE)
 public class RSQLJPASupportTest {
 
@@ -935,17 +936,11 @@ public class RSQLJPASupportTest {
 			// NOTE: in this case we got duplicates for company
 			// spring-data pending issue when applying sorting for nested collection property
 			// https://github.com/spring-projects/spring-data-jpa/issues/1115
+			// Edit: 19-12-2022: I think the above has been fixed here: https://github.com/perplexhub/rsql-jpa-specification/pull/66
 			.containsExactly(
 				Tuple.tuple("admin", 5),
-				Tuple.tuple("admin", 5),
-				Tuple.tuple("admin", 5),
-				Tuple.tuple("user", 1),
 				Tuple.tuple("user", 1),
 				Tuple.tuple("user", 2),
-				Tuple.tuple("user", 2),
-				Tuple.tuple("user", 2),
-				Tuple.tuple("user", 2),
-				Tuple.tuple("user", 3),
 				Tuple.tuple("user", 3),
 				Tuple.tuple("user", 4)
 			);
@@ -1010,7 +1005,7 @@ public class RSQLJPASupportTest {
 				.contains(user1.getId());
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		getPropertyWhitelist().clear();
 		getPropertyBlacklist().clear();

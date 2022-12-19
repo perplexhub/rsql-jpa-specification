@@ -9,11 +9,11 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
 
-import javax.persistence.EntityManager;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.Attribute.PersistentAttributeType;
-import javax.persistence.metamodel.ManagedType;
-import javax.persistence.metamodel.PluralAttribute;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
+import jakarta.persistence.metamodel.ManagedType;
+import jakarta.persistence.metamodel.PluralAttribute;
 
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.util.StringUtils;
@@ -75,7 +75,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 			} else if (targetType.equals(ZonedDateTime.class)) {
 				object = ZonedDateTime.parse(source);
 			} else if (targetType.equals(Character.class)) {
-				object = (!StringUtils.isEmpty(source) ? source.charAt(0) : null);
+				object = (!StringUtils.hasText(source) ? source.charAt(0) : null);
 			} else if (targetType.equals(boolean.class) || targetType.equals(Boolean.class)) {
 				object = Boolean.valueOf(source);
 			} else if (targetType.isEnum()) {
