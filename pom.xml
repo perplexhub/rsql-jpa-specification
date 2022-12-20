@@ -27,9 +27,9 @@
 		<spring-data-releasetrain.version>2022.0.0</spring-data-releasetrain.version>
 		<querydsl.version>4.1.4</querydsl.version>
 		<rsql-parser.version>2.1.0</rsql-parser.version>
-		<lombok.version>1.18.22</lombok.version>
+		<lombok.version>1.18.24</lombok.version>
 		<hamcrest.version>2.2</hamcrest.version>
-		<h2.version>1.4.200</h2.version>
+		<h2.version>2.1.214</h2.version>
 	</properties>
 	<modules>
 		<module>rsql-common</module>
@@ -102,7 +102,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.7.0</version>
+				<version>3.10.1</version>
 				<executions>
 					<execution>
 						<id>default-compile</id>

@@ -69,7 +69,6 @@
 							<goal>test-process</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/generated-test-sources</outputDirectory>
 							<processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
 						</configuration>
 					</execution>
