@@ -30,7 +30,7 @@ public class User {
 	@JoinColumn(name = "cityId", referencedColumnName = "id", nullable = true)
 	private City city;
 
-	@OneToMany(mappedBy = "id.userId")
+	@OneToMany(mappedBy = "id.userId", cascade = CascadeType.ALL)
 	private List<UserRole> userRoles;
 
 	@Temporal(TemporalType.TIMESTAMP)

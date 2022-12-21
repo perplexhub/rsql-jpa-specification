@@ -7,16 +7,14 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import io.github.perplexhub.rsql.model.*;
 import io.github.perplexhub.rsql.repository.querydsl.CompanyRepository;
@@ -25,9 +23,8 @@ import io.github.perplexhub.rsql.repository.querydsl.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = Application.class, webEnvironment = WebEnvironment.NONE)
-public class RSQLQueryDslSupportTest {
+@SpringBootTest
+class RSQLQueryDslSupportTest {
 
 	@Autowired
 	private UserRepository userRepository;
@@ -39,96 +36,96 @@ public class RSQLQueryDslSupportTest {
 	private TrunkGroupRepository trunkGroupRepository;
 
 	@Test
-	public final void testQueryMultiLevelAttribute() {
+	final void testQueryMultiLevelAttribute() {
 		String rsql = "projects.projectTag.localTag.description=='Local Tag 1'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, users.get(0).getId(), equalTo(1));
 	}
 
 		@Test
-	public final void testEnumILike() {
+	final void testEnumILike() {
 		RSQLJPASupport.addEntityAttributeTypeMap(Status.class, String.class);
 		String rsql = "status==*A*";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(10l));
+		assertThat(rsql, count, is(10L));
 	}
 
 	@Test
-	public final void testElementCollection1() {
+	final void testElementCollection1() {
 		String rsql = "tags=='tech'";
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 
 		rsql = "tags=like='ec'";
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 	}
 
 	@Test
-	public final void testElementCollection2() {
+	final void testElementCollection2() {
 		String rsql = "bigTags.tag=='tech'";
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 
 		companys = companyRepository.findAll(toSpecification(rsql));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 	}
 
 	@Test
-	public final void testDoubleAssociation() {
+	final void testDoubleAssociation() {
 		String rsql = "sites.trunks.id==2";
 		List<TrunkGroup> trunkGroups = (List<TrunkGroup>) trunkGroupRepository.findAll(toPredicate(rsql, QTrunkGroup.trunkGroup));
 		long count = trunkGroups.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat("DoubleAssociation", count, is(0l));
+		assertThat("DoubleAssociation", count, is(0L));
 	}
 
 	@Test
-	public final void testNull() {
+	final void testNull() {
 		String rsql = null;
 		long count = userRepository.count(toPredicate(rsql, QUser.user));
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat("Null", count, is(12l));
+		assertThat("Null", count, is(12L));
 
 		count = companyRepository.count(toPredicate(rsql, QUser.user));
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat("Null", count, is(7l));
+		assertThat("Null", count, is(7L));
 	}
 
 	@Test
-	public final void testEqual() {
+	final void testEqual() {
 		String rsql = "id==2";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
 		rsql = "id=='2'";
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getName(), equalTo("World Inc"));
 
 		rsql = "company.id=='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 		assertThat(rsql, users.get(0).getName(), equalTo("March"));
 		assertThat(rsql, users.get(1).getName(), equalTo("April"));
 		assertThat(rsql, users.get(2).getName(), equalTo("May"));
@@ -139,7 +136,7 @@ public class RSQLQueryDslSupportTest {
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getCode(), equalTo("empty"));
 		assertThat(rsql, companys.get(0).getName(), equalTo(""));
 
@@ -147,193 +144,193 @@ public class RSQLQueryDslSupportTest {
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 
 		rsql = "userRoles.role.code=='admin'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 	}
 
 	@Test
-	public final void testNotEqual() {
+	final void testNotEqual() {
 		String rsql = "id!='2'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(11l));
+		assertThat(rsql, count, is(11L));
 
 		rsql = "company.id!='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8l));
+		assertThat(rsql, count, is(8L));
 	}
 
 	@Test
-	public final void testGreaterThan() {
+	final void testGreaterThan() {
 		String rsql = "id>'2'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(10l));
+		assertThat(rsql, count, is(10L));
 
 		rsql = "company.id=gt='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 	}
 
 	@Test
-	public final void testGreaterThanCreateDate() {
+	final void testGreaterThanCreateDate() {
 		String rsql = "createDate=gt=2018-10-20";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(2l));
+		assertThat(rsql, count, is(2L));
 	}
 
 	@Test
-	public final void testLessThanCreateDate() {
+	final void testLessThanCreateDate() {
 		String rsql = "createDate=lt=2018-10-20";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(10l));
+		assertThat(rsql, count, is(10L));
 	}
 
 	@Test
-	public final void testGreaterThanOrEqual() {
+	final void testGreaterThanOrEqual() {
 		String rsql = "id>='2'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(11l));
+		assertThat(rsql, count, is(11L));
 
 		rsql = "company.id=ge='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(10l));
+		assertThat(rsql, count, is(10L));
 
 		rsql = "userRoles.id.roleId>='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 
 		rsql = "userRoles.role.id>='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 	}
 
 	@Test
-	public final void testLessThan() {
+	final void testLessThan() {
 		String rsql = "id<'2'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 
 		rsql = "company.id=lt='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(2l));
+		assertThat(rsql, count, is(2L));
 	}
 
 	@Test
-	public final void testLessThanOrEqual() {
+	final void testLessThanOrEqual() {
 		String rsql = "id<='2'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(2l));
+		assertThat(rsql, count, is(2L));
 
 		rsql = "company.id=le='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 	}
 
 	@Test
-	public final void testIn() {
+	final void testIn() {
 		String rsql = "id=in=('2')";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 
 		rsql = "company.id=in=('2')";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 
 		rsql = "company.id=in='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 
 		rsql = "company.id=in=(2,3)";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.id=in=('2','4')";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(5l));
+		assertThat(rsql, count, is(5L));
 	}
 
 	@Test
-	public final void testNotIn() {
+	final void testNotIn() {
 		String rsql = "id=out=('2')";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(11l));
+		assertThat(rsql, count, is(11L));
 
 		rsql = "company.id=out=('2')";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8l));
+		assertThat(rsql, count, is(8L));
 
 		rsql = "company.id=out='2'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8l));
+		assertThat(rsql, count, is(8L));
 
 		rsql = "company.id=out=(2,3)";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.id=out=('2','4')";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(7l));
+		assertThat(rsql, count, is(7L));
 	}
 
 	@Test
-	public final void testIsNull() {
+	final void testIsNull() {
 		String rsql = "name=isnull=''";
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getCode(), equalTo("null"));
 		assertThat(rsql, companys.get(0).getName(), is(nullValue()));
 
@@ -341,7 +338,7 @@ public class RSQLQueryDslSupportTest {
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getCode(), equalTo("null"));
 		assertThat(rsql, companys.get(0).getName(), is(nullValue()));
 
@@ -349,214 +346,214 @@ public class RSQLQueryDslSupportTest {
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getCode(), equalTo("null"));
 		assertThat(rsql, companys.get(0).getName(), is(nullValue()));
 	}
 
 	@Test
-	public final void testIsNotNull() {
+	final void testIsNotNull() {
 		String rsql = "name=isnotnull=''";
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=notnull=''";
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=nn=''";
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 	}
 
 	@Test
-	public final void testLike() {
+	final void testLike() {
 		String rsql = "name=like='ber'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 
 		rsql = "company.name=like='Inc'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.name=='*Inc*'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.name=='*Inc'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.name=='Inc*'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(0l));
+		assertThat(rsql, count, is(0L));
 	}
 
 	@Test
-	public final void testNotLike() {
+	final void testNotLike() {
 		String rsql = "name=notlike='ber'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8l));
+		assertThat(rsql, count, is(8L));
 
 		rsql = "company.name=notlike='Inc'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 	}
 
 	@Test
-	public final void testEqualsIgnoreCase() {
+	final void testEqualsIgnoreCase() {
 		String rsql = "name=icase='may'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 
 		rsql = "company.name=icase='fake company'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 
 		rsql = "company.name=='^fake company'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 	}
 
 	@Test
-	public final void testLikeIgnoreCase() {
+	final void testLikeIgnoreCase() {
 		String rsql = "name=ilike='BER'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 
 		rsql = "company.name=ilike='INC'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.name=='^*INC*'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.name=='^*INC'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 
 		rsql = "company.name=='^INC*'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(0l));
+		assertThat(rsql, count, is(0L));
 	}
 
 	@Test
-	public final void testNotLikeIgnoreCase() {
+	final void testNotLikeIgnoreCase() {
 		String rsql = "name=inotlike='BER'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8l));
+		assertThat(rsql, count, is(8L));
 
 		rsql = "company.name=inotlike='INC'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6l));
+		assertThat(rsql, count, is(6L));
 	}
 
 	@Test
-	public final void testAnd() {
+	final void testAnd() {
 		String rsql = "company.id=in=(2,5);userRoles.role.code=='admin'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 
 		rsql = "company.id=in=(2,5) and userRoles.role.code=='admin'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 	}
 
 	@Test
-	public final void testOr() {
+	final void testOr() {
 		String rsql = "company.id=in=(2,5),userRoles.role.code=='admin'";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(7l));
+		assertThat(rsql, count, is(7L));
 
 		rsql = "company.id=in=(2,5) or userRoles.role.code=='admin'";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(7l));
+		assertThat(rsql, count, is(7L));
 	}
 
 	@Test
-	public final void testBetween() {
+	final void testBetween() {
 		String rsql = "id=bt=('2', '4')";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 
 		rsql = "company.id=bt=(2,'5')";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(10l));
+		assertThat(rsql, count, is(10L));
 	}
 
 	@Test
-	public final void testNotBetween() {
+	final void testNotBetween() {
 		String rsql = "id=nb=('2', '4')";
 		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(9l));
+		assertThat(rsql, count, is(9L));
 
 		rsql = "company.id=nb=(2,'5')";
 		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(2l));
+		assertThat(rsql, count, is(2L));
 	}
 
 	@Test
-	public final void testPropertyPathMapper() {
+	final void testPropertyPathMapper() {
 		Map<String, String> propertyPathMapper = new HashMap<>();
 		propertyPathMapper.put("i", "id");
 		propertyPathMapper.put("ci", "company.id");
@@ -564,24 +561,30 @@ public class RSQLQueryDslSupportTest {
 		propertyPathMapper.put("urir", "userRoles.id.roleId");
 		propertyPathMapper.put("urrc", "userRoles.role.code");
 		String rsql = "i==2";
-		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user, propertyPathMapper));
+		final BooleanExpression booleanExpression1 = toPredicate(rsql, QUser.user, propertyPathMapper);
+		assert booleanExpression1 != null;
+		List<User> users = (List<User>) userRepository.findAll(booleanExpression1);
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, users.get(0).getName(), equalTo("February"));
 
 		rsql = "i=='2'";
-		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company, propertyPathMapper));
+		final BooleanExpression booleanExpression2 = toPredicate(rsql, QCompany.company, propertyPathMapper);
+		assert booleanExpression2 != null;
+		List<Company> companys = (List<Company>) companyRepository.findAll(booleanExpression2);
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getName(), equalTo("World Inc"));
 
 		rsql = "ci=='2'";
-		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user, propertyPathMapper));
+		final BooleanExpression booleanExpression3 = toPredicate(rsql, QUser.user, propertyPathMapper);
+		assert booleanExpression3 != null;
+		users = (List<User>) userRepository.findAll(booleanExpression3);
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4l));
+		assertThat(rsql, count, is(4L));
 		assertThat(rsql, users.get(0).getName(), equalTo("March"));
 		assertThat(rsql, users.get(1).getName(), equalTo("April"));
 		assertThat(rsql, users.get(2).getName(), equalTo("May"));
@@ -589,30 +592,36 @@ public class RSQLQueryDslSupportTest {
 		assertThat(rsql, users.get(0).getCompany().getName(), equalTo("World Inc"));
 
 		rsql = "n==''";
-		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company, propertyPathMapper));
+		final BooleanExpression booleanExpression4 = toPredicate(rsql, QCompany.company, propertyPathMapper);
+		assert booleanExpression4 != null;
+		companys = (List<Company>) companyRepository.findAll(booleanExpression4);
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1l));
+		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getCode(), equalTo("empty"));
 		assertThat(rsql, companys.get(0).getName(), equalTo(""));
 
 		rsql = "urir=='2'";
-		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user, propertyPathMapper));
+		final BooleanExpression booleanExpression5 = toPredicate(rsql, QUser.user, propertyPathMapper);
+		assert booleanExpression5 != null;
+		users = (List<User>) userRepository.findAll(booleanExpression5);
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 
 		rsql = "urrc=='admin'";
-		users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user, propertyPathMapper));
+		final BooleanExpression booleanExpression6 = toPredicate(rsql, QUser.user, propertyPathMapper);
+		assert booleanExpression6 != null;
+		users = (List<User>) userRepository.findAll(booleanExpression6);
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(3l));
+		assertThat(rsql, count, is(3L));
 	}
 
 	@Test
-	public void testThrowUnknownPropertyException() {
+	void testThrowUnknownPropertyException() {
 		assertThatExceptionOfType(UnknownPropertyException.class)
-				.isThrownBy(() -> userRepository.findAll(toPredicate("abc==1", QUser.user)))
+				.isThrownBy(() -> toPredicate("abc==1", QUser.user))
 				.satisfies(e -> {
 					assertEquals("abc", e.getName());
 					assertEquals(User.class, e.getType());
