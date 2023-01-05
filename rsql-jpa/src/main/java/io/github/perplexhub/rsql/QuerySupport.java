@@ -22,4 +22,7 @@ public class QuerySupport {
     private Map<String, JoinType> joinHints;
     private Map<Class<?>, List<String>> propertyWhitelist;
     private Map<Class<?>, List<String>> propertyBlacklist;
+
+    public static class QuerySupportBuilder {
+    }
 }
