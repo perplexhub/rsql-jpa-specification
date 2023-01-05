@@ -2,7 +2,7 @@ package io.github.perplexhub.rsql;
 
 import java.util.function.Function;
 
-import javax.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Predicate;
 
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import lombok.AllArgsConstructor;

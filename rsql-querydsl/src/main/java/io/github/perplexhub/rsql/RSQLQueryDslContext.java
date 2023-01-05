@@ -1,6 +1,6 @@
 package io.github.perplexhub.rsql;
 
-import javax.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Attribute;
 
 import com.querydsl.core.types.Path;
 

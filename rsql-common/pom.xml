@@ -12,7 +12,7 @@
 		<dependency>
 			<groupId>org.reflections</groupId>
 			<artifactId>reflections</artifactId>
-			<version>0.9.12</version>
+			<version>0.10.2</version>
 		</dependency>
 		<dependency>
 			<groupId>cz.jirutka.rsql</groupId>
@@ -45,6 +45,8 @@
 		<dependency>
 			<groupId>com.querydsl</groupId>
 			<artifactId>querydsl-apt</artifactId>
+			<version>5.0.0</version>
+			<classifier>jakarta</classifier>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -67,7 +69,6 @@
 							<goal>test-process</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/generated-test-sources</outputDirectory>
 							<processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
 						</configuration>
 					</execution>

@@ -5,8 +5,8 @@ import static java.util.stream.Collectors.toSet;
 import java.util.*;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.criteria.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.*;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -163,14 +163,12 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	 */
 	public static <T> Specification<T> toSort(@Nullable final String sortQuery, final Map<String, String> propertyPathMapper) {
 		log.debug("toSort({},propertyPathMapper:{})", sortQuery, propertyPathMapper);
-		return new Specification<T>() {
-			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-				if (StringUtils.hasText(sortQuery)) {
-					final List<Order> orders = SortUtils.parseSort(sortQuery, propertyPathMapper, root, cb);
-					query.orderBy(orders);
-				}
-				return null;
+		return (root, query, cb) -> {
+			if (StringUtils.hasText(sortQuery)) {
+				final List<Order> orders = SortUtils.parseSort(sortQuery, propertyPathMapper, root, cb);
+				query.orderBy(orders);
 			}
+			return null;
 		};
 	}
 

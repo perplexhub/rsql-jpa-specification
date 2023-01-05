@@ -1,7 +1,7 @@
 package io.github.perplexhub.rsql;
 
-import javax.persistence.criteria.Path;
-import javax.persistence.metamodel.Attribute;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.metamodel.Attribute;
 
 import lombok.Value;
 

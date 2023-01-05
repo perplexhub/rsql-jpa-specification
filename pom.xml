@@ -20,16 +20,16 @@
 		</developer>
 	</developers>
 	<properties>
-		<java.version>1.8</java.version>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<java.version>17</java.version>
+		<maven.compiler.target>17</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring-boot.version>2.0.0.RELEASE</spring-boot.version>
-		<spring-data-releasetrain.version>Kay-RELEASE</spring-data-releasetrain.version>
+		<spring-boot.version>3.0.0</spring-boot.version>
+		<spring-data-releasetrain.version>2022.0.0</spring-data-releasetrain.version>
 		<querydsl.version>4.1.4</querydsl.version>
 		<rsql-parser.version>2.1.0</rsql-parser.version>
-		<lombok.version>1.18.10</lombok.version>
+		<lombok.version>1.18.24</lombok.version>
 		<hamcrest.version>2.2</hamcrest.version>
-		<h2.version>1.4.200</h2.version>
+		<h2.version>2.1.214</h2.version>
 	</properties>
 	<modules>
 		<module>rsql-common</module>
@@ -54,7 +54,7 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.data</groupId>
-				<artifactId>spring-data-releasetrain</artifactId>
+				<artifactId>spring-data-bom</artifactId>
 				<version>${spring-data-releasetrain.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
@@ -102,7 +102,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.7.0</version>
+				<version>3.10.1</version>
 				<executions>
 					<execution>
 						<id>default-compile</id>
@@ -130,6 +130,17 @@
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M7</version>
+				<configuration>
+					<useSystemClassLoader>false</useSystemClassLoader>
+					<environmentVariables>
+						<LOG_PATH>${project.build.directory}/logs</LOG_PATH>
+					</environmentVariables>
 				</configuration>
 			</plugin>
 		</plugins>

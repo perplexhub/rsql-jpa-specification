@@ -3,7 +3,7 @@ package io.github.perplexhub.rsql;
 import lombok.Builder;
 import lombok.Data;
 
-import javax.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.JoinType;
 import java.util.List;
 import java.util.Map;
 
