@@ -3,11 +3,17 @@
 [![Sonatype Nexus (Releases)](https://img.shields.io/nexus/r/io.github.perplexhub/rsql?label=Release&logo=Release&server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql*)
 [![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.perplexhub/rsql?label=Snapshot&logo=Snapshot&server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql~~~)
 
-[![Release Workflow Status](https://img.shields.io/github/workflow/status/perplexhub/rsql-jpa-specification/Maven%20Release?label=Release&logo=Release)](https://github.com/perplexhub/rsql-jpa-specification/actions?query=workflow%3A%22Maven+Release%22)
-[![Snapshot Workflow Status](https://img.shields.io/github/workflow/status/perplexhub/rsql-jpa-specification/Java%20CI?label=Snapshot&logo=Snapshot)](https://github.com/perplexhub/rsql-jpa-specification/actions?query=workflow%3A%22Java+CI%22)
-[![PR Workflow Status](https://img.shields.io/github/workflow/status/perplexhub/rsql-jpa-specification/Java%20Pull%20Request%20CI?label=Pull+Request&logo=PR)](https://github.com/perplexhub/rsql-jpa-specification/actions?query=workflow%3A%22Java+Pull+Request+CI%22)
+[![Release Workflow Status](https://img.shields.io/github/actions/workflow/status/perplexhub/rsql-jpa-specification/release.yml?label=Release&style=plastic)](https://github.com/perplexhub/rsql-jpa-specification/actions/workflows/pull_request.yml)
+[![Snapshot Workflow Status](https://img.shields.io/github/actions/workflow/status/perplexhub/rsql-jpa-specification/snapshot.yml?label=Snapshot&style=plastic)](https://github.com/perplexhub/rsql-jpa-specification/actions/workflows/release.yml)
+[![PR Workflow Status](https://img.shields.io/github/actions/workflow/status/perplexhub/rsql-jpa-specification/pull_request.yml?label=Pull%20Request&style=plastic)](https://github.com/perplexhub/rsql-jpa-specification/actions/workflows/pull_request.yml)
 
 Translate RSQL query into org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate and support entities association query.
+
+## SpringBoot 3 Support
+rsql-jpa-specification supports SpringBoot 3 since version 6.x. (Contributed by [chriseteka](https://github.com/chriseteka]))
+
+For SpringBoot 2 users, please continue to use [version 5.x](https://github.com/perplexhub/rsql-jpa-specification/tree/5.x).
+
 
 [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/rsql-common/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
 
