@@ -81,8 +81,8 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
 ```xml
   <properties>
-    <spring-boot.version>2.0.0.RELEASE</spring-boot.version>
-    <spring-data-releasetrain.version>Kay-RELEASE</spring-data-releasetrain.version>
+    <spring-boot.version>3.0.0</spring-boot.version>
+    <spring-data-releasetrain.version>2022.0.0</spring-data-releasetrain.version>
     <querydsl.version>4.1.4</querydsl.version>
   </properties>
 ```
