@@ -1,10 +1,7 @@
 package io.github.perplexhub.rsql;
 
 import java.lang.reflect.*;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -80,6 +77,8 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 				object = Boolean.valueOf(source);
 			} else if (targetType.isEnum()) {
 				object = Enum.valueOf(targetType, source);
+			} else if (targetType.equals(Instant.class)) {
+				object = Instant.parse(source);
 			} else {
 				Constructor<?> cons = (Constructor<?>) targetType.getConstructor(new Class<?>[] { String.class });
 				object = cons.newInstance(new Object[] { source });
