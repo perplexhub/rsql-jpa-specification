@@ -170,11 +170,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		if (cachedJoins.containsKey(keyJoin)) {
 			root = cachedJoins.get(keyJoin);
 		} else {
-			if (joinType == null) {
-				root = ((From) root).join(mappedProperty);
-			} else {
-				root = ((From) root).join(mappedProperty, joinType);
-			}
+			root = JoinUtils.getOrCreateJoin((From) root, mappedProperty, joinType);
 			cachedJoins.put(keyJoin, root);
 		}
 		return root;
