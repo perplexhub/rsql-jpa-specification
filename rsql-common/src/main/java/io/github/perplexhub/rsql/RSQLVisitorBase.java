@@ -5,6 +5,7 @@ import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.Attribute;
@@ -31,6 +32,8 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	protected static volatile @Setter Map<Class<?>, List<String>> globalPropertyWhitelist;
 	protected static volatile @Setter Map<Class<?>, List<String>> globalPropertyBlacklist;
 	protected static volatile @Setter ConfigurableConversionService defaultConversionService;
+
+	protected static volatile @Setter Set<Class> globalSuppressConversionExceptions;
 
 	protected @Setter Map<Class<?>, List<String>> propertyWhitelist;
 
@@ -85,10 +88,12 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 			}
 
 			return object;
-		} catch (DateTimeParseException | IllegalArgumentException e) {
-			log.debug("Parsing [{}] with [{}] causing [{}], skip", source, targetType.getName(), e.getMessage());
 		} catch (Exception e) {
-			log.error("Parsing [{}] with [{}] causing [{}], add your parser via RSQLSupport.addConverter(Type.class, Type::valueOf)", source, targetType.getName(), e.getMessage(), e);
+			if (globalSuppressConversionExceptions.contains(e.getClass())) {
+				log.debug("Parsing [{}] with [{}] causing [{}], skip", source, targetType.getName(), e.getMessage());
+			} else {
+				log.error("Parsing [{}] with [{}] causing [{}], add your parser via RSQLSupport.addConverter(Type.class, Type::valueOf)", source, targetType.getName(), e.getMessage(), e);
+			}
 		}
 		return null;
 	}

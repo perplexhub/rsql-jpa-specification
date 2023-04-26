@@ -2,6 +2,7 @@ package io.github.perplexhub.rsql;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
 
 import jakarta.persistence.EntityManager;
@@ -30,6 +31,8 @@ public class RSQLCommonSupport {
 	private @Getter static final Map<Class<?>, List<String>> propertyBlacklist = new ConcurrentHashMap<>();
 	private @Getter static final ConfigurableConversionService conversionService = new DefaultConversionService();
 
+	private @Getter static final Set<Class> suppressConversionExceptions = new CopyOnWriteArraySet<>();
+
 	public RSQLCommonSupport() {
 		init();
 	}
@@ -52,6 +55,7 @@ public class RSQLCommonSupport {
 		RSQLVisitorBase.setGlobalPropertyWhitelist(getPropertyWhitelist());
 		RSQLVisitorBase.setGlobalPropertyBlacklist(getPropertyBlacklist());
 		RSQLVisitorBase.setDefaultConversionService(getConversionService());
+		RSQLVisitorBase.setGlobalSuppressConversionExceptions(getSuppressConversionExceptions());
 		log.info("RSQLCommonSupport {} is initialized", getVersion());
 	}
 
