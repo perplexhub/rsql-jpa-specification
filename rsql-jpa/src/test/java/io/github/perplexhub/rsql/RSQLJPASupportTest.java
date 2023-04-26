@@ -12,7 +12,9 @@ import java.util.*;
 
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
 
+import io.github.perplexhub.rsql.model.Status;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.junit.Before;
@@ -1008,6 +1010,37 @@ public class RSQLJPASupportTest {
 				.extracting(User::getId)
 				.doesNotContain(user2.getId())
 				.contains(user1.getId());
+	}
+
+	@Test
+	@Transactional
+	public void testFetch() {
+		Specification<User> spec = RSQLJPASupport.<User>toSpecification("company.name=ilike='inc'", true)
+				.and(toSort("city.name,asc;company.name,asc;name,asc"));
+
+		List<User> result = userRepository.findAll((root, query, builder) -> {
+			/*
+                 Join fetch should be applied only for query to fetch the "data", not for "count" query to do pagination.
+                 Handled this by checking the criteriaQuery.getResultType(), if it's long that means query is
+                 for count so not appending join fetch else append it.
+              */
+			if (Long.class != query.getResultType()) {
+				root.fetch("company", JoinType.INNER);
+				root.fetch("city", JoinType.LEFT);
+				root.fetch("userRoles", JoinType.LEFT);
+			}
+
+			Predicate rsqlPredicate = spec.toPredicate(root, query, builder);
+
+			Predicate extraPredicate = builder.equal(root.get("status"), Status.ACTIVE);
+
+			return builder.and(rsqlPredicate, extraPredicate);
+		});
+
+		assertEquals(1, result.size());
+		Assertions.assertThat(result)
+				.extracting(User::getId)
+				.containsExactly(6);
 	}
 
 	@Before
