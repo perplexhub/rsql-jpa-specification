@@ -23,6 +23,9 @@ public class QuerySupport {
     private Map<Class<?>, List<String>> propertyWhitelist;
     private Map<Class<?>, List<String>> propertyBlacklist;
 
-    public static class QuerySupportBuilder {
+    @Override
+    public String toString() {
+        return String.format("%s,distinct:%b,propertyPathMapper:%s,customPredicates:%d,joinHints:%s,propertyWhitelist:%s,propertyBlacklist:%s",
+                rsqlQuery, distinct, propertyPathMapper, customPredicates == null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist);
     }
 }

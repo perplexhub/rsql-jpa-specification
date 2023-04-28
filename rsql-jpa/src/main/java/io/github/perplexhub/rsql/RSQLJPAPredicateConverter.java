@@ -42,7 +42,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints) {
-		this(builder, propertyPathMapper, customPredicates, null, false);
+		this(builder, propertyPathMapper, customPredicates, joinHints, false);
 	}
 	
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper,
