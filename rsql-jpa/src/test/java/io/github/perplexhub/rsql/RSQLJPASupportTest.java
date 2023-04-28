@@ -838,7 +838,7 @@ public class RSQLJPASupportTest {
 
 	@Test
 	public void testWithNullSort() {
-		Page<User> users = userRepository.findAll(toSort(null), PageRequest.of(0, 5));
+		Page<User> users = userRepository.findAll(toSort((String)null), PageRequest.of(0, 5));
 		Assertions.assertThat(users.getContent())
 			.extracting(User::getId)
 			.containsExactly(1, 2, 3, 4, 5);
