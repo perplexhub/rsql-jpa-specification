@@ -101,6 +101,7 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public static <T> Specification<T> toSpecification(final QuerySupport querySupport) {
+		log.debug("toSpecification({})", querySupport);
 		return (root, query, cb) -> {
 			query.distinct(querySupport.isDistinct());
 			if (!StringUtils.hasText(querySupport.getRsqlQuery())) {
@@ -135,8 +136,6 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 			final Map<String, JoinType> joinHints,
 			final Map<Class<?>, List<String>> propertyWhitelist,
 			final Map<Class<?>, List<String>> propertyBlacklist) {
-		log.debug("toSpecification({},distinct:{},propertyPathMapper:{},customPredicates:{},joinHints:{},propertyWhitelist:{},propertyBlacklist:{})",
-				rsqlQuery, distinct, propertyPathMapper, customPredicates==null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist);
 		return toSpecification(QuerySupport.builder()
 				.rsqlQuery(rsqlQuery)
 				.distinct(distinct)
@@ -152,25 +151,26 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 		return toSort(sortQuery, Collections.emptyMap());
 	}
 
+	public static <T> Specification<T> toSort(@Nullable final String sortQuery, final Map<String, String> propertyPathMapper) {
+		return toSort(SortSupport.builder().sortQuery(sortQuery).propertyPathMapper(propertyPathMapper).build());
+	}
+
 	/**
 	 * Add orderBy(s) to {@code CriteriaQuery}.
 	 * Example: {@code "field1,asc;field2,desc;field3.subfield1,asc"}
 	 *
-	 * @param sortQuery - sort query
-	 * @param propertyPathMapper - property remapping
+	 * @param sortSupport - sort support
 	 * @param <T>
 	 * @return {@code Specification} with specified order by
 	 */
-	public static <T> Specification<T> toSort(@Nullable final String sortQuery, final Map<String, String> propertyPathMapper) {
-		log.debug("toSort({},propertyPathMapper:{})", sortQuery, propertyPathMapper);
-		return new Specification<T>() {
-			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-				if (StringUtils.hasText(sortQuery)) {
-					final List<Order> orders = SortUtils.parseSort(sortQuery, propertyPathMapper, root, cb);
-					query.orderBy(orders);
-				}
-				return null;
+	public static <T> Specification<T> toSort(final SortSupport sortSupport) {
+		log.debug("toSort({})", sortSupport);
+		return (root, query, cb) -> {
+			if (StringUtils.hasText(sortSupport.getSortQuery())) {
+				final List<Order> orders = SortUtils.parseSort(sortSupport, root, cb);
+				query.orderBy(orders);
 			}
+			return null;
 		};
 	}
 
