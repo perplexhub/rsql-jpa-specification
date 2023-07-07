@@ -29,7 +29,7 @@
 		<rsql-parser.version>2.1.0</rsql-parser.version>
 		<lombok.version>1.18.24</lombok.version>
 		<hamcrest.version>2.2</hamcrest.version>
-		<h2.version>2.1.214</h2.version>
+		<h2.version>2.2.220</h2.version>
 	</properties>
 	<modules>
 		<module>rsql-common</module>
