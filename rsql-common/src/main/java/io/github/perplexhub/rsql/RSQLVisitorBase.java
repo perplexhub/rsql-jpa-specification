@@ -85,12 +85,10 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 			}
 
 			return object;
-		} catch (DateTimeParseException | IllegalArgumentException e) {
-			log.debug("Parsing [{}] with [{}] causing [{}], skip", source, targetType.getName(), e.getMessage());
 		} catch (Exception e) {
 			log.error("Parsing [{}] with [{}] causing [{}], add your parser via RSQLSupport.addConverter(Type.class, Type::valueOf)", source, targetType.getName(), e.getMessage(), e);
+			throw new ConversionException(String.format("Failed to convert %s to %s type", source, targetType.getName()), e);
 		}
-		return null;
 	}
 
 	protected void accessControl(Class type, String name) {
