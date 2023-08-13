@@ -12,6 +12,7 @@ import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
 import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.PluralAttribute;
 
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.util.StringUtils;
 
@@ -86,6 +87,25 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 			return object;
 		} catch (Exception e) {
+			if (targetType.equals(LocalDateTime.class)) {
+				try {
+					if ((e instanceof ConversionFailedException && e.getCause() instanceof DateTimeParseException) || e instanceof DateTimeParseException) {
+						LocalDate date = null;
+						if (defaultConversionService.canConvert(String.class, LocalDate.class)) {
+							date = defaultConversionService.convert(source, LocalDate.class);
+						}
+
+						if (date == null) {
+							date = LocalDate.parse(source);
+						}
+
+						return date.atStartOfDay();
+					}
+				} catch (Exception e1) {
+					e.addSuppressed(e1);
+				}
+			}
+
 			log.error("Parsing [{}] with [{}] causing [{}], add your parser via RSQLSupport.addConverter(Type.class, Type::valueOf)", source, targetType.getName(), e.getMessage(), e);
 			throw new ConversionException(String.format("Failed to convert %s to %s type", source, targetType.getName()), e);
 		}
