@@ -2,7 +2,6 @@ package io.github.perplexhub.rsql;
 
 import java.lang.reflect.*;
 import java.time.*;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -13,7 +12,6 @@ import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.PluralAttribute;
 
 import lombok.Getter;
-import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.util.StringUtils;
@@ -71,6 +69,8 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 				object = LocalDate.parse(source);
 			} else if (targetType.equals(LocalDateTime.class)) {
 				object = LocalDateTime.parse(source);
+			} else if (targetType.equals(LocalTime.class)) {
+				object = LocalTime.parse(source);
 			} else if (targetType.equals(OffsetDateTime.class)) {
 				object = OffsetDateTime.parse(source);
 			} else if (targetType.equals(ZonedDateTime.class)) {

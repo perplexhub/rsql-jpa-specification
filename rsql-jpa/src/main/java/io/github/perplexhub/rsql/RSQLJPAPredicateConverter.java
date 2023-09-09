@@ -234,7 +234,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 
 		final boolean json = isJsonType(attribute);
-		Class type = json ? String.class : attribute != null ? attribute.getJavaType() : null;
+		Class type = json ? getJsonTargetType(node) : attribute != null ? attribute.getJavaType() : null;
 
 		if (attribute != null) {
 			if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
@@ -246,7 +246,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
 			}
 		}
-    Expression expr = json ? getJsonExpression(attrPath, attribute, node) : attrPath;
+    	Expression expr = json ? getJsonExpression(attrPath, attribute, node) : attrPath;
 
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
@@ -324,6 +324,14 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		throw new RSQLException("Unknown operator: " + op);
 	}
 
+	private Class getJsonTargetType(ComparisonNode node) {
+		if(node.getArguments().isEmpty()) {
+			return String.class;
+		} else {
+			return JSONUtils.getJsonType(node.getArguments().get(0));
+		}
+	}
+
 	private Expression<?> getJsonExpression(Path<?> path, Attribute attribute, ComparisonNode node) {
 		var database = getDatabase(attribute).orElse(null);
 
@@ -336,12 +344,16 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					.map(builder::literal)
 					.map(expr -> expr.as(String.class))
 					.forEach(args::add);
-
-			return builder.function("jsonb_extract_path_text", String.class, args.toArray(Expression[]::new));	
+			final Class targetType = getJsonTargetType(node);
+			boolean nativeJsonb = Objects.equals(Double.class, targetType);
+			final String extractFunction = nativeJsonb ? "jsonb_extract_path" : "jsonb_extract_path_text";
+			return builder.function(extractFunction, String.class, args.toArray(Expression[]::new)).as(targetType);
 		}
 
 		return path;
 	}
+
+
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
 		if (type.equals(String.class)) {
