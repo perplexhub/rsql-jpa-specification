@@ -21,6 +21,7 @@ import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import java.util.stream.Stream;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
@@ -233,6 +234,10 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
 		}
 
+		final boolean pgJsonbSupport = isPostgresJsonColumn(attribute);
+		if(pgJsonbSupport) {
+			return visitPostgresJsonb(attrPath, attribute, node);
+		}
 		final boolean json = isJsonType(attribute);
 		Class type = json ? String.class : attribute != null ? attribute.getJavaType() : null;
 
@@ -246,7 +251,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
 			}
 		}
-    Expression expr = json ? getJsonExpression(attrPath, attribute, node) : attrPath;
+    	Expression expr = json ? getJsonExpression(attrPath, attribute, node) : attrPath;
 
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
@@ -322,6 +327,19 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
+	}
+
+	private boolean isPostgresJsonColumn(Attribute attribute) {
+		if(!isJsonType(attribute)) {
+			return false;
+		}
+		var database = getDatabase(attribute).orElse(null);
+		return database == Database.POSTGRESQL;
+	}
+
+	private Predicate visitPostgresJsonb(Path<?> attrPath, Attribute attribute, ComparisonNode node) {
+		var jspb = new PostgresJsonPredicateBuilder(builder);
+		return jspb.build(node, attrPath);
 	}
 
 	private Expression<?> getJsonExpression(Path<?> path, Attribute attribute, ComparisonNode node) {
