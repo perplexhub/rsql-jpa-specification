@@ -139,7 +139,7 @@ class RSQLJPASupportTest {
 		users = userRepository.findAll(toSpecification(rsql, List.of(customPredicate)));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4L)); //While this is in the old repo, I think something is off
+		assertThat(rsql, count, is(3L)); //While this is in the old repo, I think something is off
 	}
 
 	@Test

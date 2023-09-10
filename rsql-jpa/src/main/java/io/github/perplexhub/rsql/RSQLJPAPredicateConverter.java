@@ -21,6 +21,7 @@ import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import java.util.stream.Stream;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
@@ -233,8 +234,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
 		}
 
+		final boolean pgJsonbSupport = isPostgresJsonColumn(attribute);
+		if(pgJsonbSupport) {
+			return visitPostgresJsonb(attrPath, attribute, node);
+		}
 		final boolean json = isJsonType(attribute);
-		Class type = json ? getJsonTargetType(node) : attribute != null ? attribute.getJavaType() : null;
+		Class type = json ? String.class : attribute != null ? attribute.getJavaType() : null;
 
 		if (attribute != null) {
 			if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
@@ -324,12 +329,17 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		throw new RSQLException("Unknown operator: " + op);
 	}
 
-	private Class getJsonTargetType(ComparisonNode node) {
-		if(node.getArguments().isEmpty()) {
-			return String.class;
-		} else {
-			return JSONUtils.getJsonType(node.getArguments().get(0));
+	private boolean isPostgresJsonColumn(Attribute attribute) {
+		if(!isJsonType(attribute)) {
+			return false;
 		}
+		var database = getDatabase(attribute).orElse(null);
+		return database == Database.POSTGRESQL;
+	}
+
+	private Predicate visitPostgresJsonb(Path<?> attrPath, Attribute attribute, ComparisonNode node) {
+		var jspb = new PostgresJsonPredicateBuilder(builder);
+		return jspb.build(node, attrPath);
 	}
 
 	private Expression<?> getJsonExpression(Path<?> path, Attribute attribute, ComparisonNode node) {
@@ -344,16 +354,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					.map(builder::literal)
 					.map(expr -> expr.as(String.class))
 					.forEach(args::add);
-			final Class targetType = getJsonTargetType(node);
-			boolean nativeJsonb = Objects.equals(Double.class, targetType);
-			final String extractFunction = nativeJsonb ? "jsonb_extract_path" : "jsonb_extract_path_text";
-			return builder.function(extractFunction, String.class, args.toArray(Expression[]::new)).as(targetType);
+
+			return builder.function("jsonb_extract_path_text", String.class, args.toArray(Expression[]::new));	
 		}
 
 		return path;
 	}
-
-
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
 		if (type.equals(String.class)) {

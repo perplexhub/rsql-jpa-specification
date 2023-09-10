@@ -58,6 +58,33 @@ class RSQLJPASupportPostgresJsonTest {
     users.forEach(e -> e.setId(null));
   }
 
+  @ParameterizedTest
+  @MethodSource("legacyData")
+  void testJsonDateForLegacyPostgres(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
+    //given
+    PostgresJsonPathExpressionBuilder.dateTimeSupport = false;
+    repository.saveAllAndFlush(users);
+
+    //when
+    List<PostgresJsonEntity> result = repository.findAll(toSpecification(rsql));
+
+    //then
+    assertThat(result)
+            .hasSameSizeAs(expected)
+            .containsExactlyInAnyOrderElementsOf(expected);
+
+    users.forEach(e -> e.setId(null));
+  }
+
+  static Stream<Arguments> legacyData() {
+    return Stream.of(
+              dateData(),
+              timeData(),
+              dateTimeData()
+        )
+        .flatMap(s -> s);
+  }
+
   static Stream<Arguments> data() {
     return Stream.of(
             equalsData(),
@@ -67,9 +94,9 @@ class RSQLJPASupportPostgresJsonTest {
             gtLtData(),
             miscData(),
             numericData(),
-            dateTimeData(),
-            timeData(),
             dateData(),
+            timeData(),
+            dateTimeData(),
             booleanData()
         )
         .flatMap(s -> s);
@@ -187,18 +214,18 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a==1", List.of(e1)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a==3.14", List.of(e3)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a>1", List.of(e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a>3.13", List.of(e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a==1", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a==3.14", List.of(e3)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a>1", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a>3.13", List.of(e3, e4)),
 
-        arguments(List.of(e1, e2, e3, e4), "properties.a>=3", List.of(e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<3", List.of(e1, e2))
+            arguments(List.of(e1, e2, e3, e4), "properties.a>=3", List.of(e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a<3", List.of(e1, e2))
     );
   }
 
 
-  private static Stream<Arguments> dateData() {
+  protected static Stream<Arguments> dateData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "1970-01-01"));
     var e2 = new PostgresJsonEntity(Map.of("a", "2000-01-01"));
     var e3 = new PostgresJsonEntity(Map.of("a", "2020-01-01"));
@@ -207,16 +234,16 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01", List.of(e1)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01", List.of(e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01", List.of(e1, e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<1970-01-01", List.of()),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(1970-01-01, 2020-01-01)", List.of(e1, e2, e3)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=nb=(1970-01-01, 2020-01-01)", List.of(e4))
+            arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a<1970-01-01", List.of()),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(1970-01-01, 2020-01-01)", List.of(e1, e2, e3)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=nb=(1970-01-01, 2020-01-01)", List.of(e4))
     );
   }
 
-  private static Stream<Arguments> timeData() {
+  protected static Stream<Arguments> timeData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "00:00:00"));
     var e2 = new PostgresJsonEntity(Map.of("a", "01:00:00.000000"));
     var e3 = new PostgresJsonEntity(Map.of("a", "02:00:00"));
@@ -225,16 +252,16 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a==00:00:00", List.of(e1)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=gt=00:00:00", List.of(e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a>=00:00:00", List.of(e1, e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<00:00:00", List.of()),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(00:00:00, 02:00:00)", List.of(e1, e2, e3)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=nb=(00:00:00, 02:00:00)", List.of(e4))
+            arguments(List.of(e1, e2, e3, e4), "properties.a==00:00:00", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=00:00:00", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a>=00:00:00", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a<00:00:00", List.of()),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(00:00:00, 02:00:00)", List.of(e1, e2, e3)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=nb=(00:00:00, 02:00:00)", List.of(e4))
     );
   }
 
-  private static Stream<Arguments> dateTimeData() {
+  protected static Stream<Arguments> dateTimeData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "1970-01-01T00:00:00+00:00"));
     var e2 = new PostgresJsonEntity(Map.of("a", "2000-01-01T00:00:00+00:00"));
     var e3 = new PostgresJsonEntity(Map.of("a", "2020-01-01T00:00:00+00:00"));
@@ -243,10 +270,10 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01T00:00:00+00:00", List.of(e1)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01T00:00:00+00:00", List.of(e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01T00:00:00+00:00", List.of(e1, e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<1970-01-01T00:00:00+00:00", List.of())
+            arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01T00:00:00+00:00", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01T00:00:00+00:00", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01T00:00:00+00:00", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a<1970-01-01T00:00:00+00:00", List.of())
     );
   }
 
