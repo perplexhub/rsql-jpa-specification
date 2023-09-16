@@ -174,7 +174,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 	
 	private boolean isJsonType(Attribute<?, ?> attribute) {
-    return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
+    	return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
 	}
 
 	private boolean isJsonColumn(Attribute<?, ?> attribute) {
