@@ -4,6 +4,7 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import lombok.val;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
@@ -189,7 +190,7 @@ public class PostgresJsonPathExpressionBuilder {
 
 
     enum BaseJsonType {
-        STRING, NUMBER, BOOLEAN, NULL, DATE_TIME
+        STRING, NUMBER, BOOLEAN, NULL, DATE_TIME, DATE_TIME_TZ
     }
 
     record ArgValue(String value, BaseJsonType baseJsonType) {
@@ -198,7 +199,7 @@ public class PostgresJsonPathExpressionBuilder {
                 case STRING -> String.format("\"%s\"", printString(operator));
                 case NUMBER, BOOLEAN -> value;
                 case NULL -> "null";
-                case DATE_TIME -> String.format("\"%s\".datetime()", value);
+                case DATE_TIME, DATE_TIME_TZ -> String.format("\"%s\".datetime()", value);
             };
         }
 
@@ -224,9 +225,11 @@ public class PostgresJsonPathExpressionBuilder {
     static ArgConverter DATE_TIME_CONVERTER = new ArgConverter() {
         @Override
         public boolean accepts(String s) {
-            return s.matches("^\\d{2}:\\d{2}:\\d{2}$")
-                    || s.matches("^\\d{4}-\\d{2}-\\d{2}$")
-                    || s.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$");
+            return ISO_DATE_TIME_PATTERN_TZ.matcher(s).matches()
+                    || ISO_DATE_TIME_PATTERN.matcher(s).matches()
+                    || ISO_DATE_PATTERN.matcher(s).matches()
+                    || ISO_TIME_PATTERN_TZ.matcher(s).matches()
+                    || ISO_TIME_PATTERN.matcher(s).matches();
         }
 
         @Override
@@ -263,4 +266,14 @@ public class PostgresJsonPathExpressionBuilder {
             return new ArgValue(s, BaseJsonType.BOOLEAN);
         }
     };
+
+    private static final Pattern ISO_DATE_TIME_PATTERN_TZ = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$");
+
+    private static final Pattern ISO_DATE_TIME_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$");
+
+    private static final Pattern ISO_DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
+
+    private static final Pattern ISO_TIME_PATTERN_TZ = Pattern.compile("^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$");
+
+    private static final Pattern ISO_TIME_PATTERN = Pattern.compile("^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$");
 }

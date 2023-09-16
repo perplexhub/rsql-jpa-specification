@@ -76,11 +76,34 @@ class PostgresJsonPathExpressionBuilderTest {
     }
 
     @Test
-    void pathForEqualWithTimeAsValueComparison() {
+    void pathForEqualWithSimpleTimeAsValueComparison() {
         PostgresJsonPathExpressionBuilder.dateTimeSupport = true;
         PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("10:12:13"));
         assertEquals("$.equal_key ? (@.datetime() == \"10:12:13\".datetime())", builder.getJsonPathTest());
     }
+
+    @Test
+    void pathForEqualWithTimeAndTimeZoneAsValueComparison() {
+        PostgresJsonPathExpressionBuilder.dateTimeSupport = true;
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("10:12:13+01:00"));
+        assertEquals("$.equal_key ? (@.datetime() == \"10:12:13+01:00\".datetime())", builder.getJsonPathTest());
+    }
+
+    @Test
+    void pathForEqualWithTimeWithMillisAsValueComparison() {
+        PostgresJsonPathExpressionBuilder.dateTimeSupport = true;
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("10:12:13.123"));
+        assertEquals("$.equal_key ? (@.datetime() == \"10:12:13.123\".datetime())", builder.getJsonPathTest());
+    }
+
+    @Test
+    void pathForEqualWithTimeWithMillisAndTimeZoneAsValueComparison() {
+        PostgresJsonPathExpressionBuilder.dateTimeSupport = true;
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("10:12:13.123+01:00"));
+        assertEquals("$.equal_key ? (@.datetime() == \"10:12:13.123+01:00\".datetime())", builder.getJsonPathTest());
+    }
+
+
 
     @Test
     void pathForEqualWithLegacyTimeAsValueComparison() {

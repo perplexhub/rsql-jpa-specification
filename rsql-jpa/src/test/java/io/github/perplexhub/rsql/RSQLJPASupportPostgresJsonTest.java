@@ -80,7 +80,7 @@ class RSQLJPASupportPostgresJsonTest {
     return Stream.of(
               dateData(),
               timeData(),
-              dateTimeData()
+              dateTimeWithTzData()
         )
         .flatMap(s -> s);
   }
@@ -96,7 +96,8 @@ class RSQLJPASupportPostgresJsonTest {
             numericData(),
             dateData(),
             timeData(),
-            dateTimeData(),
+            dateTimeWithTzData(),
+            dateTimeWithoutTzData(),
             booleanData()
         )
         .flatMap(s -> s);
@@ -245,7 +246,7 @@ class RSQLJPASupportPostgresJsonTest {
 
   protected static Stream<Arguments> timeData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "00:00:00"));
-    var e2 = new PostgresJsonEntity(Map.of("a", "01:00:00.000000"));
+    var e2 = new PostgresJsonEntity(Map.of("a", "01:00:00"));
     var e3 = new PostgresJsonEntity(Map.of("a", "02:00:00"));
     var e4 = new PostgresJsonEntity(Map.of("a", "03:00:00"));
     var e5 = new PostgresJsonEntity(nullMap("a"));
@@ -261,7 +262,7 @@ class RSQLJPASupportPostgresJsonTest {
     );
   }
 
-  protected static Stream<Arguments> dateTimeData() {
+  protected static Stream<Arguments> dateTimeWithTzData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "1970-01-01T00:00:00+00:00"));
     var e2 = new PostgresJsonEntity(Map.of("a", "2000-01-01T00:00:00+00:00"));
     var e3 = new PostgresJsonEntity(Map.of("a", "2020-01-01T00:00:00+00:00"));
@@ -273,10 +274,25 @@ class RSQLJPASupportPostgresJsonTest {
             arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01T00:00:00+00:00", List.of(e1)),
             arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01T00:00:00+00:00", List.of(e2, e3, e4)),
             arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01T00:00:00+00:00", List.of(e1, e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a<1970-01-01T00:00:00+00:00", List.of())
+            arguments(List.of(e1, e2, e3, e4), "properties.a<2020-01-01T00:00:00+00:00", List.of(e1, e2))
     );
   }
 
+  protected static Stream<Arguments> dateTimeWithoutTzData() {
+    var e1 = new PostgresJsonEntity(Map.of("a", "1970-01-01T00:00:00"));
+    var e2 = new PostgresJsonEntity(Map.of("a", "2000-01-01T00:00:00"));
+    var e3 = new PostgresJsonEntity(Map.of("a", "2020-01-01T00:00:00"));
+    var e4 = new PostgresJsonEntity(Map.of("a", "2020-01-01T01:00:00"));
+    var e5 = new PostgresJsonEntity(nullMap("a"));
+    var e6 = new PostgresJsonEntity(Map.of("b", "other"));
+
+    return Stream.of(
+            arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01T00:00:00", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01T00:00:00", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01T00:00:00", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4), "properties.a<2020-01-01T00:00:00", List.of(e1, e2))
+    );
+  }
   private static Stream<Arguments> booleanData() {
     var e1 = new PostgresJsonEntity(Map.of("a", true));
     var e2 = new PostgresJsonEntity(Map.of("a", false));
