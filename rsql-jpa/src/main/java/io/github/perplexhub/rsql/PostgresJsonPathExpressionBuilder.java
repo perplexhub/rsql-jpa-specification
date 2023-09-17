@@ -9,7 +9,9 @@ import java.util.stream.Collectors;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
-
+/**
+ * This class is used to build a json path expression for a given keyPath and operator.
+ */
 public class PostgresJsonPathExpressionBuilder {
 
     protected static boolean dateTimeSupport = true;
@@ -50,32 +52,13 @@ public class PostgresJsonPathExpressionBuilder {
             throw new IllegalArgumentException("Operator " + operator + " requires at least one value");
         }
         //Copy to unmodifiable list
-
         this.values = findMoreTypes(operator, candidateValues);
     }
 
-    private List<String> removeEmptyValuesIfNullCheck(ComparisonOperator operator, List<String> args) {
-        if(operator.equals(IS_NULL) || operator.equals(NOT_NULL)) {
-            return Collections.emptyList();
-        }
-        return args;
-    }
-
-    private List<ArgValue> findMoreTypes(ComparisonOperator operator, List<String> values) {
-        if(NOT_RELEVANT_FOR_CONVERSION.contains(operator)) {
-            return values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList();
-        }
-        List<ArgConverter> argConverters = dateTimeSupport ?
-                List.of(DATE_TIME_CONVERTER, NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER)
-                : List.of(NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER);
-        Optional<ArgConverter> candidateConverter = argConverters.stream()
-                .filter(argConverter -> values.stream().allMatch(argConverter::accepts))
-                .findFirst();
-        return candidateConverter.map(argConverter -> values.stream()
-                        .map(argConverter::convert).toList())
-                .orElseGet(() -> values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList());
-    }
-
+    /**
+     * Builds a json path expression for a given keyPath and operator.
+     * @return the json path expression
+     */
     String getJsonPathExpression() {
         List<String> valuesToCompare = values.stream().map(argValue -> argValue.print(operator)).toList();
 
@@ -92,6 +75,38 @@ public class PostgresJsonPathExpressionBuilder {
         return String.format("%s ? %s", targetPath, String.format(comparisonTemplate, templateArguments.toArray()));
     }
 
+    /**
+     * If the operator is NOT_NULL, we will remove all values.
+     */
+    private List<String> removeEmptyValuesIfNullCheck(ComparisonOperator operator, List<String> args) {
+        if(operator.equals(NOT_NULL)) {
+            return Collections.emptyList();
+        }
+        return args;
+    }
+
+    /**
+     * Try to find a more specific type for the given values.
+     * We will keep the original value if we cannot find a more specific type for all values.
+     */
+    private List<ArgValue> findMoreTypes(ComparisonOperator operator, List<String> values) {
+        if(NOT_RELEVANT_FOR_CONVERSION.contains(operator)) {
+            return values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList();
+        }
+        List<ArgConverter> argConverters = dateTimeSupport ?
+                List.of(DATE_TIME_CONVERTER, NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER)
+                : List.of(NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER);
+        Optional<ArgConverter> candidateConverter = argConverters.stream()
+                .filter(argConverter -> values.stream().allMatch(argConverter::accepts))
+                .findFirst();
+        return candidateConverter.map(argConverter -> values.stream()
+                        .map(argConverter::convert).toList())
+                .orElseGet(() -> values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList());
+    }
+
+    /**
+     * If the operator is EQUAL and one of the values contains a wildcard, we will transform the operator to LIKE.
+     */
     private ComparisonOperator transformEqualsToLike(ComparisonOperator operator, List<String> valuesToCompare) {
         boolean hasWildcard = valuesToCompare.stream().anyMatch(s -> s.contains("*"));
         if(!hasWildcard) {
@@ -103,6 +118,11 @@ public class PostgresJsonPathExpressionBuilder {
         return operator;
     }
 
+    /**
+     * Removes the jsonb reference from the keyPath.
+     * @param keyPath the keyPath
+     * @return the keyPath without the jsonb reference
+     */
     String removeJsonbReferenceFromKeyPath(String keyPath) {
         List<String> keyPathParts = Arrays.asList(keyPath.split("\\."));
         //If the keyPath is empty, we will return an empty string
@@ -114,6 +134,12 @@ public class PostgresJsonPathExpressionBuilder {
         return String.join(".", keyPathParts);
     }
 
+    /**
+     * Returns the template for the given operator.
+     * @param operator the operator
+     * @param numberOfArguments the number of arguments
+     * @return the template
+     */
     String operatorToTemplate(ComparisonOperator operator, int numberOfArguments) {
         if(operator.equals(NOT_NULL)) {
             if(numberOfArguments != 0) {
@@ -190,11 +216,16 @@ public class PostgresJsonPathExpressionBuilder {
 
     }
 
-
+    /**
+     * The base json type.
+     */
     enum BaseJsonType {
         STRING, NUMBER, BOOLEAN, NULL, DATE_TIME, DATE_TIME_TZ
     }
 
+    /**
+     * The argument value that holds the value and the base json type.
+     */
     record ArgValue(String value, BaseJsonType baseJsonType) {
         public String print(ComparisonOperator operator) {
             return switch (baseJsonType) {
@@ -219,6 +250,9 @@ public class PostgresJsonPathExpressionBuilder {
         }
     }
 
+    /**
+     * Interface for argument converters.
+     */
     interface ArgConverter {
         boolean accepts(String s);
         ArgValue convert(String s);

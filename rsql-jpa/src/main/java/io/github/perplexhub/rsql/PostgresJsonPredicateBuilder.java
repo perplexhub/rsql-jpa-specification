@@ -6,15 +6,27 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 
+/**
+ * Builds a predicate for a JSON that use the Postgres JSONB functions jsonb_path_exists and jsonb_path_exists.
+ */
 public class PostgresJsonPredicateBuilder {
     private final CriteriaBuilder builder;
     private boolean invertPredicate = false;
 
-
+    /**
+     * Creates a new instance.
+     * @param builder the criteria builder
+     */
     public PostgresJsonPredicateBuilder(CriteriaBuilder builder) {
         this.builder = builder;
     }
 
+    /**
+     * Builds a predicate for a JSON that use the Postgres JSONB functions jsonb_path_exists and jsonb_path_exists.
+     * @param comparisonNode the comparison node
+     * @param attrPath the path to the JSON attribute
+     * @return the predicate
+     */
     Predicate build(ComparisonNode comparisonNode, Path<?> attrPath) {
         var jsb = new PostgresJsonPathExpressionBuilder(convertToAlwaysTrueOperator(comparisonNode.getOperator()),
                 comparisonNode.getSelector(), comparisonNode.getArguments());
@@ -27,6 +39,11 @@ public class PostgresJsonPredicateBuilder {
         }
     }
 
+    /**
+     * Converts operators that are not supported by jsonb_path_exists to operators that are always true.
+     * @param operator the operator to convert
+     * @return the converted operator
+     */
     private ComparisonOperator convertToAlwaysTrueOperator(ComparisonOperator operator) {
         if (RSQLOperators.NOT_EQUAL.equals(operator)) {
             invertPredicate = true;
