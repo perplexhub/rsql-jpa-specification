@@ -104,5 +104,59 @@ class PostgresJsonPathExpressionBuilderTest {
         assertEquals("$.equal_key ? (@ == \"10:12:13\")", builder.getJsonPathExpression());
     }
 
+    @Test
+    void pathForLikeWithBooleanAsArgumentWillCompareString() {
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.LIKE, "json.like_key", Collections.singletonList("true"));
+        assertEquals("$.like_key ? (@ like_regex \".*true.*\")", builder.getJsonPathExpression());
+    }
+
+    @Test
+    void pathForLikeWithIntegerAsArgumentWillCompareString() {
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.LIKE, "json.like_key", Collections.singletonList("1"));
+        assertEquals("$.like_key ? (@ like_regex \".*1.*\")", builder.getJsonPathExpression());
+    }
+
+    @Test
+    void pathForLikeWithTimeAsArgumentWillCompareString() {
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.LIKE, "json.like_key", Collections.singletonList("10:12:13"));
+        assertEquals("$.like_key ? (@ like_regex \".*10:12:13.*\")", builder.getJsonPathExpression());
+    }
+
+    @Test
+    void pathForLikeWithDateAsArgumentWillCompareString() {
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.LIKE, "json.like_key", Collections.singletonList("2020-01-01"));
+        assertEquals("$.like_key ? (@ like_regex \".*2020-01-01.*\")", builder.getJsonPathExpression());
+    }
+
+    @Test
+    void pathForLikeWithDateTimeAsArgumentWillCompareString() {
+        PostgresJsonPathExpressionBuilder builder = new PostgresJsonPathExpressionBuilder(RSQLOperators.LIKE, "json.like_key", Collections.singletonList("2020-01-01T10:12:13"));
+        assertEquals("$.like_key ? (@ like_regex \".*2020-01-01T10:12:13.*\")", builder.getJsonPathExpression());
+    }
+
+    @Test
+    void pathForNullIsNotSupported() {
+        assertThrows(IllegalArgumentException.class, () -> new PostgresJsonPathExpressionBuilder(RSQLOperators.IS_NULL, "json.null_key", Collections.singletonList("value")));
+    }
+
+    @Test
+    void pathForNotLikeIsNotSupported() {
+        assertThrows(IllegalArgumentException.class, () -> new PostgresJsonPathExpressionBuilder(RSQLOperators.NOT_LIKE, "json.not_like_key", Collections.singletonList("value")));
+    }
+
+    @Test
+    void pathForNotLikeIgnoreCaseIsNotSupported() {
+        assertThrows(IllegalArgumentException.class, () -> new PostgresJsonPathExpressionBuilder(RSQLOperators.IGNORE_CASE_NOT_LIKE, "json.not_like_key", Collections.singletonList("value")));
+    }
+
+    @Test
+    void pathForNotInIsNotSupported() {
+        assertThrows(IllegalArgumentException.class, () -> new PostgresJsonPathExpressionBuilder(RSQLOperators.NOT_IN, "json.not_in_key", Collections.singletonList("value")));
+    }
+
+    @Test
+    void pathForNotInIsNotBetween() {
+        assertThrows(IllegalArgumentException.class, () -> new PostgresJsonPathExpressionBuilder(RSQLOperators.NOT_IN, "json.not_in_key", List.of("1", "2")));
+    }
 
 }

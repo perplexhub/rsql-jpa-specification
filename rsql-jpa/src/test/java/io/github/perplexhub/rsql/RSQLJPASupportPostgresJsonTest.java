@@ -98,7 +98,9 @@ class RSQLJPASupportPostgresJsonTest {
             timeData(),
             dateTimeWithTzData(),
             dateTimeWithoutTzData(),
-            booleanData()
+            booleanData(),
+            doesNotConvertBoolean(),
+            doesNotConvertInteger()
         )
         .flatMap(s -> s);
   }
@@ -200,7 +202,6 @@ class RSQLJPASupportPostgresJsonTest {
     return Stream.of(
         arguments(List.of(e1, e2, e3, e4), "properties.a=nn=''", List.of(e1, e2)),
         arguments(List.of(e1, e2, e3, e4), "properties.a=na=''", List.of(e3, e4)),
-
         arguments(List.of(e1, e2, e3, e4), "properties.b=nn=''", List.of(e3, e4)),
         arguments(List.of(e1, e2, e3, e4), "properties.b=na=''", List.of(e1, e2))
     );
@@ -215,13 +216,12 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-            arguments(List.of(e1, e2, e3, e4), "properties.a==1", List.of(e1)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a==3.14", List.of(e3)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a>1", List.of(e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a>3.13", List.of(e3, e4)),
-
-            arguments(List.of(e1, e2, e3, e4), "properties.a>=3", List.of(e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a<3", List.of(e1, e2))
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==1", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==3.14", List.of(e3)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a>1", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a>3.13", List.of(e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a>=3", List.of(e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a<3", List.of(e1, e2))
     );
   }
 
@@ -235,12 +235,12 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-            arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01", List.of(e1)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01", List.of(e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01", List.of(e1, e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a<1970-01-01", List.of()),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(1970-01-01, 2020-01-01)", List.of(e1, e2, e3)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=nb=(1970-01-01, 2020-01-01)", List.of(e4))
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==1970-01-01", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=gt=1970-01-01", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a>=1970-01-01", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a<1970-01-01", List.of()),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=bt=(1970-01-01, 2020-01-01)", List.of(e1, e2, e3)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=nb=(1970-01-01, 2020-01-01)", List.of(e4))
     );
   }
 
@@ -253,12 +253,12 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-            arguments(List.of(e1, e2, e3, e4), "properties.a==00:00:00", List.of(e1)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=00:00:00", List.of(e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a>=00:00:00", List.of(e1, e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a<00:00:00", List.of()),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(00:00:00, 02:00:00)", List.of(e1, e2, e3)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=nb=(00:00:00, 02:00:00)", List.of(e4))
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==00:00:00", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=gt=00:00:00", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a>=00:00:00", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a<00:00:00", List.of()),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=bt=(00:00:00, 02:00:00)", List.of(e1, e2, e3)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=nb=(00:00:00, 02:00:00)", List.of(e4))
     );
   }
 
@@ -271,10 +271,10 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-            arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01T00:00:00+00:00", List.of(e1)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01T00:00:00+00:00", List.of(e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01T00:00:00+00:00", List.of(e1, e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a<2020-01-01T00:00:00+00:00", List.of(e1, e2))
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==1970-01-01T00:00:00+00:00", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=gt=1970-01-01T00:00:00+00:00", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a>=1970-01-01T00:00:00+00:00", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a<2020-01-01T00:00:00+00:00", List.of(e1, e2))
     );
   }
 
@@ -287,10 +287,10 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-            arguments(List.of(e1, e2, e3, e4), "properties.a==1970-01-01T00:00:00", List.of(e1)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a=gt=1970-01-01T00:00:00", List.of(e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a>=1970-01-01T00:00:00", List.of(e1, e2, e3, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a<2020-01-01T00:00:00", List.of(e1, e2))
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==1970-01-01T00:00:00", List.of(e1)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a=gt=1970-01-01T00:00:00", List.of(e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a>=1970-01-01T00:00:00", List.of(e1, e2, e3, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a<2020-01-01T00:00:00", List.of(e1, e2))
     );
   }
   private static Stream<Arguments> booleanData() {
@@ -302,10 +302,36 @@ class RSQLJPASupportPostgresJsonTest {
     var e6 = new PostgresJsonEntity(Map.of("b", "other"));
 
     return Stream.of(
-            arguments(List.of(e1, e2, e3, e4), "properties.a==true", List.of(e1, e3)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a==false", List.of(e2, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a!=true", List.of(e2, e4)),
-            arguments(List.of(e1, e2, e3, e4), "properties.a!=false", List.of(e1, e3))
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==true", List.of(e1, e3)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a==false", List.of(e2, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a!=true", List.of(e2, e4)),
+            arguments(List.of(e1, e2, e3, e4, e5, e6), "properties.a!=false", List.of(e1, e3))
+    );
+  }
+
+  private static Stream<Arguments> doesNotConvertBoolean() {
+    var e1 = new PostgresJsonEntity(Map.of("a", "true"));
+    var e2 = new PostgresJsonEntity(Map.of("a", "false"));
+    var e3 = new PostgresJsonEntity(Map.of("a", "other"));
+
+    return Stream.of(
+            arguments(List.of(e1, e2, e3), "properties.a=like=true", List.of(e1)),
+            arguments(List.of(e1, e2, e3), "properties.a=like=false", List.of(e2)),
+            arguments(List.of(e1, e2, e3), "properties.a=in=(true,false)", List.of()),
+            arguments(List.of(e1, e2, e3), "properties.a=notlike=true", List.of(e2, e3))
+    );
+  }
+
+  private static Stream<Arguments> doesNotConvertInteger() {
+    var e1 = new PostgresJsonEntity(Map.of("a", "1"));
+    var e2 = new PostgresJsonEntity(Map.of("a", "2"));
+    var e3 = new PostgresJsonEntity(Map.of("a", "other"));
+
+    return Stream.of(
+            arguments(List.of(e1, e2, e3), "properties.a=like=1", List.of(e1)),
+            arguments(List.of(e1, e2, e3), "properties.a=like=2", List.of(e2)),
+            arguments(List.of(e1, e2, e3), "properties.a=in=(1,2)", List.of()),
+            arguments(List.of(e1, e2, e3), "properties.a=notlike=1", List.of(e2, e3))
     );
   }
 
