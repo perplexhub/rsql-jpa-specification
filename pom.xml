@@ -298,7 +298,7 @@
 		<repository>
 			<id>github</id>
 			<name>GitHub Packages</name>
-			<url>https://github.com/ng-galien/rsql-jpa-specification/</url>
+			<url>https://maven.pkg.github.com/ng-galien/rsql-jpa-specification/</url>
 		</repository>
 	</distributionManagement>
 </project>

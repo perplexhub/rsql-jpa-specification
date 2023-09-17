@@ -9,16 +9,10 @@ import java.util.stream.Collectors;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
+
 public class PostgresJsonPathExpressionBuilder {
 
     protected static boolean dateTimeSupport = true;
-
-     private final static Set<ComparisonOperator> REQUIRE_NO_ARGUMENTS = Set.of(IS_NULL, NOT_NULL);
-
-    private final static Set<ComparisonOperator> REQUIRE_ONE_ARGUMENT = Set.of(EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL, LIKE, NOT_LIKE, IGNORE_CASE, IGNORE_CASE_LIKE, IGNORE_CASE_NOT_LIKE);
-
-    private final static Set<ComparisonOperator> REQUIRE_TWO_ARGUMENTS = Set.of(BETWEEN, NOT_BETWEEN);
-
 
     private final ComparisonOperator operator;
     private final String keyPath;
@@ -30,39 +24,47 @@ public class PostgresJsonPathExpressionBuilder {
         this.operator = Objects.requireNonNull(operator);
         this.keyPath = Objects.requireNonNull(keyPath);
 
-        val values = sanitizeValues(operator, args);
-
-        //Values must not be null
-        if(values == null) {
-            throw new IllegalArgumentException("Values must not be null");
+        if(FORBIDDEN_NEGATION.contains(operator)) {
+            throw new IllegalArgumentException("Operator " + operator + " cannot be negated");
         }
 
+        val candidateValues = removeEmptyValuesIfNullCheck(operator, args);
+
         //List must have at least one value except for IS_NULL and NOT_NULL
-        if(values.isEmpty() && !REQUIRE_NO_ARGUMENTS.contains(operator)) {
+        if(candidateValues.isEmpty() && !REQUIRE_NO_ARGUMENTS.contains(operator)) {
             throw new IllegalArgumentException("Values must not be empty");
         }
 
         //Requires two values
-        if(REQUIRE_TWO_ARGUMENTS.contains(operator) && values.size() != 2) {
+        if(REQUIRE_TWO_ARGUMENTS.contains(operator) && candidateValues.size() != 2) {
             throw new IllegalArgumentException("Operator " + operator + " requires two values");
         }
 
         //Operators other than IS_NULL, NOT_NULL, BETWEEN, NOT_BETWEEN, IN, NOT_IN require exactly one value
-        if(REQUIRE_ONE_ARGUMENT.contains(operator) && values.size() != 1) {
+        if(REQUIRE_ONE_ARGUMENT.contains(operator) && candidateValues.size() != 1) {
             throw new IllegalArgumentException("Operator " + operator + " requires one value");
         }
+
+        //Operators IN and NOT_IN require at least one value
+        if(REQUIRE_AT_LEAST_ONE_ARGUMENT.contains(operator) && candidateValues.isEmpty()) {
+            throw new IllegalArgumentException("Operator " + operator + " requires at least one value");
+        }
         //Copy to unmodifiable list
-        this.values = findMoreTypes(values);
+
+        this.values = findMoreTypes(operator, candidateValues);
     }
 
-    private List<String> sanitizeValues(ComparisonOperator operator, List<String> args) {
+    private List<String> removeEmptyValuesIfNullCheck(ComparisonOperator operator, List<String> args) {
         if(operator.equals(IS_NULL) || operator.equals(NOT_NULL)) {
             return Collections.emptyList();
         }
         return args;
     }
 
-    private List<ArgValue> findMoreTypes(List<String> values) {
+    private List<ArgValue> findMoreTypes(ComparisonOperator operator, List<String> values) {
+        if(NOT_RELEVANT_FOR_CONVERSION.contains(operator)) {
+            return values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList();
+        }
         List<ArgConverter> argConverters = dateTimeSupport ?
                 List.of(DATE_TIME_CONVERTER, NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER)
                 : List.of(NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER);
@@ -70,11 +72,11 @@ public class PostgresJsonPathExpressionBuilder {
                 .filter(argConverter -> values.stream().allMatch(argConverter::accepts))
                 .findFirst();
         return candidateConverter.map(argConverter -> values.stream()
-                .map(argConverter::convert).toList())
+                        .map(argConverter::convert).toList())
                 .orElseGet(() -> values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList());
     }
 
-    String getJsonPathTest() {
+    String getJsonPathExpression() {
         List<String> valuesToCompare = values.stream().map(argValue -> argValue.print(operator)).toList();
 
         String targetPath = String.format("$.%s", removeJsonbReferenceFromKeyPath(keyPath));
@@ -242,8 +244,8 @@ public class PostgresJsonPathExpressionBuilder {
 
         @Override
         public boolean accepts(String s) {
-            return s.matches("^\\d+\\.\\d+$")
-                    || s.matches("^\\d+$");
+            return NUMBER_PATTERN.matcher(s).matches()
+                    || INTEGER_PATTERN.matcher(s).matches();
         }
 
 
@@ -258,7 +260,7 @@ public class PostgresJsonPathExpressionBuilder {
 
         @Override
         public boolean accepts(String s) {
-            return s.matches("^(true|false)$");
+            return BOOLEAN_PATTERN.matcher(s).matches();
         }
 
         @Override
@@ -276,4 +278,29 @@ public class PostgresJsonPathExpressionBuilder {
     private static final Pattern ISO_TIME_PATTERN_TZ = Pattern.compile("^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$");
 
     private static final Pattern ISO_TIME_PATTERN = Pattern.compile("^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$");
+
+    private static final Pattern BOOLEAN_PATTERN = Pattern.compile("^(true|false)$");
+
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("^\\d+\\.\\d+$");
+
+    private static final Pattern INTEGER_PATTERN = Pattern.compile("^\\d+$");
+
+    private static final Set<ComparisonOperator> FORBIDDEN_NEGATION =
+            Set.of(IS_NULL, NOT_IN, NOT_LIKE, IGNORE_CASE_NOT_LIKE, NOT_BETWEEN);
+
+    private static final Set<ComparisonOperator> NOT_RELEVANT_FOR_CONVERSION =
+            Set.of(NOT_NULL, LIKE, IGNORE_CASE);
+
+    private final static Set<ComparisonOperator> REQUIRE_NO_ARGUMENTS =
+            Set.of(NOT_NULL);
+
+    private final static Set<ComparisonOperator> REQUIRE_ONE_ARGUMENT =
+            Set.of(EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL,
+                    LIKE, IGNORE_CASE, IGNORE_CASE_LIKE);
+
+    private final static Set<ComparisonOperator> REQUIRE_TWO_ARGUMENTS = Set.of(BETWEEN);
+
+    private final static Set<ComparisonOperator> REQUIRE_AT_LEAST_ONE_ARGUMENT = Set.of(IN);
+
+
 }

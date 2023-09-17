@@ -19,7 +19,7 @@ public class PostgresJsonPredicateBuilder {
         var jsb = new PostgresJsonPathExpressionBuilder(convertToAlwaysTrueOperator(comparisonNode.getOperator()),
                 comparisonNode.getSelector(), comparisonNode.getArguments());
         var function = builder.function("jsonb_path_exists", Boolean.class, attrPath,
-                builder.literal(jsb.getJsonPathTest()));
+                builder.literal(jsb.getJsonPathExpression()));
         if (invertPredicate) {
             return builder.isFalse(function);
         } else {
