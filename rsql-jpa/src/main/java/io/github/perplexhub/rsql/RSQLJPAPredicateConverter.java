@@ -151,15 +151,15 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 
 	private boolean isJsonType(String mappedProperty, ManagedType<?> classMetadata) {
 		return Optional.ofNullable(classMetadata.getAttribute(mappedProperty))
-				.map(this::isJsonType)
+				.map(RSQLJPAPredicateConverter::isJsonType)
 				.orElse(false);
 	}
 	
-	private boolean isJsonType(Attribute<?, ?> attribute) {
-    return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
+	public static boolean isJsonType(Attribute<?, ?> attribute) {
+    	return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
 	}
 
-	private boolean isJsonColumn(Attribute<?, ?> attribute) {
+	private static boolean isJsonColumn(Attribute<?, ?> attribute) {
 		return Optional.ofNullable(attribute)
 				.filter(attr -> attr.getJavaMember() instanceof Field)
 				.map(attr -> ((Field) attr.getJavaMember()))
@@ -169,7 +169,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				.orElse(false);
 	}
 
-	private Optional<Database> getDatabase(Attribute<?, ?> attribute) {
+	private static Optional<Database> getDatabase(Attribute<?, ?> attribute) {
 		return getEntityManagerMap()
 				.values()
 				.stream()
@@ -213,7 +213,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			for (String argument : node.getArguments()) {
 				arguments.add(convert(argument, customPredicate.getType()));
 			}
-			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
+			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, node.getSelector(), arguments, root));
 		}
 
 		final boolean json = isJsonType(attribute);
