@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:postgresql:13://localhost/test
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+        hibernate:
+          dialect: org.hibernate.dialect.PostgreSQLDialect
+          show_sql: true

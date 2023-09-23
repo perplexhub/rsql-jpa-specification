@@ -18,10 +18,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.vendor.Database;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("postgres")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class RSQLJPASupportPostgresJsonTest {
 
   @Autowired
@@ -68,7 +70,7 @@ class RSQLJPASupportPostgresJsonTest {
         .flatMap(s -> s);
   }
 
-  private static Stream<Arguments> equalsData() {
+  static Stream<Arguments> equalsData() {
     var e1 = new PostgresJsonEntity(Map.of("a1", "b1"));
     var e2 = new PostgresJsonEntity(Map.of("a1", Map.of("a11", Map.of("a111", "b1"))));
 
@@ -93,7 +95,7 @@ class RSQLJPASupportPostgresJsonTest {
     );
   }
 
-  private static Stream<Arguments> inData() {
+  static Stream<Arguments> inData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "b1"));
     var e2 = new PostgresJsonEntity(Map.of("a", "b2"));
     var e3 = new PostgresJsonEntity(Map.of("a", "c1"));
@@ -107,7 +109,7 @@ class RSQLJPASupportPostgresJsonTest {
     );
   }
 
-  private static Stream<Arguments> betweenData() {
+  static Stream<Arguments> betweenData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "a"));
     var e2 = new PostgresJsonEntity(Map.of("a", "b"));
     var e3 = new PostgresJsonEntity(Map.of("a", "c"));
@@ -119,7 +121,7 @@ class RSQLJPASupportPostgresJsonTest {
     );
   }
 
-  private static Stream<Arguments> likeData() {
+  static Stream<Arguments> likeData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "a b c"));
     var e2 = new PostgresJsonEntity(Map.of("a", "b c d"));
     var e3 = new PostgresJsonEntity(Map.of("a", "c d e"));
@@ -140,7 +142,7 @@ class RSQLJPASupportPostgresJsonTest {
     );
   }
 
-  private static Stream<Arguments> gtLtData() {
+  static Stream<Arguments> gtLtData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "a"));
     var e2 = new PostgresJsonEntity(Map.of("a", "b"));
     var e3 = new PostgresJsonEntity(Map.of("a", "c"));
@@ -156,7 +158,7 @@ class RSQLJPASupportPostgresJsonTest {
     );
   }
 
-  private static Stream<Arguments> miscData() {
+  static Stream<Arguments> miscData() {
     var e1 = new PostgresJsonEntity(Map.of("a", "b1"));
     var e2 = new PostgresJsonEntity(Map.of("a", "b2"));
     var e3 = new PostgresJsonEntity(Map.of("b", "c1"));
