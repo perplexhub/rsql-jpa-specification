@@ -37,6 +37,7 @@ public class RSQLCommonSupport {
 	public RSQLCommonSupport(Map<String, EntityManager> entityManagerMap) {
 		if (entityManagerMap != null) {
 			RSQLCommonSupport.entityManagerMap.putAll(entityManagerMap);
+			RSQLCommonSupport.managedTypeMap.clear();
 			log.info("{} EntityManager bean{} found: {}", entityManagerMap.size(), entityManagerMap.size() > 1 ? "s are" : " is", entityManagerMap);
 		} else {
 			log.warn("No EntityManager beans are found");
