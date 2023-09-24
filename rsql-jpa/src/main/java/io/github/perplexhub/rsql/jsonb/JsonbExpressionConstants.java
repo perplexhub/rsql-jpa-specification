@@ -1,17 +1,33 @@
 package io.github.perplexhub.rsql.jsonb;
 
+
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
-public class JsonbExpressionUtils {    /**
- * The base json type.
+/**
+ * Constants for jsonb expression.
  */
+public class JsonbExpressionConstants {
+
+    /**
+     * The base json type.
+     */
     enum BaseJsonType {
         STRING, NUMBER, BOOLEAN, NULL, DATE_TIME, DATE_TIME_TZ
+    }
+
+    /**
+     * Interface for argument converters.
+     */
+    interface ArgConverter {
+        boolean accepts(String s);
+
+        ArgValue convert(String s);
     }
 
     /**
@@ -29,7 +45,7 @@ public class JsonbExpressionUtils {    /**
 
         public String printString(ComparisonOperator operator) {
             String value = this.value;
-            if((operator.equals(LIKE)
+            if ((operator.equals(LIKE)
                     || operator.equals(NOT_LIKE)
                     || operator.equals(IGNORE_CASE_LIKE)
                     || operator.equals(IGNORE_CASE_NOT_LIKE))
@@ -41,15 +57,7 @@ public class JsonbExpressionUtils {    /**
         }
     }
 
-    /**
-     * Interface for argument converters.
-     */
-    interface ArgConverter {
-        boolean accepts(String s);
-        ArgValue convert(String s);
-    }
-
-    static ArgConverter DATE_TIME_CONVERTER = new ArgConverter() {
+    static final ArgConverter DATE_TIME_CONVERTER = new ArgConverter() {
         @Override
         public boolean accepts(String s) {
             return ISO_DATE_TIME_PATTERN_TZ.matcher(s).matches()
@@ -65,7 +73,7 @@ public class JsonbExpressionUtils {    /**
         }
     };
 
-    static ArgConverter NUMBER_CONVERTER = new ArgConverter() {
+    static final ArgConverter NUMBER_CONVERTER = new ArgConverter() {
 
         @Override
         public boolean accepts(String s) {
@@ -80,8 +88,7 @@ public class JsonbExpressionUtils {    /**
         }
     };
 
-
-    static ArgConverter BOOLEAN_ARG_CONVERTER = new ArgConverter() {
+    static final ArgConverter BOOLEAN_ARG_CONVERTER = new ArgConverter() {
 
         @Override
         public boolean accepts(String s) {
@@ -118,15 +125,28 @@ public class JsonbExpressionUtils {    /**
     static final Set<ComparisonOperator> NOT_RELEVANT_FOR_CONVERSION =
             Set.of(NOT_NULL, LIKE, IGNORE_CASE);
 
-    static Set<ComparisonOperator> REQUIRE_NO_ARGUMENTS =
+    static final Set<ComparisonOperator> REQUIRE_NO_ARGUMENTS =
             Set.of(NOT_NULL);
 
-    final static Set<ComparisonOperator> REQUIRE_ONE_ARGUMENT =
+    static final Set<ComparisonOperator> REQUIRE_ONE_ARGUMENT =
             Set.of(EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL,
                     LIKE, IGNORE_CASE, IGNORE_CASE_LIKE);
 
-    final static Set<ComparisonOperator> REQUIRE_TWO_ARGUMENTS = Set.of(BETWEEN);
+    static final Set<ComparisonOperator> REQUIRE_TWO_ARGUMENTS = Set.of(BETWEEN);
 
-    final static Set<ComparisonOperator> REQUIRE_AT_LEAST_ONE_ARGUMENT = Set.of(IN);
+    static final Set<ComparisonOperator> REQUIRE_AT_LEAST_ONE_ARGUMENT = Set.of(IN);
 
+    static final Map<ComparisonOperator, String> COMPARISON_TEMPLATE = Map.ofEntries(
+            Map.entry(NOT_NULL, "(%s != null)"),
+            Map.entry(EQUAL, "(%s == %s)"),
+            Map.entry(NOT_EQUAL, "(%s != %s)"),
+            Map.entry(GREATER_THAN, "(%s > %s)"),
+            Map.entry(GREATER_THAN_OR_EQUAL, "(%s >= %s)"),
+            Map.entry(LESS_THAN, "(%s < %s)"),
+            Map.entry(LESS_THAN_OR_EQUAL, "(%s <= %s)"),
+            Map.entry(LIKE, "(%s like_regex %s)"),
+            Map.entry(IGNORE_CASE, "(%s like_regex %s flag \"i\")"),
+            Map.entry(IGNORE_CASE_LIKE, "(%s like_regex %s flag \"i\")"),
+            Map.entry(BETWEEN, "(%1$s >= %2$s && %1$s <= %3$s)")
+    );
 }

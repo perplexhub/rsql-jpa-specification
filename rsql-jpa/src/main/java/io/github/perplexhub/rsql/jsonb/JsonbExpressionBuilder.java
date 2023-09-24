@@ -6,47 +6,37 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
-import static io.github.perplexhub.rsql.jsonb.JsonbExpressionUtils.*;
+import static io.github.perplexhub.rsql.jsonb.JsonbExpressionConstants.*;
+import static io.github.perplexhub.rsql.jsonb.JsonbPathSupport.dateTimeSupport;
 
+/**
+ * Builds a jsonb expression for a given keyPath and operator.
+ */
 public class JsonbExpressionBuilder {
-    protected static boolean dateTimeSupport = true;
 
     private final ComparisonOperator operator;
     private final String keyPath;
     private final List<ArgValue> values;
 
     public JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args) {
-
-        //Sanity check
         this.operator = Objects.requireNonNull(operator);
         this.keyPath = Objects.requireNonNull(keyPath);
-
         if(FORBIDDEN_NEGATION.contains(operator)) {
             throw new IllegalArgumentException("Operator " + operator + " cannot be negated");
         }
-
         var candidateValues = removeEmptyValuesIfNullCheck(operator, args);
-
-        //List must have at least one value except for IS_NULL and NOT_NULL
         if(candidateValues.isEmpty() && !REQUIRE_NO_ARGUMENTS.contains(operator)) {
             throw new IllegalArgumentException("Values must not be empty");
         }
-
-        //Requires two values
         if(REQUIRE_TWO_ARGUMENTS.contains(operator) && candidateValues.size() != 2) {
             throw new IllegalArgumentException("Operator " + operator + " requires two values");
         }
-
-        //Operators other than IS_NULL, NOT_NULL, BETWEEN, NOT_BETWEEN, IN, NOT_IN require exactly one value
         if(REQUIRE_ONE_ARGUMENT.contains(operator) && candidateValues.size() != 1) {
             throw new IllegalArgumentException("Operator " + operator + " requires one value");
         }
-
-        //Operators IN and NOT_IN require at least one value
         if(REQUIRE_AT_LEAST_ONE_ARGUMENT.contains(operator) && candidateValues.isEmpty()) {
             throw new IllegalArgumentException("Operator " + operator + " requires at least one value");
         }
-        //Copy to unmodifiable list
         this.values = findMoreTypes(operator, candidateValues);
     }
 
@@ -56,9 +46,9 @@ public class JsonbExpressionBuilder {
      */
     String getJsonPathExpression() {
         List<String> valuesToCompare = values.stream().map(argValue -> argValue.print(operator)).toList();
-
         String targetPath = String.format("$.%s", removeJsonbReferenceFromKeyPath(keyPath));
-        String valueReference = values.stream().filter(argValue -> argValue.baseJsonType().equals(BaseJsonType.DATE_TIME))
+        String valueReference = values.stream()
+                .filter(argValue -> argValue.baseJsonType().equals(BaseJsonType.DATE_TIME))
                 .findFirst()
                 .map(v -> "@.datetime()")
                 .orElse("@");
@@ -88,12 +78,14 @@ public class JsonbExpressionBuilder {
         if(NOT_RELEVANT_FOR_CONVERSION.contains(operator)) {
             return values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList();
         }
-        List<JsonbExpressionUtils.ArgConverter> argConverters = dateTimeSupport ?
+
+        List<JsonbExpressionConstants.ArgConverter> argConverters = dateTimeSupport ?
                 List.of(DATE_TIME_CONVERTER, NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER)
                 : List.of(NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER);
         Optional<ArgConverter> candidateConverter = argConverters.stream()
                 .filter(argConverter -> values.stream().allMatch(argConverter::accepts))
                 .findFirst();
+
         return candidateConverter.map(argConverter -> values.stream()
                         .map(argConverter::convert).toList())
                 .orElseGet(() -> values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList());
@@ -120,7 +112,6 @@ public class JsonbExpressionBuilder {
      */
     String removeJsonbReferenceFromKeyPath(String keyPath) {
         List<String> keyPathParts = Arrays.asList(keyPath.split("\\."));
-        //If the keyPath is empty, we will return an empty string
         if(keyPathParts.isEmpty()) {
             return "";
         }
@@ -130,72 +121,12 @@ public class JsonbExpressionBuilder {
     }
 
     /**
-     * Returns the template for the given operator.
+     * Returns the String template for the given operator.
      * @param operator the operator
      * @param numberOfArguments the number of arguments
      * @return the template
      */
     String operatorToTemplate(ComparisonOperator operator, int numberOfArguments) {
-        if(operator.equals(NOT_NULL)) {
-            if(numberOfArguments != 0) {
-                throw new IllegalArgumentException("Null operator requires no value");
-            }
-            return "(%s != null)";
-        }
-        if(operator.equals(EQUAL)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Equal operator requires exactly one value");
-            }
-            return "(%s == %s)";
-        }
-        if (operator.equals(GREATER_THAN)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Greater than operator requires exactly one value");
-            }
-            return "(%s > %s)";
-        }
-        if (operator.equals(GREATER_THAN_OR_EQUAL)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Greater than or equal operator requires exactly one value");
-            }
-            return "(%s >= %s)";
-        }
-        if (operator.equals(LESS_THAN)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Less than operator requires exactly one value");
-            }
-            return "(%s < %s)";
-        }
-        if (operator.equals(LESS_THAN_OR_EQUAL)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Less than or equal operator requires exactly one value");
-            }
-            return "(%s <= %s)";
-        }
-        if (operator.equals(LIKE)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Like operator requires exactly one value");
-            }
-            return "(%s like_regex %s)";
-        }
-        if (operator.equals(IGNORE_CASE)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Ignore case operator requires exactly one value");
-            }
-            return "(%s like_regex %s flag \"i\")";
-        }
-        if (operator.equals(IGNORE_CASE_LIKE)) {
-            if(numberOfArguments != 1) {
-                throw new IllegalArgumentException("Ignore case like operator requires exactly one value");
-            }
-            return "(%s like_regex %s flag \"i\")";
-        }
-        if (operator.equals(BETWEEN)) {
-            if(numberOfArguments != 2) {
-                throw new IllegalArgumentException("Between operator requires exactly two values");
-            }
-            return "(%1$s >= %2$s && %1$s <= %3$s)";
-        }
         if (operator.equals(IN)) {
             if(numberOfArguments < 1) {
                 throw new IllegalArgumentException("In operator requires at least one value");
@@ -207,7 +138,7 @@ public class JsonbExpressionBuilder {
             return orChain.stream()
                     .collect(Collectors.joining(" || ", "(", ")"));
         }
-        throw new UnsupportedOperationException("Operation " + operator + " is not supported yet");
-
+        return Optional.ofNullable(COMPARISON_TEMPLATE.get(operator))
+                .orElseThrow(() -> new UnsupportedOperationException(operator + " is not supported yet"));
     }
 }
