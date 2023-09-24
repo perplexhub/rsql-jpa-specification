@@ -127,7 +127,7 @@ class RSQLJPASupportTest {
 	final void testCustomPredicate() {
 		String rsql = "createDate=dayofweek='2'";
 		RSQLCustomPredicate<Long> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=dayofweek="), Long.class, input -> {
-			Expression<Long> function = input.getCriteriaBuilder().function("DAY_OF_WEEK", Long.class, input.getPath());
+			Expression<Long> function = input.getCriteriaBuilder().function("ISO_DAY_OF_WEEK", Long.class, input.getPath());
 			return input.getCriteriaBuilder().lessThan(function, (Long) input.getArguments().get(0));
 		});
 		List<User> users = userRepository.findAll(toSpecification(rsql, List.of(customPredicate)));
@@ -139,7 +139,7 @@ class RSQLJPASupportTest {
 		users = userRepository.findAll(toSpecification(rsql, List.of(customPredicate)));
 		count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(4L)); //While this is in the old repo, I think something is off
+		assertThat(rsql, count, is(3L)); //While this is in the old repo, I think something is off
 	}
 
 	@Test
