@@ -7,6 +7,7 @@ import java.util.function.Function;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.ManagedType;
 
+import lombok.Setter;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -36,8 +37,7 @@ public class RSQLCommonSupport {
 
 	public RSQLCommonSupport(Map<String, EntityManager> entityManagerMap) {
 		if (entityManagerMap != null) {
-			RSQLCommonSupport.entityManagerMap.putAll(entityManagerMap);
-			RSQLCommonSupport.managedTypeMap.clear();
+			setEntityManagerMap(entityManagerMap);
 			log.info("{} EntityManager bean{} found: {}", entityManagerMap.size(), entityManagerMap.size() > 1 ? "s are" : " is", entityManagerMap);
 		} else {
 			log.warn("No EntityManager beans are found");
@@ -54,6 +54,14 @@ public class RSQLCommonSupport {
 		RSQLVisitorBase.setGlobalPropertyBlacklist(getPropertyBlacklist());
 		RSQLVisitorBase.setDefaultConversionService(getConversionService());
 		log.info("RSQLCommonSupport {} is initialized", getVersion());
+	}
+
+	/**
+	 * As the entityManager is renewed by Spring, we need to clear the managedTypeMap cache.
+	 */
+	private static void setEntityManagerMap(Map<String, EntityManager> entityManagerMap) {
+		RSQLCommonSupport.entityManagerMap.putAll(entityManagerMap);
+		RSQLCommonSupport.managedTypeMap.clear();
 	}
 
 	public static void addConverter(Converter<?, ?> converter) {
