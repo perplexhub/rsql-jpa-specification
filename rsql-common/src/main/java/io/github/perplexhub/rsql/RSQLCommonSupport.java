@@ -7,7 +7,6 @@ import java.util.function.Function;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.ManagedType;
 
-import lombok.Setter;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -32,6 +31,7 @@ public class RSQLCommonSupport {
 	private @Getter static final ConfigurableConversionService conversionService = new DefaultConversionService();
 
 	public RSQLCommonSupport() {
+		setEntityManagerMap(new HashMap<>());
 		init();
 	}
 
