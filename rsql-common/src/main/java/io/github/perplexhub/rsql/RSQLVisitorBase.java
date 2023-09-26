@@ -5,6 +5,7 @@ import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.Attribute;
@@ -27,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
-	protected static volatile @Setter Map<Class, ManagedType> managedTypeMap;
+	protected static final @Getter Map<Class, ManagedType> managedTypeMap = new ConcurrentHashMap<>();
 	protected static volatile @Setter Map<String, EntityManager> entityManagerMap;
 	protected static volatile @Setter @Getter Map<EntityManager, Database> entityManagerDatabase = Map.of();
 	protected static final Map<Class, Class> primitiveToWrapper;
@@ -40,8 +41,9 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 	protected @Setter Map<Class<?>, List<String>> propertyBlacklist;
 
-	protected Map<Class, ManagedType> getManagedTypeMap() {
-		return managedTypeMap != null ? managedTypeMap : Collections.emptyMap();
+	public static void setManagedTypeMap(Map<Class, ManagedType> managedTypeMap) {
+		RSQLVisitorBase.managedTypeMap.clear();
+		RSQLVisitorBase.managedTypeMap.putAll(managedTypeMap);
 	}
 
 	protected Map<String, EntityManager> getEntityManagerMap() {
