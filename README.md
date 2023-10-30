@@ -277,3 +277,62 @@ RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new Comp
 });
 List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
+
+# Jsonb Support with Postgresql
+
+It's possible to make rsql queries on jsonb fields. For example, if you have a jsonb field named `data` in your entity, you can make queries like this:
+
+```json
+{
+  "data": {
+    "name": "demo",
+    "user" : {
+      "id": 1,
+      "name": "demo"
+    },
+    "roles": [
+      {
+        "id": 1,
+        "name": "admin"
+      },
+      {
+        "id": 2,
+        "name": "user"
+      }
+    ]
+  }
+}
+```
+
+```java
+String rsql = "data.name==demo";
+List<User> users = userRepository.findAll(toSpecification(rsql));
+```
+
+```java
+String rsql = "data.user.id==1";
+List<User> users = userRepository.findAll(toSpecification(rsql));
+```
+
+```java
+String rsql = "data.roles.id==1";
+List<User> users = userRepository.findAll(toSpecification(rsql));
+```
+
+The library use [jsonb_path_exists](https://www.postgresql.org/docs/current/functions-json.html) function under the hood.   
+Json primitive types are supported such as 
+* string
+* number
+* boolean
+* array
+
+## Temporal values support
+
+Since Postgresql 13 jsonb supports temporal values with `datetime()` function.  
+As Date time values are string in jsonb, you can make queries on them as well.  
+You must use the [ISO 8601](https://json-schema.org/understanding-json-schema/reference/string.html#id9) format for date time values.
+
+>If your request conform timezone pattern, the library will use `jsonb_path_exists_tz.  
+>Then consider the timezone consideration of the [official documentation](https://www.postgresql.org/docs/current/functions-json.html)
+
+

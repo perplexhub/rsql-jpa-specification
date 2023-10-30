@@ -1,6 +1,7 @@
 package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
+import static io.github.perplexhub.rsql.jsonb.JsonbSupport.*;
 
 import jakarta.persistence.Column;
 import java.lang.reflect.Field;
@@ -19,7 +20,6 @@ import cz.jirutka.rsql.parser.ast.AndNode;
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.jpa.vendor.Database;
@@ -78,68 +78,67 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				attribute = context.getAttribute();
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
-						throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
+					throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
 				}
+				if (isAssociationType(mappedProperty, classMetadata) && !property.equals(propertyPath)) {
+					boolean isOneToAssociationType = isOneToOneAssociationType(mappedProperty, classMetadata) || isOneToManyAssociationType(mappedProperty, classMetadata);
+					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
+					type = associationType;
+					String previousClass = classMetadata.getJavaType().getName();
+					previousClassMetadata = classMetadata;
+					classMetadata = getManagedType(associationType);
 
-        if (isAssociationType(mappedProperty, classMetadata) && !property.equals(propertyPath)) {
-          boolean isOneToAssociationType = isOneToOneAssociationType(mappedProperty, classMetadata) || isOneToManyAssociationType(mappedProperty, classMetadata);
-          Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
-          type = associationType;
-          String previousClass = classMetadata.getJavaType().getName();
-          previousClassMetadata = classMetadata;
-          classMetadata = getManagedType(associationType);
-
-          String keyJoin = getKeyJoin(root, mappedProperty);
-          if (isOneToAssociationType) {
-            if (joinHints.containsKey(keyJoin)) {
-              log.debug("Create a join between [{}] and [{}] using key [{}] with supplied hints", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-              root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
-            } else {
-              log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-              root = join(keyJoin, root, mappedProperty, JoinType.LEFT);
-            }
-          } else {
-            String lookAheadProperty = i < propertiesLength - 1 ? properties[i + 1] : null;
-            boolean lookAheadPropertyIsId = false;
-            if (!isManyToManyAssociationType(mappedProperty, previousClassMetadata) && classMetadata instanceof IdentifiableType && lookAheadProperty != null) {
-              final IdentifiableType identifiableType = (IdentifiableType) classMetadata;
-              final SingularAttribute id = identifiableType.getId(identifiableType.getIdType().getJavaType());
-              if (identifiableType.hasSingleIdAttribute() && id.isId() && id.getName().equals(lookAheadProperty)) {
-                lookAheadPropertyIsId = true;
-              }
-            }
-            if (lookAheadPropertyIsId || lookAheadProperty == null) {
-              log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
-              root = root.get(mappedProperty);
-            } else {
-              log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-              root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
-            }
-          }
-        } else if (isElementCollectionType(mappedProperty, classMetadata)) {
-          String previousClass = classMetadata.getJavaType().getName();
-          attribute = classMetadata.getAttribute(property);
-          classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
-          String keyJoin = getKeyJoin(root, mappedProperty);
-          log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-          root = join(keyJoin, root, mappedProperty);
-        } else if (isJsonType(mappedProperty, classMetadata)) {
+					String keyJoin = getKeyJoin(root, mappedProperty);
+				if (isOneToAssociationType) {
+					if (joinHints.containsKey(keyJoin)) {
+						log.debug("Create a join between [{}] and [{}] using key [{}] with supplied hints", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+						root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
+					} else {
+						log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+						root = join(keyJoin, root, mappedProperty, JoinType.LEFT);
+					}
+				} else {
+					String lookAheadProperty = i < propertiesLength - 1 ? properties[i + 1] : null;
+					boolean lookAheadPropertyIsId = false;
+					if (!isManyToManyAssociationType(mappedProperty, previousClassMetadata) && classMetadata instanceof IdentifiableType && lookAheadProperty != null) {
+						final IdentifiableType identifiableType = (IdentifiableType) classMetadata;
+						final SingularAttribute id = identifiableType.getId(identifiableType.getIdType().getJavaType());
+						if (identifiableType.hasSingleIdAttribute() && id.isId() && id.getName().equals(lookAheadProperty)) {
+							lookAheadPropertyIsId = true;
+						}
+					}
+					if (lookAheadPropertyIsId || lookAheadProperty == null) {
+						log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
+						root = root.get(mappedProperty);
+					} else {
+						log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+						root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
+					}
+			  	}
+			} else if (isElementCollectionType(mappedProperty, classMetadata)) {
+					String previousClass = classMetadata.getJavaType().getName();
+					attribute = classMetadata.getAttribute(property);
+					classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
+					String keyJoin = getKeyJoin(root, mappedProperty);
+					log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+					root = join(keyJoin, root, mappedProperty);
+				} else if (isJsonType(mappedProperty, classMetadata)) {
 					root = root.get(mappedProperty);
-          attribute = classMetadata.getAttribute(mappedProperty);
-          break;
-        } else {
-          log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
-          root = root.get(mappedProperty);
+					attribute = classMetadata.getAttribute(mappedProperty);
+					break;
+				} else {
+					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
+					root = root.get(mappedProperty);
 
-          if (isEmbeddedType(mappedProperty, classMetadata)) {
-            Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
-            type = embeddedType;
-            classMetadata = getManagedType(embeddedType);
-          } else {
-            attribute = classMetadata.getAttribute(property);
-          }
-        }
-      }
+					if (isEmbeddedType(mappedProperty, classMetadata)) {
+						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
+						type = embeddedType;
+						classMetadata = getManagedType(embeddedType);
+					} else {
+						attribute = classMetadata.getAttribute(property);
+					}
+				}
+			}
 		}
 
 		if (attribute != null) {
@@ -156,7 +155,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 	
 	private boolean isJsonType(Attribute<?, ?> attribute) {
-    return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
+    	return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
 	}
 
 	private boolean isJsonColumn(Attribute<?, ?> attribute) {
@@ -216,8 +215,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
 		}
 
-		final boolean json = isJsonType(attribute);
-		Class type = json ? String.class : attribute != null ? attribute.getJavaType() : null;
+		if(isJsonType(attribute)) {
+			return jsonbPathExists(builder, node, attrPath);
+		}
+
+		Class type = attribute != null ? attribute.getJavaType() : null;
 
 		if (attribute != null) {
 			if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
@@ -229,60 +231,59 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
 			}
 		}
-    Expression expr = json ? getJsonExpression(attrPath, attribute, node) : attrPath;
 
-		if (node.getArguments().size() > 1) {
+        if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
 				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
-				return expr.in(listObject);
+				return attrPath.in(listObject);
 			}
 			if (op.equals(NOT_IN)) {
-				return expr.in(listObject).not();
+				return attrPath.in(listObject).not();
 			}
 			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(expr, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
+				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
 			}
 			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(expr, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
+				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
 			}
 		} else {
 
 			if (op.equals(IS_NULL)) {
-				return builder.isNull(expr);
+				return builder.isNull(attrPath);
 			}
 			if (op.equals(NOT_NULL)) {
-				return builder.isNotNull(expr);
+				return builder.isNotNull(attrPath);
 			}
 			Object argument = convert(node.getArguments().get(0), type);
 			if (op.equals(IN)) {
-				return builder.equal(expr, argument);
+				return builder.equal(attrPath, argument);
 			}
 			if (op.equals(NOT_IN)) {
-				return builder.notEqual(expr, argument);
+				return builder.notEqual(attrPath, argument);
 			}
 			if (op.equals(LIKE)) {
-				return builder.like(expr, "%" + argument.toString() + "%");
+				return builder.like(attrPath, "%" + argument.toString() + "%");
 			}
 			if (op.equals(NOT_LIKE)) {
-				return builder.like(expr, "%" + argument.toString() + "%").not();
+				return builder.like(attrPath, "%" + argument.toString() + "%").not();
 			}
 			if (op.equals(IGNORE_CASE)) {
-				return builder.equal(builder.upper(expr), argument.toString().toUpperCase());
+				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return builder.like(builder.upper(expr), "%" + argument.toString().toUpperCase() + "%");
+				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%");
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return builder.like(builder.upper(expr), "%" + argument.toString().toUpperCase() + "%").not();
+				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%").not();
 			}
 			if (op.equals(EQUAL)) {
-				return equalPredicate(expr, type, argument);
+				return equalPredicate(attrPath, type, argument);
 			}
 			if (op.equals(NOT_EQUAL)) {
-				return equalPredicate(expr, type, argument).not();
+				return equalPredicate(attrPath, type, argument).not();
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
@@ -291,39 +292,20 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			Comparable comparable = (Comparable) argument;
 
 			if (op.equals(GREATER_THAN)) {
-				return builder.greaterThan(expr, comparable);
+				return builder.greaterThan(attrPath, comparable);
 			}
 			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return builder.greaterThanOrEqualTo(expr, comparable);
+				return builder.greaterThanOrEqualTo(attrPath, comparable);
 			}
 			if (op.equals(LESS_THAN)) {
-				return builder.lessThan(expr, comparable);
+				return builder.lessThan(attrPath, comparable);
 			}
 			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return builder.lessThanOrEqualTo(expr, comparable);
+				return builder.lessThanOrEqualTo(attrPath, comparable);
 			}
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
-	}
-
-	private Expression<?> getJsonExpression(Path<?> path, Attribute attribute, ComparisonNode node) {
-		var database = getDatabase(attribute).orElse(null);
-
-		if (database == Database.POSTGRESQL) {
-			var args = new ArrayList<Expression<?>>();
-			args.add(path);
-
-			Stream.of(node.getSelector().split("\\."))
-					.skip(1) // skip root
-					.map(builder::literal)
-					.map(expr -> expr.as(String.class))
-					.forEach(args::add);
-
-			return builder.function("jsonb_extract_path_text", String.class, args.toArray(Expression[]::new));	
-		}
-
-		return path;
 	}
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
