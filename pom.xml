@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.perplexhub</groupId>
 	<artifactId>rsql</artifactId>
-	<version>6.0.8-SNAPSHOT</version>
+	<version>6.0.14-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>io.github.perplexhub - RSQL</name>
 	<inceptionYear>2018</inceptionYear>
