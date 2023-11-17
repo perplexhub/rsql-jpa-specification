@@ -46,8 +46,6 @@ class RSQLJPASupportPostgresJsonTest {
     void tearDown() {
         repository.deleteAll();
         repository.flush();
-        repository2.deleteAll();
-        repository2.flush();
         RSQLVisitorBase.setEntityManagerDatabase(Map.of());
     }
 
@@ -83,6 +81,23 @@ class RSQLJPASupportPostgresJsonTest {
         assertThat(result)
                 .hasSameSizeAs(expected)
                 .containsExactlyInAnyOrderElementsOf(expected);
+
+        users.forEach(e -> e.setId(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("sortData")
+    void testJsonSort(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
+        //given
+        repository.saveAllAndFlush(users);
+
+        //when
+        List<PostgresJsonEntity> result = repository.findAll(RSQLJPASupport.toSort(rsql));
+
+        //then
+        assertThat(result)
+                .hasSameSizeAs(expected)
+                .containsExactlyElementsOf(expected);
 
         users.forEach(e -> e.setId(null));
     }
@@ -131,6 +146,14 @@ class RSQLJPASupportPostgresJsonTest {
                 dateTimeWithTzData(),
                 dateTimeWithoutTzData(),
                 meltedTimeZone(),
+                null
+        ).filter(Objects::nonNull).flatMap(s -> s);
+    }
+
+    static Stream<Arguments> sortData() {
+        return Stream.of(
+                sortByNumber(),
+                sortByNested(),
                 null
         ).filter(Objects::nonNull).flatMap(s -> s);
     }
@@ -465,6 +488,36 @@ class RSQLJPASupportPostgresJsonTest {
                 arguments(allCases, "properties.a=like=2", List.of(e2)),
                 arguments(allCases, "properties.a=in=(1,2)", List.of()),
                 arguments(allCases, "properties.a=notlike=1", List.of(e2, e3)),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    private static Stream<Arguments> sortByNumber() {
+        var e1 = new PostgresJsonEntity(Map.of("b", 22, "a", 1, "z", 7));
+        var e2 = new PostgresJsonEntity(Map.of("c", 10, "a", 2, "z", 3));
+        var e3 = new PostgresJsonEntity(Map.of("d", 11, "a", 3, "z", 5));
+        var e4 = new PostgresJsonEntity(Map.of("e", 3, "a", 11, "z", 1));
+        var e5 = new PostgresJsonEntity(Map.of("f", 2, "a", 10, "z", 8));
+        var e6 = new PostgresJsonEntity(Map.of("g", 1, "a", 22, "z", 0));
+
+        var allCases = List.of(e1, e2, e3, e4, e5, e6);
+        return Stream.of(
+                arguments(allCases, "properties.a,asc", List.of(e1, e2, e3, e5, e4, e6)),
+                arguments(allCases, "properties.a,desc", List.of(e6, e4, e5, e3, e2, e1)),
+                arguments(allCases, "properties.z,asc", List.of(e6, e4, e2, e3, e1, e5)),
+                arguments(allCases, "properties.z,desc", List.of(e5, e1, e3, e2, e4, e6)),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    private static Stream<Arguments> sortByNested() {
+        var e1 = new PostgresJsonEntity(Map.of("0", "2", "a", Map.of("b", Map.of("c", 1))));
+        var e2 = new PostgresJsonEntity(Map.of("1", "1", "a", Map.of("b", Map.of("c", 2))));
+        var e3 = new PostgresJsonEntity(Map.of("2", "0", "a", Map.of("b", Map.of("c", 3))));
+        var allCases = List.of(e1, e2, e3);
+        return Stream.of(
+                arguments(allCases, "properties.a.b.c,asc", List.of(e1, e2, e3)),
+                arguments(allCases, "properties.a.b.c,desc", List.of(e3, e2, e1)),
                 null
         ).filter(Objects::nonNull);
     }
