@@ -528,6 +528,35 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
+	final void testEscapeForUnderscore() {
+		String rsql = "code=like='" + getLikeEscapeChar() + "_'";
+		List<Company> users = companyRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(2L));
+	}
+
+	@Test
+	final void testEscapeForPercent() {
+		String rsql = "name=like='" + getLikeEscapeChar() + "%'";
+		List<Company> users = companyRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(2L));
+	}
+
+	@Test
+	final void testEscapeForAntiSlash() {
+		setLikeEscapeChar('\\');
+		String rsql = "name=like='\\\\%'";
+		List<Company> users = companyRepository.findAll(toSpecification(rsql));
+		setLikeEscapeChar(DEFAULT_LIKE_ESCAPE_CHAR);
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(2L));
+	}
+
+	@Test
 	final void testEqualsIgnoreCase() {
 		String rsql = "name=icase='may'";
 		List<User> users = userRepository.findAll(toSpecification(rsql));

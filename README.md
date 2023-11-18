@@ -227,6 +227,11 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper));
 repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable);
 ```
 
+# Escaping Special Characters for LIKE Predicate
+
+The default character for escaping is `$`. You can change it by setting it with `RSQLJPASupport.setLikeEscapeChar` method.
+If you want to use backslash ` \ ` as escape character, you must escape twice ` \\ ` due to parser implementation.
+
 # Custom Value Converter
 
 ```java
