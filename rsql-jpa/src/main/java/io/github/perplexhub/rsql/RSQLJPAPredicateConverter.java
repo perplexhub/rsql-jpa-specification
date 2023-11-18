@@ -265,19 +265,19 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.notEqual(attrPath, argument);
 			}
 			if (op.equals(LIKE)) {
-				return builder.like(attrPath, '%' + argument.toString() + '%', RSQLJPASupport.DEFAULT_LIKE_ESCAPE_CHAR);
+				return builder.like(attrPath, '%' + argument.toString() + '%', RSQLJPASupport.LIKE_ESCAPE_CHAR);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return builder.like(attrPath, '%' + argument.toString() + '%', RSQLJPASupport.DEFAULT_LIKE_ESCAPE_CHAR).not();
+				return builder.like(attrPath, '%' + argument.toString() + '%', RSQLJPASupport.LIKE_ESCAPE_CHAR).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
 				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return builder.like(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', RSQLJPASupport.DEFAULT_LIKE_ESCAPE_CHAR);
+				return builder.like(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', RSQLJPASupport.LIKE_ESCAPE_CHAR);
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return builder.like(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', RSQLJPASupport.DEFAULT_LIKE_ESCAPE_CHAR).not();
+				return builder.like(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', RSQLJPASupport.LIKE_ESCAPE_CHAR).not();
 			}
 			if (op.equals(EQUAL)) {
 				return equalPredicate(attrPath, type, argument);

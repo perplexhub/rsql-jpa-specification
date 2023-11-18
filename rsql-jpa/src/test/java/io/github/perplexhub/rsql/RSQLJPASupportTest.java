@@ -224,7 +224,7 @@ class RSQLJPASupportTest {
 
 		count = companyRepository.count(toSpecification(rsql));
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat("Null", count, is(7L));
+		assertThat("Null", count, is(9L));
 	}
 
 	@Test
@@ -461,21 +461,21 @@ class RSQLJPASupportTest {
 		List<Company> companys = companyRepository.findAll(toSpecification(rsql));
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
+		assertThat(rsql, count, is(8L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=notnull=''";
 		companys = companyRepository.findAll(toSpecification(rsql));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
+		assertThat(rsql, count, is(8L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=nn=''";
 		companys = companyRepository.findAll(toSpecification(rsql));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
+		assertThat(rsql, count, is(8L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 	}
 
@@ -529,6 +529,7 @@ class RSQLJPASupportTest {
 
 	@Test
 	final void testEscapeForUnderscore() {
+		setDefaultLikeEscapeChar();
 		String rsql = "code=like='" + getLikeEscapeChar() + "_'";
 		List<Company> users = companyRepository.findAll(toSpecification(rsql));
 		long count = users.size();
@@ -538,6 +539,7 @@ class RSQLJPASupportTest {
 
 	@Test
 	final void testEscapeForPercent() {
+		setDefaultLikeEscapeChar();
 		String rsql = "name=like='" + getLikeEscapeChar() + "%'";
 		List<Company> users = companyRepository.findAll(toSpecification(rsql));
 		long count = users.size();
@@ -550,7 +552,6 @@ class RSQLJPASupportTest {
 		setLikeEscapeChar('\\');
 		String rsql = "name=like='\\\\%'";
 		List<Company> users = companyRepository.findAll(toSpecification(rsql));
-		setLikeEscapeChar(DEFAULT_LIKE_ESCAPE_CHAR);
 		long count = users.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(2L));
@@ -941,12 +942,12 @@ class RSQLJPASupportTest {
 		List<Company> companies = companyRepository.findAll(toSort("code,desc,ic"));
 		Assertions.assertThat(companies)
 				.extracting(Company::getId)
-				.containsExactly(2, 4, 7, 1, 5, 6, 3);
+				.containsExactly(2, 4, 7, 1, 5, 6, 3, 8, 9);
 
 		companies = companyRepository.findAll(toSort("code,desc"));
 		Assertions.assertThat(companies)
 				.extracting(Company::getId)
-				.containsExactly(7, 1, 5, 6, 3, 2, 4);
+				.containsExactly(7, 1, 5, 6, 3, 8, 9, 2, 4);
 	}
 
 	@Test
@@ -954,7 +955,7 @@ class RSQLJPASupportTest {
 		List<Company> companies = companyRepository.findAll(toSort("id,desc,ic"));
 		Assertions.assertThat(companies)
 				.extracting(Company::getId)
-				.containsExactly(7, 6, 5, 4, 3, 2, 1);
+				.containsExactly(9, 8, 7, 6, 5, 4, 3, 2, 1);
 	}
 
 	@Test

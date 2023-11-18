@@ -102,7 +102,7 @@ class RSQLQueryDslSupportTest {
 
 		count = companyRepository.count(toPredicate(rsql, QUser.user));
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat("Null", count, is(7L));
+		assertThat("Null", count, is(9L));
 	}
 
 	@Test
@@ -357,21 +357,21 @@ class RSQLQueryDslSupportTest {
 		List<Company> companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
+		assertThat(rsql, count, is(8L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=notnull=''";
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
+		assertThat(rsql, count, is(8L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=nn=''";
 		companys = (List<Company>) companyRepository.findAll(toPredicate(rsql, QCompany.company));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
+		assertThat(rsql, count, is(8L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 	}
 
