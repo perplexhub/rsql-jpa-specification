@@ -22,6 +22,7 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.repository.query.EscapeCharacter;
 import org.springframework.orm.jpa.vendor.Database;
 
 @Slf4j
@@ -265,19 +266,19 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.notEqual(attrPath, argument);
 			}
 			if (op.equals(LIKE)) {
-				return builder.like(attrPath, "%" + argument.toString() + "%");
+				return builder.like(attrPath, '%' + escapeInLikeExpression(argument.toString()) + '%', '\\');
 			}
 			if (op.equals(NOT_LIKE)) {
-				return builder.like(attrPath, "%" + argument.toString() + "%").not();
+				return builder.like(attrPath, '%' + escapeInLikeExpression(argument.toString()) + '%', '\\').not();
 			}
 			if (op.equals(IGNORE_CASE)) {
 				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%");
+				return builder.like(builder.upper(attrPath), '%' + escapeInLikeExpression(argument.toString().toUpperCase()) + '%', '\\');
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%").not();
+				return builder.like(builder.upper(attrPath), '%' + escapeInLikeExpression(argument.toString().toUpperCase()) + '%', '\\').not();
 			}
 			if (op.equals(EQUAL)) {
 				return equalPredicate(attrPath, type, argument);
@@ -306,6 +307,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
+	}
+
+	private String escapeInLikeExpression(String argument) {
+		//If an escape character, % or _ is part of the literal value to be matched, it must be preceded by the escape character.
+		return argument.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
 	}
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
