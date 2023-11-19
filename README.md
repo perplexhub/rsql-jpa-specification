@@ -229,9 +229,42 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable
 
 # Escaping Special Characters for LIKE Predicate
 
-The default character for escaping is `$`. You can change it by setting it with `RSQLJPASupport.setLikeEscapeChar` method.
+For the LIKE statement in different RDBMS, the most commonly used special characters are:
+
+### MySQL/MariaDB and PostgreSQL
+
+* %: Represents any sequence of zero or more characters. For example, LIKE '%abc' would match any string ending with "abc".
+* _: Represents any single character. For example, LIKE 'a_c' would match a three-character string starting with 'a' and ending with 'c'.
+
+### SQL Server
+
+* % and _: Function in the same way as in MySQL/MariaDB and PostgreSQL.
+* []: Used to specify a set or range of characters. For instance, LIKE '[a-c]%' would match any string starting with 'a', 'b', or 'c'.
+* ^: Used within [] to exclude characters. For example, LIKE '[^a-c]%' would match any string not starting with 'a', 'b', or 'c'.
+
+### Oracle:
+
+* % and _: Function similarly to MySQL/MariaDB and PostgreSQL.
+* ESCAPE: Allows specifying an escape character to include % or _ literally in the search. For example, LIKE '%\_%' ESCAPE '\' would match a string containing an underscore.
+
+### LIKE in RSQL
+
+The default character for escaping in a RSQL like operator is `$`.  
+You can change it by setting it with `RSQLJPASupport.setLikeEscapeChar()` method.  
 If you want to use backslash ` \ ` as escape character, you must escape twice ` \\ ` due to parser implementation.
 
+#### Example
+
+Above RSQL with default escape character `$` for searching string containing `_`:
+
+> my_table.my_column=like='$_'
+
+Will produce the following SQL:
+
+```sql
+SELECT * FROM my_table WHERE my_column LIKE '%$_%' ESCAPE '$'
+```
+    
 # Custom Value Converter
 
 ```java
