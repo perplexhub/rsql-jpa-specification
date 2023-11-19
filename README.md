@@ -227,45 +227,7 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper));
 repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable);
 ```
 
-# Escaping Special Characters for LIKE Predicate
-
-For the LIKE statement in different RDBMS, the most commonly used special characters are:
-
-### MySQL/MariaDB and PostgreSQL
-
-* %: Represents any sequence of zero or more characters. For example, LIKE '%abc' would match any string ending with "abc".
-* _: Represents any single character. For example, LIKE 'a_c' would match a three-character string starting with 'a' and ending with 'c'.
-
-### SQL Server
-
-* % and _: Function in the same way as in MySQL/MariaDB and PostgreSQL.
-* []: Used to specify a set or range of characters. For instance, LIKE '[a-c]%' would match any string starting with 'a', 'b', or 'c'.
-* ^: Used within [] to exclude characters. For example, LIKE '[^a-c]%' would match any string not starting with 'a', 'b', or 'c'.
-
-### Oracle:
-
-* % and _: Function similarly to MySQL/MariaDB and PostgreSQL.
-* ESCAPE: Allows specifying an escape character to include % or _ literally in the search. For example, LIKE '%\_%' ESCAPE '\' would match a string containing an underscore.
-
-### LIKE in RSQL
-
-The default character for escaping in a RSQL like operator is `$`.  
-You can change it by setting it with `RSQLJPASupport.setLikeEscapeChar()` method.  
-If you want to use backslash ` \ ` as escape character, you must escape twice ` \\ ` due to parser implementation.
-
-#### Example
-
-Above RSQL with default escape character `$` for searching string containing `_`:
-
-> my_table.my_column=like='$_'
-
-Will produce the following SQL:
-
-```sql
-SELECT * FROM my_table WHERE my_column LIKE '%$_%' ESCAPE '$'
-```
-    
-# Custom Value Converter
+## Custom Value Converter
 
 ```java
 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -278,7 +240,7 @@ RSQLJPASupport.addConverter(Date.class, s -> {
 });
 ```
 
-# Custom Operator & Predicate
+## Custom Operator & Predicate
 
 ```java
 String rsql = "createDate=dayofweek='2'";
@@ -316,7 +278,47 @@ RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new Comp
 List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
 
-# Jsonb Support with Postgresql
+## Escaping Special Characters in LIKE Predicate
+
+For the `LIKE` statement in different RDBMS, the most commonly used special characters are:
+
+### MySQL/MariaDB and PostgreSQL
+
+* `%`: Represents any sequence of zero or more characters. For example, `LIKE '%abc'` would match any string ending with `abc`.
+* `_`: Represents any single character. For example, `LIKE 'a_c'` would match a three-character string starting with `a` and ending with `c`.
+
+### SQL Server
+
+* `%` and `_`: Function in the same way as in MySQL/MariaDB and PostgreSQL.
+* `[]`: Used to specify a set or range of characters. For instance, `LIKE '[a-c]%'` would match any string starting with `a`, `b`, or `c`.
+* `^`: Used within `[]` to exclude characters. For example, LIKE '[^a-c]%' would match any string not starting with `a`, `b`, or `c`.
+
+### Oracle:
+
+* `%` and `_`: Function similarly to MySQL/MariaDB and PostgreSQL.
+* `ESCAPE`: Allows specifying an escape character to include % or _ literally in the search. For example, `LIKE '%\_%' ESCAPE '\'` would match a string containing an underscore.
+
+### LIKE in RSQL
+
+The default character for escaping in a RSQL like filter is `$`.  
+You can change it by setting it with `RSQLJPASupport.setLikeEscapeChar()` method.  
+If you want to use backslash ` \ ` as escape character, you must escape twice ` \\ ` due to parser implementation.
+
+### Example
+
+Above RSQL with default escape character `$` for searching string containing `_`:
+
+```java
+my_table.my_column=like='$_'
+```
+
+Will produce the following SQL:
+
+```sql
+SELECT * FROM my_table WHERE my_column LIKE '%$_%' ESCAPE '$'
+```
+
+## Jsonb Support with Postgresql
 
 It's possible to make rsql queries on jsonb fields. For example, if you have a jsonb field named `data` in your entity, you can make queries like this:
 
@@ -364,7 +366,7 @@ Json primitive types are supported such as
 * boolean
 * array
 
-## Temporal values support
+### Temporal values support
 
 Since Postgresql 13 jsonb supports temporal values with `datetime()` function.  
 As Date time values are string in jsonb, you can make queries on them as well.  
