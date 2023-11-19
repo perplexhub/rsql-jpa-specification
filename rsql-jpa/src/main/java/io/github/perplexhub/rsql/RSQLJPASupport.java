@@ -27,8 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "serial" })
 public class RSQLJPASupport extends RSQLCommonSupport {
 
-	public final static char DEFAULT_LIKE_ESCAPE_CHAR = '$';
-	protected static char LIKE_ESCAPE_CHAR = DEFAULT_LIKE_ESCAPE_CHAR;
+	private final static char DEFAULT_LIKE_ESCAPE_CHAR = '$';
+	private static char LIKE_ESCAPE_CHAR = DEFAULT_LIKE_ESCAPE_CHAR;
 
 	public RSQLJPASupport() {
 		super();
@@ -43,14 +43,25 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 		RSQLVisitorBase.setEntityManagerDatabase(entityManagerDatabase);
 	}
 
-	public static void setLikeEscapeChar(char defaultLikeEscapeChar) {
-		RSQLJPASupport.LIKE_ESCAPE_CHAR = defaultLikeEscapeChar;
+	/**
+	 * Set the escape character for LIKE operation
+	 * @param likeEscapeChar escape character
+	 */
+	public static void setLikeEscapeChar(char likeEscapeChar) {
+		RSQLJPASupport.LIKE_ESCAPE_CHAR = likeEscapeChar;
 	}
 
+	/**
+	 * Get the escape character for LIKE operation
+	 * @return escape character
+	 */
 	public static char getLikeEscapeChar() {
 		return RSQLJPASupport.LIKE_ESCAPE_CHAR;
 	}
 
+	/**
+	 * Reset the escape character for LIKE operation to default, which is '$'
+	 */
 	public static void setDefaultLikeEscapeChar() {
 		RSQLJPASupport.LIKE_ESCAPE_CHAR = DEFAULT_LIKE_ESCAPE_CHAR;
 	}
