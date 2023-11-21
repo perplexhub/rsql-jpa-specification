@@ -300,9 +300,16 @@ For the `LIKE` statement in different RDBMS, the most commonly used special char
 
 ### LIKE in RSQL
 
-The default character for escaping in a RSQL like filter is `$`.  
-You can change it by setting it with `RSQLJPASupport.setLikeEscapeChar()` method.  
-If you want to use backslash ` \ ` as escape character, you must escape twice ` \\ ` due to parser implementation.
+To use escape character in RSQL, you must use `QuerySupport` to build the `Specification` with appropriate escape character.
+
+```java
+char escapeChar = '$';
+QuerySupport query = QuerySupport.builder()
+    .rsqlQuery("name=like='" + escapeChar + "%'")
+    .escapeCharacter(escapeChar)
+    .build();
+List<Company> users = companyRepository.findAll(toSpecification(query));
+```
 
 ### Example
 

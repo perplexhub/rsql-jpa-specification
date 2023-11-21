@@ -529,32 +529,41 @@ class RSQLJPASupportTest {
 
 	@Test
 	final void testEscapeForUnderscore() {
-		setDefaultLikeEscapeChar();
-		String rsql = "code=like='" + getLikeEscapeChar() + "_'";
-		List<Company> users = companyRepository.findAll(toSpecification(rsql));
+		char escapeChar = '$';
+		QuerySupport query = QuerySupport.builder()
+				.rsqlQuery("code=like='" + escapeChar + "_'")
+				.escapeCharacter(escapeChar)
+				.build();
+		List<Company> users = companyRepository.findAll(toSpecification(query));
 		long count = users.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(2L));
+		log.info("rsql: {} -> count: {}", query.getRsqlQuery(), count);
+		assertThat(query.getRsqlQuery(), count, is(2L));
 	}
 
 	@Test
 	final void testEscapeForPercent() {
-		setDefaultLikeEscapeChar();
-		String rsql = "name=like='" + getLikeEscapeChar() + "%'";
-		List<Company> users = companyRepository.findAll(toSpecification(rsql));
+		char escapeChar = '$';
+		QuerySupport query = QuerySupport.builder()
+				.rsqlQuery("name=like='" + escapeChar + "%'")
+				.escapeCharacter(escapeChar)
+				.build();
+		List<Company> users = companyRepository.findAll(toSpecification(query));
 		long count = users.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(2L));
+		log.info("rsql: {} -> count: {}", query.getRsqlQuery(), count);
+		assertThat(query.getRsqlQuery(), count, is(2L));
 	}
 
 	@Test
 	final void testEscapeForAntiSlash() {
-		setLikeEscapeChar('\\');
-		String rsql = "name=like='\\\\%'";
-		List<Company> users = companyRepository.findAll(toSpecification(rsql));
+		char escapeChar = '\\';
+		QuerySupport query = QuerySupport.builder()
+				.rsqlQuery("name=like='\\\\%'")
+				.escapeCharacter(escapeChar)
+				.build();
+		List<Company> users = companyRepository.findAll(toSpecification(query));
 		long count = users.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(2L));
+		log.info("rsql: {} -> count: {}", query.getRsqlQuery(), count);
+		assertThat(query.getRsqlQuery(), count, is(2L));
 	}
 
 	@Test

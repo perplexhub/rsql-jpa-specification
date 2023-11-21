@@ -27,9 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "serial" })
 public class RSQLJPASupport extends RSQLCommonSupport {
 
-	private final static char DEFAULT_LIKE_ESCAPE_CHAR = '$';
-	private static char LIKE_ESCAPE_CHAR = DEFAULT_LIKE_ESCAPE_CHAR;
-
 	public RSQLJPASupport() {
 		super();
 	}
@@ -41,29 +38,6 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	public RSQLJPASupport(Map<String, EntityManager> entityManagerMap, Map<EntityManager, Database> entityManagerDatabase) {
 		super(entityManagerMap);
 		RSQLVisitorBase.setEntityManagerDatabase(entityManagerDatabase);
-	}
-
-	/**
-	 * Set the escape character for LIKE operation
-	 * @param likeEscapeChar escape character
-	 */
-	public static void setLikeEscapeChar(char likeEscapeChar) {
-		RSQLJPASupport.LIKE_ESCAPE_CHAR = likeEscapeChar;
-	}
-
-	/**
-	 * Get the escape character for LIKE operation
-	 * @return escape character
-	 */
-	public static char getLikeEscapeChar() {
-		return RSQLJPASupport.LIKE_ESCAPE_CHAR;
-	}
-
-	/**
-	 * Reset the escape character for LIKE operation to default, which is '$'
-	 */
-	public static void setDefaultLikeEscapeChar() {
-		RSQLJPASupport.LIKE_ESCAPE_CHAR = DEFAULT_LIKE_ESCAPE_CHAR;
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
@@ -151,7 +125,8 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 
 			Node rsql = new RSQLParser(supportedOperators).parse(querySupport.getRsqlQuery());
 			RSQLJPAPredicateConverter visitor = new RSQLJPAPredicateConverter(cb, querySupport.getPropertyPathMapper(),
-					querySupport.getCustomPredicates(), querySupport.getJoinHints(), querySupport.isStrictEquality());
+					querySupport.getCustomPredicates(), querySupport.getJoinHints(), querySupport.isStrictEquality(),
+					querySupport.getEscapeCharacter());
 
 			visitor.setPropertyWhitelist(querySupport.getPropertyWhitelist());
 			visitor.setPropertyBlacklist(querySupport.getPropertyBlacklist());

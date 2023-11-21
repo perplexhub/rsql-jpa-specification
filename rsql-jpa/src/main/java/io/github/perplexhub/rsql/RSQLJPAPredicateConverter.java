@@ -36,6 +36,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private final @Getter Map<ComparisonOperator, RSQLCustomPredicate<?>> customPredicates;
 	private final @Getter Map<String, JoinType> joinHints;
 	private final boolean strictEquality;
+	private final Character escapeCharacter;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
 		this(builder, propertyPathMapper, null, null);
@@ -46,18 +47,20 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints) {
-		this(builder, propertyPathMapper, customPredicates, joinHints, false);
+		this(builder, propertyPathMapper, customPredicates, joinHints, false, null);
 	}
 	
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper,
 																	 List<RSQLCustomPredicate<?>> customPredicates,
 																	 Map<String, JoinType> joinHints,
-																	 boolean strictEquality) {
+																	 boolean strictEquality,
+									 								 Character escapeCharacter) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
 		this.joinHints = joinHints != null ? joinHints : Collections.emptyMap();
 		this.strictEquality = strictEquality;
+		this.escapeCharacter = escapeCharacter;
 	}
 
 	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
@@ -265,19 +268,19 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.notEqual(attrPath, argument);
 			}
 			if (op.equals(LIKE)) {
-				return builder.like(attrPath, '%' + argument.toString() + '%', RSQLJPASupport.getLikeEscapeChar());
+				return likePredicate(attrPath, '%' + argument.toString() + '%', builder);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return builder.like(attrPath, '%' + argument.toString() + '%', RSQLJPASupport.getLikeEscapeChar()).not();
+				return likePredicate(attrPath, '%' + argument.toString() + '%', builder).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
 				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return builder.like(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', RSQLJPASupport.getLikeEscapeChar());
+				return likePredicate(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', builder);
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return builder.like(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', RSQLJPASupport.getLikeEscapeChar()).not();
+				return likePredicate(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', builder).not();
 			}
 			if (op.equals(EQUAL)) {
 				return equalPredicate(attrPath, type, argument);
@@ -306,6 +309,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
+	}
+
+	private Predicate likePredicate(Expression attributePath, String likeExpression, CriteriaBuilder builder) {
+		return Optional.ofNullable(this.escapeCharacter)
+				.map(character ->  builder.like(attributePath, likeExpression, character))
+				.orElse(builder.like(attributePath, likeExpression));
 	}
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
