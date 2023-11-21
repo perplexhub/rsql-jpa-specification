@@ -325,9 +325,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.equal(expr, argument); 
 			} else {
 				if (argStr.contains("*") && argStr.contains("^")) {
-					return builder.like(builder.upper(expr), argStr.replace('*', '%').replace("^", "").toUpperCase());
+					return likePredicate(builder.upper(expr),
+							argStr.replace('*', '%').replace("^", "").toUpperCase(),
+							builder);
 				} else if (argStr.contains("*")) {
-					return builder.like(expr, argStr.replace('*', '%'));
+					return likePredicate(expr, argStr.replace('*', '%'), builder);
 				} else if (argStr.contains("^")) {
 					return builder.equal(builder.upper(expr), argStr.replace("^", "").toUpperCase());
 				} else {
