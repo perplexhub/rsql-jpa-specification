@@ -314,7 +314,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private Predicate likePredicate(Expression attributePath, String likeExpression, CriteriaBuilder builder) {
 		return Optional.ofNullable(this.escapeCharacter)
 				.map(character ->  builder.like(attributePath, likeExpression, character))
-				.orElse(builder.like(attributePath, likeExpression));
+				.orElseGet(() -> builder.like(attributePath, likeExpression));
 	}
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
