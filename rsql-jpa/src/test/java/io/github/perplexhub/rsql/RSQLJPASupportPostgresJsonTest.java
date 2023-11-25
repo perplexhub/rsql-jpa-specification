@@ -46,6 +46,8 @@ class RSQLJPASupportPostgresJsonTest {
     void tearDown() {
         repository.deleteAll();
         repository.flush();
+        repository2.deleteAll();
+        repository2.flush();
         RSQLVisitorBase.setEntityManagerDatabase(Map.of());
     }
 
