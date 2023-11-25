@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
@@ -224,7 +225,7 @@ class RSQLJPASupportTest {
 
 		count = companyRepository.count(toSpecification(rsql));
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat("Null", count, is(9L));
+		assertThat("Null", count, is(7L));
 	}
 
 	@Test
@@ -461,21 +462,21 @@ class RSQLJPASupportTest {
 		List<Company> companys = companyRepository.findAll(toSpecification(rsql));
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8L));
+		assertThat(rsql, count, is(6L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=notnull=''";
 		companys = companyRepository.findAll(toSpecification(rsql));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8L));
+		assertThat(rsql, count, is(6L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
 		rsql = "name=nn=''";
 		companys = companyRepository.findAll(toSpecification(rsql));
 		count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(8L));
+		assertThat(rsql, count, is(6L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 	}
 
@@ -528,42 +529,60 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
-	final void testEscapeForUnderscore() {
+	@Transactional
+	void testEscapeForUnderscore() {
+		Company company1 = new Company();
+		company1.setId(100);
+		company1.setCode("code_1");
+		Company company2 = new Company();
+		company2.setId(101);
+		company2.setCode("code_2");
+		Set<Company> companies = Set.of(company1, company2);
+		companyRepository.saveAll(companies);
 		char escapeChar = '$';
 		QuerySupport query = QuerySupport.builder()
 				.rsqlQuery("code=like='" + escapeChar + "_'")
 				.escapeCharacter(escapeChar)
 				.build();
-		List<Company> users = companyRepository.findAll(toSpecification(query));
-		long count = users.size();
-		log.info("rsql: {} -> count: {}", query.getRsqlQuery(), count);
-		assertThat(query.getRsqlQuery(), count, is(2L));
+		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
 	}
 
 	@Test
-	final void testEscapeForPercent() {
+	@Transactional
+	void testEscapeForPercent() {
+		Company company1 = new Company();
+		company1.setId(100);
+		company1.setCode("code%1");
+		Company company2 = new Company();
+		company2.setId(101);
+		company2.setCode("code%2");
+		Set<Company> companies = Set.of(company1, company2);
+		companyRepository.saveAll(companies);
 		char escapeChar = '$';
 		QuerySupport query = QuerySupport.builder()
-				.rsqlQuery("name=like='" + escapeChar + "%'")
+				.rsqlQuery("code=like='" + escapeChar + "%'")
 				.escapeCharacter(escapeChar)
 				.build();
-		List<Company> users = companyRepository.findAll(toSpecification(query));
-		long count = users.size();
-		log.info("rsql: {} -> count: {}", query.getRsqlQuery(), count);
-		assertThat(query.getRsqlQuery(), count, is(2L));
+		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
 	}
 
 	@Test
-	final void testEscapeForAntiSlash() {
+	@Transactional
+	void testEscapeForAntiSlash() {
+		Company company1 = new Company();
+		company1.setId(100);
+		company1.setCode("code%1");
+		Company company2 = new Company();
+		company2.setId(101);
+		company2.setCode("code%2");
+		Set<Company> companies = Set.of(company1, company2);
+		companyRepository.saveAll(companies);
 		char escapeChar = '\\';
 		QuerySupport query = QuerySupport.builder()
-				.rsqlQuery("name=like='\\\\%'")
+				.rsqlQuery("code=like='\\\\%'")
 				.escapeCharacter(escapeChar)
 				.build();
-		List<Company> users = companyRepository.findAll(toSpecification(query));
-		long count = users.size();
-		log.info("rsql: {} -> count: {}", query.getRsqlQuery(), count);
-		assertThat(query.getRsqlQuery(), count, is(2L));
+		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
 	}
 
 	@Test
@@ -951,12 +970,12 @@ class RSQLJPASupportTest {
 		List<Company> companies = companyRepository.findAll(toSort("code,desc,ic"));
 		Assertions.assertThat(companies)
 				.extracting(Company::getId)
-				.containsExactly(2, 4, 7, 1, 5, 6, 3, 8, 9);
+				.containsExactly(2, 4, 7, 1, 5, 6, 3);
 
 		companies = companyRepository.findAll(toSort("code,desc"));
 		Assertions.assertThat(companies)
 				.extracting(Company::getId)
-				.containsExactly(7, 1, 5, 6, 3, 8, 9, 2, 4);
+				.containsExactly(7, 1, 5, 6, 3, 2, 4);
 	}
 
 	@Test
@@ -964,7 +983,7 @@ class RSQLJPASupportTest {
 		List<Company> companies = companyRepository.findAll(toSort("id,desc,ic"));
 		Assertions.assertThat(companies)
 				.extracting(Company::getId)
-				.containsExactly(9, 8, 7, 6, 5, 4, 3, 2, 1);
+				.containsExactly(7, 6, 5, 4, 3, 2, 1);
 	}
 
 	@Test
