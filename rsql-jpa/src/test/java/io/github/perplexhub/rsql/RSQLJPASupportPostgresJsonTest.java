@@ -6,7 +6,9 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.perplexhub.rsql.jsonb.JsonbSupport;
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
+import io.github.perplexhub.rsql.model.PostgresJsonEntity2;
 import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository;
+import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository2;
 import jakarta.persistence.EntityManager;
 
 import java.util.HashMap;
@@ -32,6 +34,9 @@ class RSQLJPASupportPostgresJsonTest {
     @Autowired
     private PostgresJsonEntityRepository repository;
 
+    @Autowired
+    private PostgresJsonEntityRepository2 repository2;
+
     @BeforeEach
     void setup(@Autowired EntityManager em) {
         RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
@@ -41,6 +46,8 @@ class RSQLJPASupportPostgresJsonTest {
     void tearDown() {
         repository.deleteAll();
         repository.flush();
+        repository2.deleteAll();
+        repository2.flush();
         RSQLVisitorBase.setEntityManagerDatabase(Map.of());
     }
 
@@ -97,6 +104,24 @@ class RSQLJPASupportPostgresJsonTest {
         users.forEach(e -> e.setId(null));
     }
 
+    @ParameterizedTest
+    @MethodSource("rootData")
+    void testJsonRoot(List<PostgresJsonEntity2> entity2s, String rsql, List<PostgresJsonEntity2> expected) {
+        JsonbSupport.DATE_TIME_SUPPORT = true;
+        //given
+        repository2.saveAllAndFlush(entity2s);
+
+        //when
+        List<PostgresJsonEntity2> result = repository2.findAll(toSpecification(rsql));
+
+        //then
+        assertThat(result)
+                .hasSameSizeAs(expected)
+                .containsExactlyInAnyOrderElementsOf(expected);
+
+        entity2s.forEach(e -> e.setId(null));
+    }
+
     static Stream<Arguments> data() {
         return Stream.of(
                 equalsData(),
@@ -133,6 +158,27 @@ class RSQLJPASupportPostgresJsonTest {
                 sortByNested(),
                 null
         ).filter(Objects::nonNull).flatMap(s -> s);
+    }
+
+    static Stream<Arguments> rootData() {
+        var e1 = new PostgresJsonEntity2("1");
+        var e2 = new PostgresJsonEntity2("\"value\"");
+        var e3 = new PostgresJsonEntity2("true");
+        var e4 = new PostgresJsonEntity2("[1,2,3]");
+        var e5 = new PostgresJsonEntity2("null");
+        var e6 = new PostgresJsonEntity2("{}");
+        var e7 = new PostgresJsonEntity2("{\"a\":1}");
+        var allCases = List.of(e1, e2, e3, e4, e5, e6, e7);
+        return Stream.of(
+                arguments(allCases, "data==1", List.of(e1)),
+                arguments(allCases, "data=='\"value\"'", List.of(e2)),
+                arguments(allCases, "data==true", List.of(e3)),
+                arguments(allCases, "data=='[1, 2, 3]'", List.of(e4)),
+                arguments(allCases, "data=='null'", List.of(e5)),
+                arguments(allCases, "data=='{}'", List.of(e6)),
+                arguments(allCases, "data=='{\"a\": 1}'", List.of(e7)),
+                null
+        ).filter(Objects::nonNull);
     }
 
     static Stream<Arguments> equalsData() {

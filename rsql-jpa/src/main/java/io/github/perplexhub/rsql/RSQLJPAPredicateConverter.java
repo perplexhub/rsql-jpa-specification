@@ -214,9 +214,14 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			}
 			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
 		}
-
+		Expression resolvedExpression = attrPath;
 		if(isJsonType(attribute)) {
-			return jsonbPathExists(builder, node, attrPath);
+			if(node.getSelector().contains(".")) {
+				return jsonbPathExists(builder, node, attrPath);
+			} else {
+				//We need to cast the path to string to be able to use the like operator
+				resolvedExpression = attrPath.as(String.class);
+			}
 		}
 
 		Class type = attribute != null ? attribute.getJavaType() : null;
@@ -232,58 +237,62 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			}
 		}
 
+		if (type == null) {
+			type = String.class;
+		}
+
         if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
 				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
-				return attrPath.in(listObject);
+				return resolvedExpression.in(listObject);
 			}
 			if (op.equals(NOT_IN)) {
-				return attrPath.in(listObject).not();
+				return resolvedExpression.in(listObject).not();
 			}
 			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
+				return builder.between(resolvedExpression, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
 			}
 			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
+				return builder.between(resolvedExpression, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
 			}
 		} else {
 
 			if (op.equals(IS_NULL)) {
-				return builder.isNull(attrPath);
+				return builder.isNull(resolvedExpression);
 			}
 			if (op.equals(NOT_NULL)) {
-				return builder.isNotNull(attrPath);
+				return builder.isNotNull(resolvedExpression);
 			}
 			Object argument = convert(node.getArguments().get(0), type);
 			if (op.equals(IN)) {
-				return builder.equal(attrPath, argument);
+				return builder.equal(resolvedExpression, argument);
 			}
 			if (op.equals(NOT_IN)) {
-				return builder.notEqual(attrPath, argument);
+				return builder.notEqual(resolvedExpression, argument);
 			}
 			if (op.equals(LIKE)) {
-				return builder.like(attrPath, "%" + argument.toString() + "%");
+				return builder.like(resolvedExpression, "%" + argument.toString() + "%");
 			}
 			if (op.equals(NOT_LIKE)) {
-				return builder.like(attrPath, "%" + argument.toString() + "%").not();
+				return builder.like(resolvedExpression, "%" + argument.toString() + "%").not();
 			}
 			if (op.equals(IGNORE_CASE)) {
-				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
+				return builder.equal(builder.upper(resolvedExpression), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%");
+				return builder.like(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%");
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return builder.like(builder.upper(attrPath), "%" + argument.toString().toUpperCase() + "%").not();
+				return builder.like(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%").not();
 			}
 			if (op.equals(EQUAL)) {
-				return equalPredicate(attrPath, type, argument);
+				return equalPredicate(resolvedExpression, type, argument);
 			}
 			if (op.equals(NOT_EQUAL)) {
-				return equalPredicate(attrPath, type, argument).not();
+				return equalPredicate(resolvedExpression, type, argument).not();
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
@@ -292,16 +301,16 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			Comparable comparable = (Comparable) argument;
 
 			if (op.equals(GREATER_THAN)) {
-				return builder.greaterThan(attrPath, comparable);
+				return builder.greaterThan(resolvedExpression, comparable);
 			}
 			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return builder.greaterThanOrEqualTo(attrPath, comparable);
+				return builder.greaterThanOrEqualTo(resolvedExpression, comparable);
 			}
 			if (op.equals(LESS_THAN)) {
-				return builder.lessThan(attrPath, comparable);
+				return builder.lessThan(resolvedExpression, comparable);
 			}
 			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return builder.lessThanOrEqualTo(attrPath, comparable);
+				return builder.lessThanOrEqualTo(resolvedExpression, comparable);
 			}
 		}
 		log.error("Unknown operator: {}", op);
