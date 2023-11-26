@@ -17,6 +17,7 @@ public class QuerySupport {
      * {@link RSQLOperators#LIKE}, {@link RSQLOperators#NOT_LIKE} or their case-insensitive variants.
      */
     private boolean strictEquality;
+    private Character likeEscapeCharacter;
     private Map<String, String> propertyPathMapper;
     private List<RSQLCustomPredicate<?>> customPredicates;
     private Map<String, JoinType> joinHints;
