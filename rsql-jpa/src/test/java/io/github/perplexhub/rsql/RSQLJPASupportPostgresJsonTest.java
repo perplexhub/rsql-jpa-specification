@@ -145,6 +145,7 @@ class RSQLJPASupportPostgresJsonTest {
         entityWithJsonbRepository.saveAllAndFlush(entitiesWithJsonb);
         Map<String, String> pathMapping = new HashMap<>();
         pathMapping.put("jsonbRelation", "jsonb.data");
+        pathMapping.put("jsonbRelationOfA", "jsonb.data.a");
         //when
         List<JsonbEntity> result = entityWithJsonbRepository.findAll(toSpecification(rsql, pathMapping)).stream()
                 .map(EntityWithJsonb::getJsonb)
@@ -190,6 +191,7 @@ class RSQLJPASupportPostgresJsonTest {
         entityWithJsonbRepository.saveAllAndFlush(entitiesWithJsonb);
         Map<String, String> pathMapping = new HashMap<>();
         pathMapping.put("jsonbRelation", "jsonb.data");
+        pathMapping.put("jsonbRelationOfA", "jsonb.data.a");
         //when
         List<JsonbEntity> result = entityWithJsonbRepository.findAll(RSQLJPASupport.toSort(rsql, pathMapping)).stream()
                 .map(EntityWithJsonb::getJsonb)
@@ -272,6 +274,8 @@ class RSQLJPASupportPostgresJsonTest {
         var e7 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\":1}").build();
         var allCases = List.of(e1, e2, e3, e4, e5, e6, e7);
         return Stream.of(
+                arguments(allCases, "jsonb.data==1", List.of(e1)),
+                arguments(allCases, "jsonb.data.a==1", List.of(e7)),
                 arguments(allCases, "jsonbRelation==1", List.of(e1)),
                 arguments(allCases, "jsonbRelation=='\"value\"'", List.of(e2)),
                 arguments(allCases, "jsonbRelation==true", List.of(e3)),
@@ -280,6 +284,7 @@ class RSQLJPASupportPostgresJsonTest {
                 arguments(allCases, "jsonbRelation=='{}'", List.of(e6)),
                 arguments(allCases, "jsonbRelation=='{\"a\": 1}'", List.of(e7)),
                 arguments(allCases, "jsonbRelation.a==1", List.of(e7)),
+                arguments(allCases, "jsonbRelationOfA==1", List.of(e7)),
                 null
         ).filter(Objects::nonNull);
     }
@@ -649,12 +654,15 @@ class RSQLJPASupportPostgresJsonTest {
         var e3 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\": 3, \"b\": 1}").build();
         var allCases = List.of(e1, e2, e3);
         return Stream.of(
+                arguments(allCases, "jsonb.data.a,asc", List.of(e1, e2, e3)),
                 arguments(allCases, "jsonbRelation.a,asc", List.of(e1, e2, e3)),
                 arguments(allCases, "jsonbRelation.b,asc", List.of(e3, e2, e1)),
                 arguments(allCases, "jsonbRelation,asc", List.of(e1, e2, e3)),
                 arguments(allCases, "jsonbRelation.a,desc", List.of(e3, e2, e1)),
                 arguments(allCases, "jsonbRelation.b,desc", List.of(e1, e2, e3)),
                 arguments(allCases, "jsonbRelation,desc", List.of(e3, e2, e1)),
+                arguments(allCases, "jsonbRelationOfA,asc", List.of(e1, e2, e3)),
+                arguments(allCases, "jsonbRelationOfA,desc", List.of(e3, e2, e1)),
                 null
         ).filter(Objects::nonNull);
     }
