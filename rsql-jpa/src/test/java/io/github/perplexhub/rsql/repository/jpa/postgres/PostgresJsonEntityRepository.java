@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface PostgresJsonEntityRepository extends JpaRepository<PostgresJsonEntity, UUID>,
     JpaSpecificationExecutor<PostgresJsonEntity> {
+
 }

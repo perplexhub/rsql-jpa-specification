@@ -221,7 +221,6 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
 				return jsonbPathExists(builder, jsonbNode, attrPath);
 			} else {
-				//We need to cast the path to string to be able to use the like operator
 				resolvedExpression = attrPath.as(String.class);
 			}
 		}

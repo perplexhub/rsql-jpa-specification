@@ -20,7 +20,6 @@ class JsonbExpressionBuilderTest {
     @ParameterizedTest
     @MethodSource("data")
     void testJsonbPathExpression(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
-        JsonbSupport.DATE_TIME_SUPPORT = false;
         JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments);
         var expression = builder.getJsonPathExpression();
         assertEquals(expectedJsonbFunction, expression.jsonbFunction());
