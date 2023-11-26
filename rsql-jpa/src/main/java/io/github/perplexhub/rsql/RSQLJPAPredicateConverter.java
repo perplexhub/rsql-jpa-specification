@@ -48,11 +48,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints) {
 		this(builder, propertyPathMapper, customPredicates, joinHints, false);
 	}
-
+	
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper,
-									 List<RSQLCustomPredicate<?>> customPredicates,
-									 Map<String, JoinType> joinHints,
-									 boolean strictEquality) {
+																	 List<RSQLCustomPredicate<?>> customPredicates,
+																	 Map<String, JoinType> joinHints,
+																	 boolean strictEquality) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
@@ -89,33 +89,33 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					classMetadata = getManagedType(associationType);
 
 					String keyJoin = getKeyJoin(root, mappedProperty);
-					if (isOneToAssociationType) {
-						if (joinHints.containsKey(keyJoin)) {
-							log.debug("Create a join between [{}] and [{}] using key [{}] with supplied hints", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-							root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
-						} else {
-							log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-							root = join(keyJoin, root, mappedProperty, JoinType.LEFT);
-						}
+				if (isOneToAssociationType) {
+					if (joinHints.containsKey(keyJoin)) {
+						log.debug("Create a join between [{}] and [{}] using key [{}] with supplied hints", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+						root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
 					} else {
-						String lookAheadProperty = i < propertiesLength - 1 ? properties[i + 1] : null;
-						boolean lookAheadPropertyIsId = false;
-						if (!isManyToManyAssociationType(mappedProperty, previousClassMetadata) && classMetadata instanceof IdentifiableType && lookAheadProperty != null) {
-							final IdentifiableType identifiableType = (IdentifiableType) classMetadata;
-							final SingularAttribute id = identifiableType.getId(identifiableType.getIdType().getJavaType());
-							if (identifiableType.hasSingleIdAttribute() && id.isId() && id.getName().equals(lookAheadProperty)) {
-								lookAheadPropertyIsId = true;
-							}
-						}
-						if (lookAheadPropertyIsId || lookAheadProperty == null) {
-							log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
-							root = root.get(mappedProperty);
-						} else {
-							log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-							root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
+						log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+						root = join(keyJoin, root, mappedProperty, JoinType.LEFT);
+					}
+				} else {
+					String lookAheadProperty = i < propertiesLength - 1 ? properties[i + 1] : null;
+					boolean lookAheadPropertyIsId = false;
+					if (!isManyToManyAssociationType(mappedProperty, previousClassMetadata) && classMetadata instanceof IdentifiableType && lookAheadProperty != null) {
+						final IdentifiableType identifiableType = (IdentifiableType) classMetadata;
+						final SingularAttribute id = identifiableType.getId(identifiableType.getIdType().getJavaType());
+						if (identifiableType.hasSingleIdAttribute() && id.isId() && id.getName().equals(lookAheadProperty)) {
+							lookAheadPropertyIsId = true;
 						}
 					}
-				} else if (isElementCollectionType(mappedProperty, classMetadata)) {
+					if (lookAheadPropertyIsId || lookAheadProperty == null) {
+						log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
+						root = root.get(mappedProperty);
+					} else {
+						log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+						root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
+					}
+			  	}
+			} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 					String previousClass = classMetadata.getJavaType().getName();
 					attribute = classMetadata.getAttribute(property);
 					classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
@@ -153,9 +153,9 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				.map(this::isJsonType)
 				.orElse(false);
 	}
-
+	
 	protected boolean isJsonType(Attribute<?, ?> attribute) {
-		return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
+    	return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
 	}
 
 	private boolean isJsonColumn(Attribute<?, ?> attribute) {
@@ -242,7 +242,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			type = String.class;
 		}
 
-		if (node.getArguments().size() > 1) {
+        if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
 				listObject.add(convert(argument, type));
@@ -338,9 +338,9 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
 		if (type.equals(String.class)) {
 			String argStr = argument.toString();
-
+			
 			if (strictEquality) {
-				return builder.equal(expr, argument);
+				return builder.equal(expr, argument); 
 			} else {
 				if (argStr.contains("*") && argStr.contains("^")) {
 					return builder.like(builder.upper(expr), argStr.replace('*', '%').replace("^", "").toUpperCase());
