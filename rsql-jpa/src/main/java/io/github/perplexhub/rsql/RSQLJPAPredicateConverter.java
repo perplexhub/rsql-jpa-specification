@@ -36,7 +36,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private final @Getter Map<ComparisonOperator, RSQLCustomPredicate<?>> customPredicates;
 	private final @Getter Map<String, JoinType> joinHints;
 	private final boolean strictEquality;
-	private final Character escapeCharacter;
+	private final Character likeEscapeCharacter;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
 		this(builder, propertyPathMapper, null, null);
@@ -54,13 +54,13 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 																	 List<RSQLCustomPredicate<?>> customPredicates,
 																	 Map<String, JoinType> joinHints,
 																	 boolean strictEquality,
-									 								 Character escapeCharacter) {
+									 								 Character likeEscapeCharacter) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
 		this.joinHints = joinHints != null ? joinHints : Collections.emptyMap();
 		this.strictEquality = strictEquality;
-		this.escapeCharacter = escapeCharacter;
+		this.likeEscapeCharacter = likeEscapeCharacter;
 	}
 
 	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
@@ -312,7 +312,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	private Predicate likePredicate(Expression attributePath, String likeExpression, CriteriaBuilder builder) {
-		return Optional.ofNullable(this.escapeCharacter)
+		return Optional.ofNullable(this.likeEscapeCharacter)
 				.map(character ->  builder.like(attributePath, likeExpression, character))
 				.orElseGet(() -> builder.like(attributePath, likeExpression));
 	}
