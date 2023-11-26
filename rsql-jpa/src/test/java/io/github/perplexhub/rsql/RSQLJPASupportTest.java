@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
@@ -542,7 +541,7 @@ class RSQLJPASupportTest {
 		char escapeChar = '$';
 		QuerySupport query = QuerySupport.builder()
 				.rsqlQuery("code=like='" + escapeChar + "_'")
-				.escapeCharacter(escapeChar)
+				.likeEscapeCharacter(escapeChar)
 				.build();
 		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
 	}
@@ -561,7 +560,7 @@ class RSQLJPASupportTest {
 		char escapeChar = '$';
 		QuerySupport query = QuerySupport.builder()
 				.rsqlQuery("code=like='" + escapeChar + "%'")
-				.escapeCharacter(escapeChar)
+				.likeEscapeCharacter(escapeChar)
 				.build();
 		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
 	}
@@ -580,7 +579,7 @@ class RSQLJPASupportTest {
 		char escapeChar = '\\';
 		QuerySupport query = QuerySupport.builder()
 				.rsqlQuery("code=like='\\\\%'")
-				.escapeCharacter(escapeChar)
+				.likeEscapeCharacter(escapeChar)
 				.build();
 		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
 	}
