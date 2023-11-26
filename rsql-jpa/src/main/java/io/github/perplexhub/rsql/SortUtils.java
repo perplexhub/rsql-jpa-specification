@@ -10,7 +10,6 @@ import java.util.stream.Stream;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Order;
-import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Root;
 
 import org.springframework.lang.Nullable;
@@ -49,15 +48,15 @@ class SortUtils {
 
     @SuppressWarnings("unchecked")
     private static Order sortToJpaOrder(final String[] parts, final SortSupport sortSupport, final Root<?> root, final CriteriaBuilder cb) {
-        final String property = parts[0];
+        final String selector = parts[0];
         final String direction = parts.length > 1 ? parts[1] : "asc";
 
         final RSQLJPAPredicateConverter rsqljpaPredicateConverter =
                 new RSQLJPAPredicateConverter(cb, sortSupport.getPropertyPathMapper(), null, sortSupport.getJoinHints());
-        final RSQLJPAContext rsqljpaContext = rsqljpaPredicateConverter.findPropertyPath(property, root);
+        final RSQLJPAContext rsqljpaContext = rsqljpaPredicateConverter.findPropertyPath(selector, root);
 
         final boolean isJson = rsqljpaPredicateConverter.isJsonType(rsqljpaContext.getAttribute());
-        Expression<?> propertyExpression = isJson? jsonPathOf(rsqljpaContext.getPath(), property, cb) : rsqljpaContext.getPath();
+        Expression<?> propertyExpression = isJson? sortExpressionOfJson(rsqljpaContext, selector, cb) : rsqljpaContext.getPath();
 
         if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2]) && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
             propertyExpression = cb.lower((Expression<String>) propertyExpression);
@@ -66,15 +65,29 @@ class SortUtils {
         return direction.equalsIgnoreCase("asc") ? cb.asc(propertyExpression) : cb.desc(propertyExpression);
     }
 
-    private static Expression<?> jsonPathOf(Path<?> path, String property, CriteriaBuilder builder) {
-        //TODO, check if it's on root and sanitize jsonbPath
-        var args = new ArrayList<Expression<?>>();
-        args.add(path);
-        Stream.of(property.split("\\."))
-                .skip(1) // skip root
-                .map(builder::literal)
-                .forEach(args::add);
-        return builder.function("jsonb_extract_path", String.class, args.toArray(Expression[]::new));
+    /**
+     * Builds a jsonb expression for a given keyPath and operator.<br>
+     * If the jsonb expression targets a nested jsonb property, the jsonb expression will be built using the jsonb_extract_path function.
+     * Otherwise, the jsonb expression will be built using the jsonb value as a text.
+     *
+     * @param context  the rsql context
+     * @param property the property
+     * @param builder  the criteria builder
+     * @return the jsonb expression
+     */
+    private static Expression<?> sortExpressionOfJson(RSQLJPAContext context, String property, CriteriaBuilder builder) {
+        String jsonbSelector = RSQLJPAPredicateConverter.jsonPathOfSelector(context.getAttribute(), property);
+        if(jsonbSelector.contains(".")) {
+            var args = new ArrayList<Expression<?>>();
+            args.add(context.getPath());
+            Stream.of(jsonbSelector.split("\\."))
+                    .skip(1) // skip root
+                    .map(builder::literal)
+                    .forEach(args::add);
+            return builder.function("jsonb_extract_path", String.class, args.toArray(Expression[]::new));
+        } else {
+            return context.getPath().as(String.class);
+        }
     }
 
 }

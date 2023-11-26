@@ -216,7 +216,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		Expression resolvedExpression = attrPath;
 		if(isJsonType(attribute)) {
-			String jsonbPath = jsonbPath(attribute, node.getSelector());
+			String jsonbPath = jsonPathOfSelector(attribute, node.getSelector());
 			if(jsonbPath.contains(".")) {
 				ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
 				return jsonbPathExists(builder, jsonbNode, attrPath);
@@ -320,13 +320,14 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	/**
-	 * Returns the jsonb path for the given attribute path and selector.
+	 * Returns the jsonb path for the given attribute path and selector.<br>
+	 * It extracts the jsonb part of the selector that can contains entity references before the jsonb path.
 	 *
 	 * @param attrPath the attribute path
 	 * @param selector the selector
 	 * @return the jsonb path
 	 */
-	protected String jsonbPath(Attribute attrPath, String selector) {
+	protected static String jsonPathOfSelector(Attribute attrPath, String selector) {
 		String attributeName = attrPath.getName();
 		int attributePosition = selector.indexOf(attributeName);
 		if(attributePosition < 0) {

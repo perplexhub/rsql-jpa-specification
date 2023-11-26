@@ -48,23 +48,28 @@ class RSQLJPASupportPostgresJsonTest {
     @BeforeEach
     void setup(@Autowired EntityManager em) {
         RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
+        clear();
     }
 
     @AfterEach
     void tearDown() {
+        clear();
+        RSQLVisitorBase.setEntityManagerDatabase(Map.of());
+    }
+
+    private void clear() {
         repository.deleteAll();
         repository.flush();
         entityWithJsonbRepository.deleteAll();
         entityWithJsonbRepository.flush();
-        RSQLVisitorBase.setEntityManagerDatabase(Map.of());
     }
 
     @ParameterizedTest
     @MethodSource("data")
-    void testJson(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
+    void testJsonSearch(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
         JsonbSupport.DATE_TIME_SUPPORT = false;
         //given
-        repository.saveAllAndFlush(users);
+        repository.saveAllAndFlush(entities);
 
         //when
         List<PostgresJsonEntity> result = repository.findAll(toSpecification(rsql));
@@ -74,15 +79,15 @@ class RSQLJPASupportPostgresJsonTest {
                 .hasSameSizeAs(expected)
                 .containsExactlyInAnyOrderElementsOf(expected);
 
-        users.forEach(e -> e.setId(null));
+        entities.forEach(e -> e.setId(null));
     }
 
     @ParameterizedTest
     @MethodSource("temporalData")
-    void testJsonTime(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
+    void testJsonSearchOfTemporal(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
         JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
-        repository.saveAllAndFlush(users);
+        repository.saveAllAndFlush(entities);
 
         //when
         List<PostgresJsonEntity> result = repository.findAll(toSpecification(rsql));
@@ -92,14 +97,14 @@ class RSQLJPASupportPostgresJsonTest {
                 .hasSameSizeAs(expected)
                 .containsExactlyInAnyOrderElementsOf(expected);
 
-        users.forEach(e -> e.setId(null));
+        entities.forEach(e -> e.setId(null));
     }
 
     @ParameterizedTest
     @MethodSource("sortData")
-    void testJsonSort(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
+    void testJsonSort(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
         //given
-        repository.saveAllAndFlush(users);
+        repository.saveAllAndFlush(entities);
 
         //when
         List<PostgresJsonEntity> result = repository.findAll(RSQLJPASupport.toSort(rsql));
@@ -108,14 +113,12 @@ class RSQLJPASupportPostgresJsonTest {
         assertThat(result)
                 .hasSameSizeAs(expected)
                 .containsExactlyElementsOf(expected);
-
-        users.forEach(e -> e.setId(null));
+        entities.forEach(e -> e.setId(null));
     }
 
     @ParameterizedTest
-    @MethodSource("rootData")
-    @Transactional
-    void testJsonRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
+    @MethodSource("jsonbRelation")
+    void testJsonSearchOnRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
         JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
@@ -132,6 +135,29 @@ class RSQLJPASupportPostgresJsonTest {
         assertThat(result)
                 .hasSameSizeAs(expected)
                 .containsExactlyInAnyOrderElementsOf(expected);
+        result.forEach(e -> e.setId(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("sortByRelation")
+    void testJsonSortOnRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
+        JsonbSupport.DATE_TIME_SUPPORT = true;
+        //given
+        Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
+                .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
+                .toList();
+        entityWithJsonbRepository.saveAllAndFlush(entitiesWithJsonb);
+
+        //when
+        List<JsonbEntity> result = entityWithJsonbRepository.findAll(RSQLJPASupport.toSort(rsql)).stream()
+                .map(EntityWithJsonb::getJsonb)
+                .toList();
+
+        //then
+        assertThat(result)
+                .hasSameSizeAs(expected)
+                .containsExactlyInAnyOrderElementsOf(expected);
+        result.forEach(e -> e.setId(null));
     }
 
     static Stream<Arguments> data() {
@@ -172,7 +198,7 @@ class RSQLJPASupportPostgresJsonTest {
         ).filter(Objects::nonNull).flatMap(s -> s);
     }
 
-    static Stream<Arguments> rootData() {
+    static Stream<Arguments> jsonbRelation() {
         var e1 = JsonbEntity.builder().id(UUID.randomUUID()).data("1").build();
         var e2 = JsonbEntity.builder().id(UUID.randomUUID()).data("\"value\"").build();
         var e3 = JsonbEntity.builder().id(UUID.randomUUID()).data("true").build();
@@ -182,13 +208,13 @@ class RSQLJPASupportPostgresJsonTest {
         var e7 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\":1}").build();
         var allCases = List.of(e1, e2, e3, e4, e5, e6, e7);
         return Stream.of(
-//                arguments(allCases, "jsonb.data==1", List.of(e1)),
-//                arguments(allCases, "jsonb.data=='\"value\"'", List.of(e2)),
-//                arguments(allCases, "jsonb.data==true", List.of(e3)),
-//                arguments(allCases, "jsonb.data=='[1, 2, 3]'", List.of(e4)),
-//                arguments(allCases, "jsonb.data=='null'", List.of(e5)),
-//                arguments(allCases, "jsonb.data=='{}'", List.of(e6)),
-//                arguments(allCases, "jsonb.data=='{\"a\": 1}'", List.of(e7)),
+                arguments(allCases, "jsonb.data==1", List.of(e1)),
+                arguments(allCases, "jsonb.data=='\"value\"'", List.of(e2)),
+                arguments(allCases, "jsonb.data==true", List.of(e3)),
+                arguments(allCases, "jsonb.data=='[1, 2, 3]'", List.of(e4)),
+                arguments(allCases, "jsonb.data=='null'", List.of(e5)),
+                arguments(allCases, "jsonb.data=='{}'", List.of(e6)),
+                arguments(allCases, "jsonb.data=='{\"a\": 1}'", List.of(e7)),
                 arguments(allCases, "jsonb.data.a==1", List.of(e7)),
                 null
         ).filter(Objects::nonNull);
@@ -533,6 +559,22 @@ class RSQLJPASupportPostgresJsonTest {
         return Stream.of(
                 arguments(allCases, "properties.a.b.c,asc", List.of(e1, e2, e3)),
                 arguments(allCases, "properties.a.b.c,desc", List.of(e3, e2, e1)),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    static Stream<Arguments> sortByRelation() {
+        var e1 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\": 1, \"b\": 3}").build();
+        var e2 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\": 2, \"b\": 2}").build();
+        var e3 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\": 3, \"b\": 1}").build();
+        var allCases = List.of(e1, e2, e3);
+        return Stream.of(
+                arguments(allCases, "jsonb.data.a,asc", List.of(e1, e2, e3)),
+                arguments(allCases, "jsonb.data.b,asc", List.of(e3, e2, e1)),
+                arguments(allCases, "jsonb.data,asc", List.of(e1, e2, e3)),
+                arguments(allCases, "jsonb.data.a,desc", List.of(e3, e2, e1)),
+                arguments(allCases, "jsonb.data.b,desc", List.of(e1, e2, e3)),
+                arguments(allCases, "jsonb.data,desc", List.of(e3, e2, e1)),
                 null
         ).filter(Objects::nonNull);
     }
