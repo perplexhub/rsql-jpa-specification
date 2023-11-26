@@ -67,13 +67,14 @@ class SortUtils {
     }
 
     private static Expression<?> jsonPathOf(Path<?> path, String property, CriteriaBuilder builder) {
-            var args = new ArrayList<Expression<?>>();
-            args.add(path);
-            Stream.of(property.split("\\."))
-                    .skip(1) // skip root
-                    .map(builder::literal)
-                    .forEach(args::add);
-            return builder.function("jsonb_extract_path", String.class, args.toArray(Expression[]::new));
+        //TODO, check if it's on root and sanitize jsonbPath
+        var args = new ArrayList<Expression<?>>();
+        args.add(path);
+        Stream.of(property.split("\\."))
+                .skip(1) // skip root
+                .map(builder::literal)
+                .forEach(args::add);
+        return builder.function("jsonb_extract_path", String.class, args.toArray(Expression[]::new));
     }
 
 }

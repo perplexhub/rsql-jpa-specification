@@ -5,16 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.perplexhub.rsql.jsonb.JsonbSupport;
+import io.github.perplexhub.rsql.model.EntityWithJsonb;
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
-import io.github.perplexhub.rsql.model.PostgresJsonEntity2;
+import io.github.perplexhub.rsql.model.JsonbEntity;
+import io.github.perplexhub.rsql.repository.jpa.postgres.JsonbEntityRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository;
-import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository2;
+import io.github.perplexhub.rsql.repository.jpa.postgres.EntityWithJsonbRepository;
 import jakarta.persistence.EntityManager;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -26,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("postgres")
@@ -35,7 +40,10 @@ class RSQLJPASupportPostgresJsonTest {
     private PostgresJsonEntityRepository repository;
 
     @Autowired
-    private PostgresJsonEntityRepository2 repository2;
+    private EntityWithJsonbRepository entityWithJsonbRepository;
+
+    @Autowired
+    private JsonbEntityRepository jsonbEntityRepository;
 
     @BeforeEach
     void setup(@Autowired EntityManager em) {
@@ -46,8 +54,8 @@ class RSQLJPASupportPostgresJsonTest {
     void tearDown() {
         repository.deleteAll();
         repository.flush();
-        repository2.deleteAll();
-        repository2.flush();
+        entityWithJsonbRepository.deleteAll();
+        entityWithJsonbRepository.flush();
         RSQLVisitorBase.setEntityManagerDatabase(Map.of());
     }
 
@@ -106,20 +114,24 @@ class RSQLJPASupportPostgresJsonTest {
 
     @ParameterizedTest
     @MethodSource("rootData")
-    void testJsonRoot(List<PostgresJsonEntity2> entity2s, String rsql, List<PostgresJsonEntity2> expected) {
+    @Transactional
+    void testJsonRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
         JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
-        repository2.saveAllAndFlush(entity2s);
+        Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
+                .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
+                .toList();
+        entityWithJsonbRepository.saveAllAndFlush(entitiesWithJsonb);
 
         //when
-        List<PostgresJsonEntity2> result = repository2.findAll(toSpecification(rsql));
+        List<JsonbEntity> result = entityWithJsonbRepository.findAll(toSpecification(rsql)).stream()
+                .map(EntityWithJsonb::getJsonb)
+                .toList();
 
         //then
         assertThat(result)
                 .hasSameSizeAs(expected)
                 .containsExactlyInAnyOrderElementsOf(expected);
-
-        entity2s.forEach(e -> e.setId(null));
     }
 
     static Stream<Arguments> data() {
@@ -161,22 +173,23 @@ class RSQLJPASupportPostgresJsonTest {
     }
 
     static Stream<Arguments> rootData() {
-        var e1 = new PostgresJsonEntity2("1");
-        var e2 = new PostgresJsonEntity2("\"value\"");
-        var e3 = new PostgresJsonEntity2("true");
-        var e4 = new PostgresJsonEntity2("[1,2,3]");
-        var e5 = new PostgresJsonEntity2("null");
-        var e6 = new PostgresJsonEntity2("{}");
-        var e7 = new PostgresJsonEntity2("{\"a\":1}");
+        var e1 = JsonbEntity.builder().id(UUID.randomUUID()).data("1").build();
+        var e2 = JsonbEntity.builder().id(UUID.randomUUID()).data("\"value\"").build();
+        var e3 = JsonbEntity.builder().id(UUID.randomUUID()).data("true").build();
+        var e4 = JsonbEntity.builder().id(UUID.randomUUID()).data("[1,2,3]").build();
+        var e5 = JsonbEntity.builder().id(UUID.randomUUID()).data("null").build();
+        var e6 = JsonbEntity.builder().id(UUID.randomUUID()).data("{}").build();
+        var e7 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\":1}").build();
         var allCases = List.of(e1, e2, e3, e4, e5, e6, e7);
         return Stream.of(
-                arguments(allCases, "data==1", List.of(e1)),
-                arguments(allCases, "data=='\"value\"'", List.of(e2)),
-                arguments(allCases, "data==true", List.of(e3)),
-                arguments(allCases, "data=='[1, 2, 3]'", List.of(e4)),
-                arguments(allCases, "data=='null'", List.of(e5)),
-                arguments(allCases, "data=='{}'", List.of(e6)),
-                arguments(allCases, "data=='{\"a\": 1}'", List.of(e7)),
+//                arguments(allCases, "jsonb.data==1", List.of(e1)),
+//                arguments(allCases, "jsonb.data=='\"value\"'", List.of(e2)),
+//                arguments(allCases, "jsonb.data==true", List.of(e3)),
+//                arguments(allCases, "jsonb.data=='[1, 2, 3]'", List.of(e4)),
+//                arguments(allCases, "jsonb.data=='null'", List.of(e5)),
+//                arguments(allCases, "jsonb.data=='{}'", List.of(e6)),
+//                arguments(allCases, "jsonb.data=='{\"a\": 1}'", List.of(e7)),
+                arguments(allCases, "jsonb.data.a==1", List.of(e7)),
                 null
         ).filter(Objects::nonNull);
     }

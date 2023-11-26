@@ -5,6 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,9 +14,6 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 @Getter
@@ -23,17 +22,14 @@ import java.util.UUID;
 @ToString
 @Entity
 @NoArgsConstructor
-public class PostgresJsonEntity2 {
+@Builder
+@AllArgsConstructor
+public class JsonbEntity {
 
   @Id
-  @GeneratedValue
   private UUID id;
 
   @Type(JsonType.class)
   @Column(columnDefinition = "jsonb")
   private String data;
-
-  public PostgresJsonEntity2(String data) {
-    this.data = data;
-  }
 }

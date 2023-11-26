@@ -216,8 +216,10 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		Expression resolvedExpression = attrPath;
 		if(isJsonType(attribute)) {
-			if(node.getSelector().contains(".")) {
-				return jsonbPathExists(builder, node, attrPath);
+			String jsonbPath = jsonbPath(attribute, node.getSelector());
+			if(jsonbPath.contains(".")) {
+				ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
+				return jsonbPathExists(builder, jsonbNode, attrPath);
 			} else {
 				//We need to cast the path to string to be able to use the like operator
 				resolvedExpression = attrPath.as(String.class);
@@ -315,6 +317,22 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
+	}
+
+	/**
+	 * Returns the jsonb path for the given attribute path and selector.
+	 *
+	 * @param attrPath the attribute path
+	 * @param selector the selector
+	 * @return the jsonb path
+	 */
+	protected String jsonbPath(Attribute attrPath, String selector) {
+		String attributeName = attrPath.getName();
+		int attributePosition = selector.indexOf(attributeName);
+		if(attributePosition < 0) {
+			throw new IllegalArgumentException("The attribute name [" + attributeName + "] is not part of the selector [" + selector + "]");
+		}
+		return selector.substring(attributePosition + attributeName.length());
 	}
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
