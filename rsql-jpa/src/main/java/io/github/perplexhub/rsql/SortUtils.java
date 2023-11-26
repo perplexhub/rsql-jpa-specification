@@ -53,10 +53,12 @@ class SortUtils {
 
         final RSQLJPAPredicateConverter rsqljpaPredicateConverter =
                 new RSQLJPAPredicateConverter(cb, sortSupport.getPropertyPathMapper(), null, sortSupport.getJoinHints());
-        final RSQLJPAContext rsqljpaContext = rsqljpaPredicateConverter.findPropertyPath(selector, root);
+        final RSQLJPAContext rsqljpaContext = rsqljpaPredicateConverter.findPropertyPath(selector, root, true);
 
         final boolean isJson = rsqljpaPredicateConverter.isJsonType(rsqljpaContext.getAttribute());
-        Expression<?> propertyExpression = isJson? sortExpressionOfJson(rsqljpaContext, selector, cb) : rsqljpaContext.getPath();
+        Expression<?> propertyExpression = isJson ?
+                sortExpressionOfJson(rsqljpaContext, selector, sortSupport.getPropertyPathMapper(), cb) :
+                rsqljpaContext.getPath();
 
         if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2]) && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
             propertyExpression = cb.lower((Expression<String>) propertyExpression);
@@ -75,8 +77,12 @@ class SortUtils {
      * @param builder  the criteria builder
      * @return the jsonb expression
      */
-    private static Expression<?> sortExpressionOfJson(RSQLJPAContext context, String property, CriteriaBuilder builder) {
-        String jsonbSelector = RSQLJPAPredicateConverter.jsonPathOfSelector(context.getAttribute(), property);
+    private static Expression<?> sortExpressionOfJson(RSQLJPAContext context,
+                                                      String property,
+                                                      Map<String, String> mapping,
+                                                      CriteriaBuilder builder) {
+        String path = PathUtils.expectBestMapping(property, mapping);
+        String jsonbSelector = RSQLJPAPredicateConverter.jsonPathOfSelector(context.getAttribute(), path);
         if(jsonbSelector.contains(".")) {
             var args = new ArrayList<Expression<?>>();
             args.add(context.getPath());

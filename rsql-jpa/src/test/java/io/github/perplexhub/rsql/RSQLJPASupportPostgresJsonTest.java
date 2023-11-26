@@ -1,26 +1,13 @@
 package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.RSQLJPASupport.toSpecification;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
-
 import io.github.perplexhub.rsql.jsonb.JsonbSupport;
 import io.github.perplexhub.rsql.model.EntityWithJsonb;
-import io.github.perplexhub.rsql.model.PostgresJsonEntity;
 import io.github.perplexhub.rsql.model.JsonbEntity;
+import io.github.perplexhub.rsql.model.PostgresJsonEntity;
+import io.github.perplexhub.rsql.repository.jpa.postgres.EntityWithJsonbRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.JsonbEntityRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository;
-import io.github.perplexhub.rsql.repository.jpa.postgres.EntityWithJsonbRepository;
 import jakarta.persistence.EntityManager;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.stream.Stream;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,7 +17,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import static io.github.perplexhub.rsql.RSQLJPASupport.toSpecification;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @SpringBootTest
 @ActiveProfiles("postgres")
@@ -117,7 +115,7 @@ class RSQLJPASupportPostgresJsonTest {
     }
 
     @ParameterizedTest
-    @MethodSource("jsonbRelation")
+    @MethodSource("jsonRelation")
     void testJsonSearchOnRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
         //given
         Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
@@ -127,6 +125,28 @@ class RSQLJPASupportPostgresJsonTest {
 
         //when
         List<JsonbEntity> result = entityWithJsonbRepository.findAll(toSpecification(rsql)).stream()
+                .map(EntityWithJsonb::getJsonb)
+                .toList();
+
+        //then
+        assertThat(result)
+                .hasSameSizeAs(expected)
+                .containsExactlyInAnyOrderElementsOf(expected);
+        result.forEach(e -> e.setId(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("jsonMappedRelation")
+    void testJsonSearchOnMappedRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
+        //given
+        Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
+                .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
+                .toList();
+        entityWithJsonbRepository.saveAllAndFlush(entitiesWithJsonb);
+        Map<String, String> pathMapping = new HashMap<>();
+        pathMapping.put("jsonbRelation", "jsonb.data");
+        //when
+        List<JsonbEntity> result = entityWithJsonbRepository.findAll(toSpecification(rsql, pathMapping)).stream()
                 .map(EntityWithJsonb::getJsonb)
                 .toList();
 
@@ -149,6 +169,29 @@ class RSQLJPASupportPostgresJsonTest {
 
         //when
         List<JsonbEntity> result = entityWithJsonbRepository.findAll(RSQLJPASupport.toSort(rsql)).stream()
+                .map(EntityWithJsonb::getJsonb)
+                .toList();
+
+        //then
+        assertThat(result)
+                .hasSameSizeAs(expected)
+                .containsExactlyInAnyOrderElementsOf(expected);
+        result.forEach(e -> e.setId(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("sortByMappedRelation")
+    void testJsonSortOnMappedRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
+        JsonbSupport.DATE_TIME_SUPPORT = true;
+        //given
+        Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
+                .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
+                .toList();
+        entityWithJsonbRepository.saveAllAndFlush(entitiesWithJsonb);
+        Map<String, String> pathMapping = new HashMap<>();
+        pathMapping.put("jsonbRelation", "jsonb.data");
+        //when
+        List<JsonbEntity> result = entityWithJsonbRepository.findAll(RSQLJPASupport.toSort(rsql, pathMapping)).stream()
                 .map(EntityWithJsonb::getJsonb)
                 .toList();
 
@@ -197,7 +240,7 @@ class RSQLJPASupportPostgresJsonTest {
         ).filter(Objects::nonNull).flatMap(s -> s);
     }
 
-    static Stream<Arguments> jsonbRelation() {
+    static Stream<Arguments> jsonRelation() {
         var e1 = JsonbEntity.builder().id(UUID.randomUUID()).data("1").build();
         var e2 = JsonbEntity.builder().id(UUID.randomUUID()).data("\"value\"").build();
         var e3 = JsonbEntity.builder().id(UUID.randomUUID()).data("true").build();
@@ -215,6 +258,28 @@ class RSQLJPASupportPostgresJsonTest {
                 arguments(allCases, "jsonb.data=='{}'", List.of(e6)),
                 arguments(allCases, "jsonb.data=='{\"a\": 1}'", List.of(e7)),
                 arguments(allCases, "jsonb.data.a==1", List.of(e7)),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    static Stream<Arguments> jsonMappedRelation() {
+        var e1 = JsonbEntity.builder().id(UUID.randomUUID()).data("1").build();
+        var e2 = JsonbEntity.builder().id(UUID.randomUUID()).data("\"value\"").build();
+        var e3 = JsonbEntity.builder().id(UUID.randomUUID()).data("true").build();
+        var e4 = JsonbEntity.builder().id(UUID.randomUUID()).data("[1,2,3]").build();
+        var e5 = JsonbEntity.builder().id(UUID.randomUUID()).data("null").build();
+        var e6 = JsonbEntity.builder().id(UUID.randomUUID()).data("{}").build();
+        var e7 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\":1}").build();
+        var allCases = List.of(e1, e2, e3, e4, e5, e6, e7);
+        return Stream.of(
+                arguments(allCases, "jsonbRelation==1", List.of(e1)),
+                arguments(allCases, "jsonbRelation=='\"value\"'", List.of(e2)),
+                arguments(allCases, "jsonbRelation==true", List.of(e3)),
+                arguments(allCases, "jsonbRelation=='[1, 2, 3]'", List.of(e4)),
+                arguments(allCases, "jsonbRelation=='null'", List.of(e5)),
+                arguments(allCases, "jsonbRelation=='{}'", List.of(e6)),
+                arguments(allCases, "jsonbRelation=='{\"a\": 1}'", List.of(e7)),
+                arguments(allCases, "jsonbRelation.a==1", List.of(e7)),
                 null
         ).filter(Objects::nonNull);
     }
@@ -574,6 +639,22 @@ class RSQLJPASupportPostgresJsonTest {
                 arguments(allCases, "jsonb.data.a,desc", List.of(e3, e2, e1)),
                 arguments(allCases, "jsonb.data.b,desc", List.of(e1, e2, e3)),
                 arguments(allCases, "jsonb.data,desc", List.of(e3, e2, e1)),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    static Stream<Arguments> sortByMappedRelation() {
+        var e1 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\": 1, \"b\": 3}").build();
+        var e2 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\": 2, \"b\": 2}").build();
+        var e3 = JsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\": 3, \"b\": 1}").build();
+        var allCases = List.of(e1, e2, e3);
+        return Stream.of(
+                arguments(allCases, "jsonbRelation.a,asc", List.of(e1, e2, e3)),
+                arguments(allCases, "jsonbRelation.b,asc", List.of(e3, e2, e1)),
+                arguments(allCases, "jsonbRelation,asc", List.of(e1, e2, e3)),
+                arguments(allCases, "jsonbRelation.a,desc", List.of(e3, e2, e1)),
+                arguments(allCases, "jsonbRelation.b,desc", List.of(e1, e2, e3)),
+                arguments(allCases, "jsonbRelation,desc", List.of(e3, e2, e1)),
                 null
         ).filter(Objects::nonNull);
     }

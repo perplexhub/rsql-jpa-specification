@@ -60,27 +60,34 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		this.strictEquality = strictEquality;
 	}
 
-	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
+	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot, boolean firstTry) {
 		Class type = startRoot.getJavaType();
 		ManagedType<?> classMetadata = getManagedType(type);
 		ManagedType<?> previousClassMetadata = null;
 		Path<?> root = startRoot;
 		Attribute<?, ?> attribute = null;
-
-		String[] properties = mapPropertyPath(propertyPath).split("\\.");
+		String resolvedPropertyPath = firstTry? mapPropertyPath(propertyPath) : propertyPath;
+		String[] properties = mapPropertyPath(resolvedPropertyPath).split("\\.");
 
 		for (int i = 0, propertiesLength = properties.length; i < propertiesLength; i++) {
 			String property = properties[i];
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
 			if (!mappedProperty.equals(property)) {
-				RSQLJPAContext context = findPropertyPath(mappedProperty, root);
+				RSQLJPAContext context = findPropertyPath(mappedProperty, root, firstTry);
 				root = context.getPath();
 				attribute = context.getAttribute();
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
+					Optional<String> mayBeJSonPath = PathUtils
+							.findMappingOnBeginning(propertyPath, propertyPathMapper);
+					//firstTry check to avoid stack overflow on cyclic mapping
+					if(firstTry && mayBeJSonPath.isPresent()) {
+						//Try with path mapping that matches just the beginning of the expression if json
+						return findPropertyPath(mayBeJSonPath.get(), startRoot, false);
+					}
 					throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
 				}
-				if (isAssociationType(mappedProperty, classMetadata) && !property.equals(propertyPath)) {
+				if (isAssociationType(mappedProperty, classMetadata) && !property.equals(resolvedPropertyPath)) {
 					boolean isOneToAssociationType = isOneToOneAssociationType(mappedProperty, classMetadata) || isOneToManyAssociationType(mappedProperty, classMetadata);
 					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
 					type = associationType;
@@ -202,7 +209,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root);
+		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root, true);
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 
@@ -216,7 +223,8 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		Expression resolvedExpression = attrPath;
 		if(isJsonType(attribute)) {
-			String jsonbPath = jsonPathOfSelector(attribute, node.getSelector());
+			String selector = PathUtils.expectBestMapping(node.getSelector(), propertyPathMapper);
+			String jsonbPath = jsonPathOfSelector(attribute, selector);
 			if(jsonbPath.contains(".")) {
 				ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
 				return jsonbPathExists(builder, jsonbNode, attrPath);
