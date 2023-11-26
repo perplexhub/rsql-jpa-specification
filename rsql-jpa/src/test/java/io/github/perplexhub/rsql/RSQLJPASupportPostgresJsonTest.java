@@ -49,6 +49,7 @@ class RSQLJPASupportPostgresJsonTest {
     void setup(@Autowired EntityManager em) {
         RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
         clear();
+        JsonbSupport.DATE_TIME_SUPPORT = false;
     }
 
     @AfterEach
@@ -67,7 +68,6 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("data")
     void testJsonSearch(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = false;
         //given
         repository.saveAllAndFlush(entities);
 
@@ -119,7 +119,6 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("jsonbRelation")
     void testJsonSearchOnRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
                 .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
