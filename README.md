@@ -306,7 +306,7 @@ To use escape character in RSQL, you must use `QuerySupport` to build the `Speci
 char escapeChar = '$';
 QuerySupport query = QuerySupport.builder()
     .rsqlQuery("name=like='" + escapeChar + "%'")
-    .escapeCharacter(escapeChar)
+    .likeEscapeCharacter(escapeChar)
     .build();
 List<Company> users = companyRepository.findAll(toSpecification(query));
 ```
