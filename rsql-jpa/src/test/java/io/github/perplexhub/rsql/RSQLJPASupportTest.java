@@ -741,6 +741,42 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
+	final void testFunctionOneArgument() {
+		String rsql = "@upper[code]==HELLO";
+		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionTwoArgument() {
+		String rsql = "@concat[code|name]=='TestTest Lab'";
+		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionNestedArgument() {
+		String rsql = "@concat[@upper[code]|name]=='TESTTest Lab'";
+		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionStaticArgument() {
+		String rsql = "@concat[@upper[code]|#WORLD]=='HELLOWORLD'";
+		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
 	final void testPropertyPathMapper() {
 		Map<String, String> propertyPathMapper = new HashMap<>();
 		propertyPathMapper.put("i", "id");

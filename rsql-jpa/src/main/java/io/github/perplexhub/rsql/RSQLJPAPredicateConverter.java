@@ -158,7 +158,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 	
 	protected boolean isJsonType(Attribute<?, ?> attribute) {
-    	return isJsonColumn(attribute) && getDatabase(attribute).map(JSON_SUPPORT::contains).orElse(false);
+    	return attribute!=null
+				&& isJsonColumn(attribute)
+				&& getDatabase(attribute)
+					.map(JSON_SUPPORT::contains)
+					.orElse(false);
 	}
 
 	private boolean isJsonColumn(Attribute<?, ?> attribute) {
@@ -205,9 +209,6 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root);
-		Path attrPath = holder.getPath();
-		Attribute attribute = holder.getAttribute();
 
 		if (customPredicates.containsKey(op)) {
 			RSQLCustomPredicate<?> customPredicate = customPredicates.get(op);
@@ -215,17 +216,25 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			for (String argument : node.getArguments()) {
 				arguments.add(convert(argument, customPredicate.getType()));
 			}
-			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
+			RSQLJPAContext holder = findPropertyPath(node.getSelector(), root);
+			return customPredicate.getConverter()
+					.apply(RSQLCustomPredicateInput.of(builder, holder.getPath(), holder.getAttribute(), arguments, root));
 		}
 
-		if(isJsonType(attribute)) {
-			return jsonbPathExists(builder, node, attrPath);
-		}
+		Expression<?> expression;
+		Class type = Object.class;
 
-		Class type = attribute != null ? attribute.getJavaType() : null;
-
-		if (attribute != null) {
-			if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
+		Selector selector = Selector.selectorOf(node.getSelector(), builder);
+		if(selector instanceof Selector.SingleColumnSelector singleColumnSelector) {
+			var holder = findPropertyPath(singleColumnSelector.column(), root);
+			var attribute = holder.getAttribute();
+			var path = holder.getPath();
+			type = path.getJavaType();
+			if(isJsonType(attribute)) {
+				return jsonbPathExists(builder, node, path);
+			}
+			if (attribute != null
+					&& attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
 				type = getElementCollectionGenericType(type, attribute);
 			}
 			if (type.isPrimitive()) {
@@ -233,6 +242,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			} else if (RSQLJPASupport.getValueTypeMap().containsKey(type)) {
 				type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
 			}
+			expression = holder.getPath();
+		} else if(selector instanceof Selector.FunctionSelector) {
+			expression = selector.getExpression((column, criteriaBuilder) -> findPropertyPath(column, root).getPath());
+		} else {
+			throw new IllegalArgumentException("Unknown selector type: " + selector.getClass());
 		}
 
         if (node.getArguments().size() > 1) {
@@ -241,52 +255,56 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
-				return attrPath.in(listObject);
+				return expression.in(listObject);
 			}
 			if (op.equals(NOT_IN)) {
-				return attrPath.in(listObject).not();
+				return expression.in(listObject).not();
 			}
 			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
+				Comparable firstValue = (Comparable) listObject.get(0);
+				Comparable secondValue = (Comparable) listObject.get(1);
+				return builder.between(expression.as(firstValue.getClass()), firstValue, secondValue);
 			}
 			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
+				Comparable firstValue = (Comparable) listObject.get(0);
+				Comparable secondValue = (Comparable) listObject.get(1);
+				return builder.between(expression.as(firstValue.getClass()), firstValue, secondValue).not();
 			}
 		} else {
 
 			if (op.equals(IS_NULL)) {
-				return builder.isNull(attrPath);
+				return builder.isNull(expression);
 			}
 			if (op.equals(NOT_NULL)) {
-				return builder.isNotNull(attrPath);
+				return builder.isNotNull(expression);
 			}
 			Object argument = convert(node.getArguments().get(0), type);
 			if (op.equals(IN)) {
-				return builder.equal(attrPath, argument);
+				return builder.equal(expression, argument);
 			}
 			if (op.equals(NOT_IN)) {
-				return builder.notEqual(attrPath, argument);
+				return builder.notEqual(expression, argument);
 			}
 			if (op.equals(LIKE)) {
-				return likePredicate(attrPath, '%' + argument.toString() + '%', builder);
+				return likePredicate(expression, '%' + argument.toString() + '%', builder);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return likePredicate(attrPath, '%' + argument.toString() + '%', builder).not();
+				return likePredicate(expression, '%' + argument.toString() + '%', builder).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
-				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
+				return builder.equal(builder.upper(expression.as(String.class)), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return likePredicate(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', builder);
+				return likePredicate(builder.upper(expression.as(String.class)), '%' + argument.toString().toUpperCase() + '%', builder);
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return likePredicate(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', builder).not();
+				return likePredicate(builder.upper(expression.as(String.class)), '%' + argument.toString().toUpperCase() + '%', builder).not();
 			}
 			if (op.equals(EQUAL)) {
-				return equalPredicate(attrPath, type, argument);
+				return equalPredicate(expression, type, argument);
 			}
 			if (op.equals(NOT_EQUAL)) {
-				return equalPredicate(attrPath, type, argument).not();
+				return equalPredicate(expression, type, argument).not();
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
@@ -295,16 +313,16 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			Comparable comparable = (Comparable) argument;
 
 			if (op.equals(GREATER_THAN)) {
-				return builder.greaterThan(attrPath, comparable);
+				return builder.greaterThan(expression.as(comparable.getClass()), comparable);
 			}
 			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return builder.greaterThanOrEqualTo(attrPath, comparable);
+				return builder.greaterThanOrEqualTo(expression.as(comparable.getClass()), comparable);
 			}
 			if (op.equals(LESS_THAN)) {
-				return builder.lessThan(attrPath, comparable);
+				return builder.lessThan(expression.as(comparable.getClass()), comparable);
 			}
 			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return builder.lessThanOrEqualTo(attrPath, comparable);
+				return builder.lessThanOrEqualTo(expression.as(comparable.getClass()), comparable);
 			}
 		}
 		log.error("Unknown operator: {}", op);
