@@ -528,6 +528,63 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
+	@Transactional
+	void testEscapeForUnderscore() {
+		Company company1 = new Company();
+		company1.setId(100);
+		company1.setCode("code_1");
+		Company company2 = new Company();
+		company2.setId(101);
+		company2.setCode("code_2");
+		Set<Company> companies = Set.of(company1, company2);
+		companyRepository.saveAll(companies);
+		char escapeChar = '$';
+		QuerySupport query = QuerySupport.builder()
+				.rsqlQuery("code=like='" + escapeChar + "_'")
+				.likeEscapeCharacter(escapeChar)
+				.build();
+		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
+	}
+
+	@Test
+	@Transactional
+	void testEscapeForPercent() {
+		Company company1 = new Company();
+		company1.setId(100);
+		company1.setCode("code%1");
+		Company company2 = new Company();
+		company2.setId(101);
+		company2.setCode("code%2");
+		Set<Company> companies = Set.of(company1, company2);
+		companyRepository.saveAll(companies);
+		char escapeChar = '$';
+		QuerySupport query = QuerySupport.builder()
+				.rsqlQuery("code=like='" + escapeChar + "%'")
+				.likeEscapeCharacter(escapeChar)
+				.build();
+		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
+	}
+
+	@Test
+	@Transactional
+	void testEscapeForAntiSlash() {
+		Company company1 = new Company();
+		company1.setId(100);
+		company1.setCode("code%1");
+		Company company2 = new Company();
+		company2.setId(101);
+		company2.setCode("code%2");
+		Set<Company> companies = Set.of(company1, company2);
+		companyRepository.saveAll(companies);
+		char escapeChar = '\\';
+		QuerySupport query = QuerySupport.builder()
+				.rsqlQuery("code=like='\\\\%'")
+				.likeEscapeCharacter(escapeChar)
+				.build();
+		assertEquals(companies.size(), companyRepository.count(toSpecification(query)), "Should find all companies");
+	}
+
+	@Test
 	final void testEqualsIgnoreCase() {
 		String rsql = "name=icase='may'";
 		List<User> users = userRepository.findAll(toSpecification(rsql));
