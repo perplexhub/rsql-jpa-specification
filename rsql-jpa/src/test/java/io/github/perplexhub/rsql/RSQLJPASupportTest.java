@@ -777,6 +777,24 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
+	final void testFunctionStaticArgument2() {
+		String rsql = "@concat[@upper[code]|##WORLD]=='HELLO#WORLD'";
+		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionStaticArgument3() {
+		String rsql = "@concat[@upper[code]|#123]=='HELLO123'";
+		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
 	final void testPropertyPathMapper() {
 		Map<String, String> propertyPathMapper = new HashMap<>();
 		propertyPathMapper.put("i", "id");
