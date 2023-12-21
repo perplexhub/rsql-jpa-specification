@@ -7,7 +7,7 @@ public class CustomType {
 
     private String value;
 
-    private CustomType(String value) {
+    public CustomType(String value) {
         this.value = value;
     }
 

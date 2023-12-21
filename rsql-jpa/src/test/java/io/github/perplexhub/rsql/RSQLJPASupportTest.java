@@ -60,7 +60,7 @@ class RSQLJPASupportTest {
 
 	@BeforeAll
 	static void beforeAll() {
-		RSQLCommonSupport.addEntityAttributeTypeMap(CustomType.class, String.class);
+		RSQLCommonSupport.addConverter(CustomType.class, CustomType::new);
 	}
 
 	@Test
