@@ -286,10 +286,10 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.notEqual(resolvedExpression, argument);
 			}
 			if (op.equals(LIKE)) {
-				return likePredicate(resolvedExpression, "%" + argument.toString() + "%", builder);
+				return likePredicate(resolvedExpression.as(String.class), "%" + argument.toString() + "%", builder);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return likePredicate(resolvedExpression, "%" + argument.toString() + "%", builder).not();
+				return likePredicate(resolvedExpression.as(String.class), "%" + argument.toString() + "%", builder).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
 				return builder.equal(builder.upper(resolvedExpression), argument.toString().toUpperCase());
