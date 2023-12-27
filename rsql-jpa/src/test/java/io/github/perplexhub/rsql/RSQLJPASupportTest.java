@@ -11,6 +11,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import io.github.perplexhub.rsql.custom.CustomType;
+import io.github.perplexhub.rsql.repository.jpa.custom.CustomTypeRepository;
+import io.github.perplexhub.rsql.custom.EntityWithCustomType;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -18,6 +21,7 @@ import jakarta.persistence.criteria.Predicate;
 import io.github.perplexhub.rsql.model.Status;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +54,74 @@ class RSQLJPASupportTest {
 
 	@Autowired
 	private TrunkGroupRepository trunkGroupRepository;
+
+	@Autowired
+	private CustomTypeRepository customTypeRepository;
+
+	@BeforeAll
+	static void beforeAll() {
+		RSQLCommonSupport.addConverter(CustomType.class, CustomType::new);
+	}
+
+	@Test
+	void findCustomTypeLike() {
+		var customs = List.of(
+				EntityWithCustomType.of("first", "ABCD"),
+				EntityWithCustomType.of("second", "AQWE")
+		);
+		customTypeRepository.saveAll(customs);
+		var entities = customTypeRepository.findAll(RSQLJPASupport.toSpecification("custom=like='ABC'"));
+		assertEquals(1, entities.size());
+		assertEquals(customs.get(0).getCustom(), entities.get(0).getCustom());
+	}
+
+	@Test
+	void findCustomTypeNotLike() {
+		var customs = List.of(
+				EntityWithCustomType.of("first", "ABCD"),
+				EntityWithCustomType.of("second", "AQWE")
+		);
+		customTypeRepository.saveAll(customs);
+		var entities = customTypeRepository.findAll(RSQLJPASupport.toSpecification("custom=notlike='ABC'"));
+		assertEquals(1, entities.size());
+		assertEquals(customs.get(1).getCustom(), entities.get(0).getCustom());
+	}
+
+	@Test
+	void findCustomTypeIgnoreCaseLike() {
+		var customs = List.of(
+				EntityWithCustomType.of("first", "ABCD"),
+				EntityWithCustomType.of("second", "AQWE")
+		);
+		customTypeRepository.saveAll(customs);
+		var entities = customTypeRepository.findAll(RSQLJPASupport.toSpecification("custom=ilike='abc'"));
+		assertEquals(1, entities.size());
+		assertEquals(customs.get(0).getCustom(), entities.get(0).getCustom());
+	}
+
+	@Test
+	void findCustomTypeIgnoreCaseNotLike() {
+		var customs = List.of(
+				EntityWithCustomType.of("first", "ABCD"),
+				EntityWithCustomType.of("second", "AQWE")
+		);
+		customTypeRepository.saveAll(customs);
+		var entities = customTypeRepository.findAll(RSQLJPASupport.toSpecification("custom=inotlike='abc'"));
+		assertEquals(1, entities.size());
+		assertEquals(customs.get(1).getCustom(), entities.get(0).getCustom());
+	}
+
+	@Test
+	void findCustomTypeIgnoreCase() {
+		var customs = List.of(
+				EntityWithCustomType.of("first", "ABCD"),
+				EntityWithCustomType.of("second", "AQWE")
+		);
+		customTypeRepository.saveAll(customs);
+		var entities = customTypeRepository.findAll(RSQLJPASupport.toSpecification("custom=ic='abcd'"));
+		assertEquals(1, entities.size());
+		assertEquals(customs.get(0).getCustom(), entities.get(0).getCustom());
+	}
 
 	@Test
 	final void testQuerySupport() {
@@ -1113,6 +1185,7 @@ class RSQLJPASupportTest {
 	void setUp() {
 		getPropertyWhitelist().clear();
 		getPropertyBlacklist().clear();
+		customTypeRepository.deleteAll();
 	}
 
 }
