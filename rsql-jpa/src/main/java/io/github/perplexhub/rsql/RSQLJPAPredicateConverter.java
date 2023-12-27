@@ -36,6 +36,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private final @Getter Map<ComparisonOperator, RSQLCustomPredicate<?>> customPredicates;
 	private final @Getter Map<String, JoinType> joinHints;
 	private final boolean strictEquality;
+	private final Character likeEscapeCharacter;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
 		this(builder, propertyPathMapper, null, null);
@@ -46,18 +47,20 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints) {
-		this(builder, propertyPathMapper, customPredicates, joinHints, false);
+		this(builder, propertyPathMapper, customPredicates, joinHints, false, null);
 	}
 	
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper,
 																	 List<RSQLCustomPredicate<?>> customPredicates,
 																	 Map<String, JoinType> joinHints,
-																	 boolean strictEquality) {
+																	 boolean strictEquality,
+									 								 Character likeEscapeCharacter) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
 		this.joinHints = joinHints != null ? joinHints : Collections.emptyMap();
 		this.strictEquality = strictEquality;
+		this.likeEscapeCharacter = likeEscapeCharacter;
 	}
 
 	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot, boolean firstTry) {
@@ -283,19 +286,19 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.notEqual(resolvedExpression, argument);
 			}
 			if (op.equals(LIKE)) {
-				return builder.like(resolvedExpression, "%" + argument.toString() + "%");
+				return likePredicate(resolvedExpression, "%" + argument.toString() + "%", builder);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return builder.like(resolvedExpression, "%" + argument.toString() + "%").not();
+				return likePredicate(resolvedExpression, "%" + argument.toString() + "%", builder).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
 				return builder.equal(builder.upper(resolvedExpression), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return builder.like(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%");
+				return likePredicate(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%", builder);
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return builder.like(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%").not();
+				return likePredicate(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%", builder).not();
 			}
 			if (op.equals(EQUAL)) {
 				return equalPredicate(resolvedExpression, type, argument);
@@ -343,6 +346,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		return selector.substring(attributePosition + attributeName.length());
 	}
 
+	private Predicate likePredicate(Expression attributePath, String likeExpression, CriteriaBuilder builder) {
+		return Optional.ofNullable(this.likeEscapeCharacter)
+				.map(character ->  builder.like(attributePath, likeExpression, character))
+				.orElseGet(() -> builder.like(attributePath, likeExpression));
+	}
+
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
 		if (type.equals(String.class)) {
 			String argStr = argument.toString();
@@ -351,9 +360,11 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.equal(expr, argument); 
 			} else {
 				if (argStr.contains("*") && argStr.contains("^")) {
-					return builder.like(builder.upper(expr), argStr.replace('*', '%').replace("^", "").toUpperCase());
+					return likePredicate(builder.upper(expr),
+							argStr.replace('*', '%').replace("^", "").toUpperCase(),
+							builder);
 				} else if (argStr.contains("*")) {
-					return builder.like(expr, argStr.replace('*', '%'));
+					return likePredicate(expr, argStr.replace('*', '%'), builder);
 				} else if (argStr.contains("^")) {
 					return builder.equal(builder.upper(expr), argStr.replace("^", "").toUpperCase());
 				} else {

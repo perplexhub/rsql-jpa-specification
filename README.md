@@ -49,6 +49,28 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 }
 ```
 
+### Sample main class - Application.java
+
+```java
+package io.github.perplexhub.rsql;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+@EnableJpaRepositories(basePackages = { "io.github.xxx.yyy.repository" })
+@EnableTransactionManagement
+@SpringBootApplication
+public class Application {
+
+	public static void main(String[] args) throws Exception {
+		SpringApplication.run(Application.class, args);
+	}
+
+}
+```
+
 ## Add rsql-querydsl-spring-boot-starter for RSQL to Spring JPA and QueryDSL translation
 
 ### Maven dependency for rsql-querydsl-spring-boot-starter [![](https://img.shields.io/nexus/r/io.github.perplexhub/rsql-querydsl-spring-boot-starter?color=black&label=%20&server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-querydsl-spring-boot-starter*)
@@ -227,7 +249,7 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper));
 repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable);
 ```
 
-# Custom Value Converter
+## Custom Value Converter
 
 ```java
 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -240,7 +262,7 @@ RSQLJPASupport.addConverter(Date.class, s -> {
 });
 ```
 
-# Custom Operator & Predicate
+## Custom Operator & Predicate
 
 ```java
 String rsql = "createDate=dayofweek='2'";
@@ -278,7 +300,54 @@ RSQLCustomPredicate<String> customPredicate = new RSQLCustomPredicate<>(new Comp
 List<User> users = userRepository.findAll(toSpecification(rsql, Arrays.asList(customPredicate)));
 ```
 
-# Jsonb Support with Postgresql
+## Escaping Special Characters in LIKE Predicate
+
+For the `LIKE` statement in different RDBMS, the most commonly used special characters are:
+
+### MySQL/MariaDB and PostgreSQL
+
+* `%`: Represents any sequence of zero or more characters. For example, `LIKE '%abc'` would match any string ending with `abc`.
+* `_`: Represents any single character. For example, `LIKE 'a_c'` would match a three-character string starting with `a` and ending with `c`.
+
+### SQL Server
+
+* `%` and `_`: Function in the same way as in MySQL/MariaDB and PostgreSQL.
+* `[]`: Used to specify a set or range of characters. For instance, `LIKE '[a-c]%'` would match any string starting with `a`, `b`, or `c`.
+* `^`: Used within `[]` to exclude characters. For example, LIKE '[^a-c]%' would match any string not starting with `a`, `b`, or `c`.
+
+### Oracle:
+
+* `%` and `_`: Function similarly to MySQL/MariaDB and PostgreSQL.
+* `ESCAPE`: Allows specifying an escape character to include % or _ literally in the search. For example, `LIKE '%\_%' ESCAPE '\'` would match a string containing an underscore.
+
+### LIKE in RSQL
+
+To use escape character in RSQL, you must use `QuerySupport` to build the `Specification` with appropriate escape character.
+
+```java
+char escapeChar = '$';
+QuerySupport query = QuerySupport.builder()
+    .rsqlQuery("name=like='" + escapeChar + "%'")
+    .likeEscapeCharacter(escapeChar)
+    .build();
+List<Company> users = companyRepository.findAll(toSpecification(query));
+```
+
+### Example
+
+Above RSQL with default escape character `$` for searching string containing `_`:
+
+```java
+my_table.my_column=like='$_'
+```
+
+Will produce the following SQL:
+
+```sql
+SELECT * FROM my_table WHERE my_column LIKE '%$_%' ESCAPE '$'
+```
+
+## Jsonb Support with Postgresql
 
 It's possible to make rsql queries on jsonb fields. For example, if you have a jsonb field named `data` in your entity, you can make queries like this:
 
@@ -326,7 +395,7 @@ Json primitive types are supported such as
 * boolean
 * array
 
-## Temporal values support
+### Temporal values support
 
 Since Postgresql 13 jsonb supports temporal values with `datetime()` function.  
 As Date time values are string in jsonb, you can make queries on them as well.  

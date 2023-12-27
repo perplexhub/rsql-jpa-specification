@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.perplexhub</groupId>
 	<artifactId>rsql</artifactId>
-	<version>6.0.17-SNAPSHOT</version>
+	<version>6.0.19-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>io.github.perplexhub - RSQL</name>
 	<inceptionYear>2018</inceptionYear>
@@ -26,7 +26,7 @@
 		<spring-boot.version>3.0.0</spring-boot.version>
 		<spring-data-releasetrain.version>2022.0.0</spring-data-releasetrain.version>
 		<querydsl.version>4.1.4</querydsl.version>
-		<rsql-parser.version>2.1.2</rsql-parser.version>
+		<rsql-parser.version>2.2.1</rsql-parser.version>
 		<lombok.version>1.18.24</lombok.version>
 		<hamcrest.version>2.2</hamcrest.version>
 		<h2.version>2.2.220</h2.version>
