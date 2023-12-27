@@ -49,6 +49,28 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 }
 ```
 
+### Sample main class - Application.java
+
+```java
+package io.github.perplexhub.rsql;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+@EnableJpaRepositories(basePackages = { "io.github.xxx.yyy.repository" })
+@EnableTransactionManagement
+@SpringBootApplication
+public class Application {
+
+	public static void main(String[] args) throws Exception {
+		SpringApplication.run(Application.class, args);
+	}
+
+}
+```
+
 ## Add rsql-querydsl-spring-boot-starter for RSQL to Spring JPA and QueryDSL translation
 
 ### Maven dependency for rsql-querydsl-spring-boot-starter [![](https://img.shields.io/nexus/r/io.github.perplexhub/rsql-querydsl-spring-boot-starter?color=black&label=%20&server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql-querydsl-spring-boot-starter*)
