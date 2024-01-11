@@ -136,14 +136,8 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	}
 
 	protected String mapPropertyPath(String propertyPath) {
-		if (!getPropertyPathMapper().isEmpty()) {
-			String property = getPropertyPathMapper().get(propertyPath);
-			if (StringUtils.hasText(property)) {
-				log.debug("Map propertyPath [{}] to [{}]", propertyPath, property);
-				return property;
-			}
-		}
-		return propertyPath;
+		return PathUtils.findMappingOnWhole(propertyPath, getPropertyPathMapper())
+				.orElse(propertyPath);
 	}
 
 	protected String mapProperty(String selector, Class<?> entityClass) {
