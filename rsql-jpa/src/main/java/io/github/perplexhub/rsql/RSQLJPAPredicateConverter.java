@@ -63,27 +63,34 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		this.likeEscapeCharacter = likeEscapeCharacter;
 	}
 
-	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
+	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot, boolean firstTry) {
 		Class type = startRoot.getJavaType();
 		ManagedType<?> classMetadata = getManagedType(type);
 		ManagedType<?> previousClassMetadata = null;
 		Path<?> root = startRoot;
 		Attribute<?, ?> attribute = null;
-
-		String[] properties = mapPropertyPath(propertyPath).split("\\.");
+		String resolvedPropertyPath = firstTry? mapPropertyPath(propertyPath) : propertyPath;
+		String[] properties = mapPropertyPath(resolvedPropertyPath).split("\\.");
 
 		for (int i = 0, propertiesLength = properties.length; i < propertiesLength; i++) {
 			String property = properties[i];
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
 			if (!mappedProperty.equals(property)) {
-				RSQLJPAContext context = findPropertyPath(mappedProperty, root);
+				RSQLJPAContext context = findPropertyPath(mappedProperty, root, firstTry);
 				root = context.getPath();
 				attribute = context.getAttribute();
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
+					Optional<String> mayBeJSonPath = PathUtils
+							.findMappingOnBeginning(propertyPath, propertyPathMapper);
+					//firstTry check to avoid stack overflow on cyclic mapping
+					if(firstTry && mayBeJSonPath.isPresent()) {
+						//Try with path mapping that matches just the beginning of the expression if json
+						return findPropertyPath(mayBeJSonPath.get(), startRoot, false);
+					}
 					throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
 				}
-				if (isAssociationType(mappedProperty, classMetadata) && !property.equals(propertyPath)) {
+				if (isAssociationType(mappedProperty, classMetadata) && !property.equals(resolvedPropertyPath)) {
 					boolean isOneToAssociationType = isOneToOneAssociationType(mappedProperty, classMetadata) || isOneToManyAssociationType(mappedProperty, classMetadata);
 					Class<?> associationType = findPropertyType(mappedProperty, classMetadata);
 					type = associationType;
@@ -205,7 +212,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root);
+		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root, true);
 		Path attrPath = holder.getPath();
 		Attribute attribute = holder.getAttribute();
 
@@ -217,9 +224,16 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			}
 			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
 		}
-
+		Expression resolvedExpression = attrPath;
 		if(isJsonType(attribute)) {
-			return jsonbPathExists(builder, node, attrPath);
+			String selector = PathUtils.expectBestMapping(node.getSelector(), propertyPathMapper);
+			String jsonbPath = jsonPathOfSelector(attribute, selector);
+			if(jsonbPath.contains(".")) {
+				ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
+				return jsonbPathExists(builder, jsonbNode, attrPath);
+			} else {
+				resolvedExpression = attrPath.as(String.class);
+			}
 		}
 
 		Class type = attribute != null ? attribute.getJavaType() : null;
@@ -235,58 +249,62 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			}
 		}
 
+		if (type == null) {
+			type = String.class;
+		}
+
         if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
 				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
-				return attrPath.in(listObject);
+				return resolvedExpression.in(listObject);
 			}
 			if (op.equals(NOT_IN)) {
-				return attrPath.in(listObject).not();
+				return resolvedExpression.in(listObject).not();
 			}
 			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
+				return builder.between(resolvedExpression, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
 			}
 			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(attrPath, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
+				return builder.between(resolvedExpression, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
 			}
 		} else {
 
 			if (op.equals(IS_NULL)) {
-				return builder.isNull(attrPath);
+				return builder.isNull(resolvedExpression);
 			}
 			if (op.equals(NOT_NULL)) {
-				return builder.isNotNull(attrPath);
+				return builder.isNotNull(resolvedExpression);
 			}
 			Object argument = convert(node.getArguments().get(0), type);
 			if (op.equals(IN)) {
-				return builder.equal(attrPath, argument);
+				return builder.equal(resolvedExpression, argument);
 			}
 			if (op.equals(NOT_IN)) {
-				return builder.notEqual(attrPath, argument);
+				return builder.notEqual(resolvedExpression, argument);
 			}
 			if (op.equals(LIKE)) {
-				return likePredicate(attrPath.as(String.class), '%' + argument.toString() + '%', builder);
+				return likePredicate(resolvedExpression.as(String.class), "%" + argument.toString() + "%", builder);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return likePredicate(attrPath.as(String.class), '%' + argument.toString() + '%', builder).not();
+				return likePredicate(resolvedExpression.as(String.class), "%" + argument.toString() + "%", builder).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
-				return builder.equal(builder.upper(attrPath), argument.toString().toUpperCase());
+				return builder.equal(builder.upper(resolvedExpression), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return likePredicate(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', builder);
+				return likePredicate(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%", builder);
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return likePredicate(builder.upper(attrPath), '%' + argument.toString().toUpperCase() + '%', builder).not();
+				return likePredicate(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%", builder).not();
 			}
 			if (op.equals(EQUAL)) {
-				return equalPredicate(attrPath, type, argument);
+				return equalPredicate(resolvedExpression, type, argument);
 			}
 			if (op.equals(NOT_EQUAL)) {
-				return equalPredicate(attrPath, type, argument).not();
+				return equalPredicate(resolvedExpression, type, argument).not();
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
@@ -295,20 +313,37 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			Comparable comparable = (Comparable) argument;
 
 			if (op.equals(GREATER_THAN)) {
-				return builder.greaterThan(attrPath, comparable);
+				return builder.greaterThan(resolvedExpression, comparable);
 			}
 			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return builder.greaterThanOrEqualTo(attrPath, comparable);
+				return builder.greaterThanOrEqualTo(resolvedExpression, comparable);
 			}
 			if (op.equals(LESS_THAN)) {
-				return builder.lessThan(attrPath, comparable);
+				return builder.lessThan(resolvedExpression, comparable);
 			}
 			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return builder.lessThanOrEqualTo(attrPath, comparable);
+				return builder.lessThanOrEqualTo(resolvedExpression, comparable);
 			}
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
+	}
+
+	/**
+	 * Returns the jsonb path for the given attribute path and selector.<br>
+	 * It extracts the jsonb part of the selector that can contains entity references before the jsonb path.
+	 *
+	 * @param attrPath the attribute path
+	 * @param selector the selector
+	 * @return the jsonb path
+	 */
+	protected static String jsonPathOfSelector(Attribute attrPath, String selector) {
+		String attributeName = attrPath.getName();
+		int attributePosition = selector.indexOf(attributeName);
+		if(attributePosition < 0) {
+			throw new IllegalArgumentException("The attribute name [" + attributeName + "] is not part of the selector [" + selector + "]");
+		}
+		return selector.substring(attributePosition + attributeName.length());
 	}
 
 	private Predicate likePredicate(Expression attributePath, String likeExpression, CriteriaBuilder builder) {
