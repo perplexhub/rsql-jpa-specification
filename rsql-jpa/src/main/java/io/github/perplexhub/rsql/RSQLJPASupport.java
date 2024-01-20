@@ -125,8 +125,9 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 
 			Node rsql = new RSQLParser(supportedOperators).parse(querySupport.getRsqlQuery());
 			RSQLJPAPredicateConverter visitor = new RSQLJPAPredicateConverter(cb, querySupport.getPropertyPathMapper(),
-					querySupport.getCustomPredicates(), querySupport.getJoinHints(), querySupport.isStrictEquality(),
-					querySupport.getLikeEscapeCharacter());
+					querySupport.getCustomPredicates(), querySupport.getJoinHints(),
+					querySupport.getProcedureWhiteList(), querySupport.getProcedureBlackList(),
+					querySupport.isStrictEquality(), querySupport.getLikeEscapeCharacter());
 
 			visitor.setPropertyWhitelist(querySupport.getPropertyWhitelist());
 			visitor.setPropertyBlacklist(querySupport.getPropertyBlacklist());

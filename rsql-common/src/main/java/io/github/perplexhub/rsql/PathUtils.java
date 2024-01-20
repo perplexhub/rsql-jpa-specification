@@ -7,6 +7,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class PathUtils {
+
+    private PathUtils() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     /**
      * If the beginning of the property path is mapped, replace it with the mapped value.
      *

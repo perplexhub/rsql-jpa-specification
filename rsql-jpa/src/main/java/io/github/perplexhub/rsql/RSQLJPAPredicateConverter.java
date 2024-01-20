@@ -35,6 +35,8 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private final @Getter Map<String, String> propertyPathMapper;
 	private final @Getter Map<ComparisonOperator, RSQLCustomPredicate<?>> customPredicates;
 	private final @Getter Map<String, JoinType> joinHints;
+	private final Collection<String> procedureWhiteList;
+	private final Collection<String> procedureBlackList;
 	private final boolean strictEquality;
 	private final Character likeEscapeCharacter;
 
@@ -47,23 +49,37 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints) {
-		this(builder, propertyPathMapper, customPredicates, joinHints, false, null);
+		this(builder, propertyPathMapper, customPredicates, joinHints, null, null, false, null);
+	}
+
+	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper, List<RSQLCustomPredicate<?>> customPredicates, Map<String, JoinType> joinHints, Collection<String> procedureWhiteList, Collection<String> procedureBlackList) {
+		this(builder, propertyPathMapper, customPredicates, joinHints, procedureWhiteList, procedureBlackList, false, null);
 	}
 	
-	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper,
-																	 List<RSQLCustomPredicate<?>> customPredicates,
-																	 Map<String, JoinType> joinHints,
-																	 boolean strictEquality,
-									 								 Character likeEscapeCharacter) {
+	public RSQLJPAPredicateConverter(CriteriaBuilder builder,
+			Map<String, String> propertyPathMapper,
+			List<RSQLCustomPredicate<?>> customPredicates,
+			Map<String, JoinType> joinHints,
+			Collection<String> proceduresWhiteList,
+			Collection<String> proceduresBlackList,
+			boolean strictEquality,
+			Character likeEscapeCharacter) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
 		this.joinHints = joinHints != null ? joinHints : Collections.emptyMap();
+		this.procedureWhiteList = proceduresWhiteList != null ? proceduresWhiteList : Collections.emptyList();
+		this.procedureBlackList = proceduresBlackList != null ? proceduresBlackList : Collections.emptyList();
 		this.strictEquality = strictEquality;
 		this.likeEscapeCharacter = likeEscapeCharacter;
 	}
 
-	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot, boolean firstTry) {
+	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
+		var holder = findPropertyPathInternal(propertyPath, startRoot, true);
+		return holder;
+	}
+
+	private RSQLJPAContext findPropertyPathInternal(String propertyPath, Path startRoot, boolean firstTry) {
 		Class type = startRoot.getJavaType();
 		ManagedType<?> classMetadata = getManagedType(type);
 		ManagedType<?> previousClassMetadata = null;
@@ -76,7 +92,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			String property = properties[i];
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
 			if (!mappedProperty.equals(property)) {
-				RSQLJPAContext context = findPropertyPath(mappedProperty, root, firstTry);
+				RSQLJPAContext context = findPropertyPathInternal(mappedProperty, root, firstTry);
 				root = context.getPath();
 				attribute = context.getAttribute();
 			} else {
@@ -86,7 +102,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					//firstTry check to avoid stack overflow on cyclic mapping
 					if(firstTry && mayBeJSonPath.isPresent()) {
 						//Try with path mapping that matches just the beginning of the expression if json
-						return findPropertyPath(mayBeJSonPath.get(), startRoot, false);
+						return findPropertyPathInternal(mayBeJSonPath.get(), startRoot, false);
 					}
 					throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
 				}
@@ -216,9 +232,6 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-		RSQLJPAContext holder = findPropertyPath(node.getSelector(), root, true);
-		Path attrPath = holder.getPath();
-		Attribute attribute = holder.getAttribute();
 
 		if (customPredicates.containsKey(op)) {
 			RSQLCustomPredicate<?> customPredicate = customPredicates.get(op);
@@ -226,90 +239,121 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			for (String argument : node.getArguments()) {
 				arguments.add(convert(argument, customPredicate.getType()));
 			}
-			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, attrPath, attribute, arguments, root));
+			RSQLJPAContext holder = findPropertyPath(node.getSelector(), root);
+			return customPredicate.getConverter().apply(RSQLCustomPredicateInput.of(builder, holder.getPath(),
+				holder.getAttribute(), arguments, root));
 		}
-		Expression resolvedExpression = attrPath;
-//        Selector selector = Selector.selectorOf(node.getSelector(), builder);
-//		if(isJsonType(attribute)) {
-//			String selector = PathUtils.expectBestMapping(node.getSelector(), propertyPathMapper);
-//			String jsonbPath = jsonPathOfSelector(attribute, selector);
-//			if(jsonbPath.contains(".")) {
-//				ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
-//				return jsonbPathExists(builder, jsonbNode, attrPath);
-//			} else {
-//				resolvedExpression = attrPath.as(String.class);
-//			}
-//		}
-//
-		Class type = attribute != null ? attribute.getJavaType() : null;
-//
-//		if (attribute != null) {
-//			if (attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
-//				type = getElementCollectionGenericType(type, attribute);
-//			}
-//			if (type.isPrimitive()) {
-//				type = primitiveToWrapper.get(type);
-//			} else if (RSQLJPASupport.getValueTypeMap().containsKey(type)) {
-//				type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
-//			}
-//		}
 
+		Selector selector = Selector.selectorOf(node.getSelector(), builder);
+		if(!Selector.checkWhiteListedFunction(selector, procedureWhiteList)) {
+			throw new RSQLException(String.format("Function %s is not allowed", selector));
+		}
+
+		if(!Selector.checkBlackListedFunction(selector, procedureBlackList)) {
+			throw new RSQLException(String.format("Function %s is not allowed", selector));
+		}
+
+		Expression<?> expression;
+		Class<?> type = Object.class;
+
+		if(selector instanceof Selector.SingleColumnSelector singleColumnSelector) {
+			var holder = findPropertyPath(singleColumnSelector.column(), root);
+			var attribute = holder.getAttribute();
+			var path = holder.getPath();
+			type = path.getJavaType();
+			if(isJsonType(attribute)) {
+				String jsonSelector = PathUtils.expectBestMapping(node.getSelector(), propertyPathMapper);
+				String jsonbPath = jsonPathOfSelector(attribute, jsonSelector);
+				if(jsonbPath.contains(".")) {
+					ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
+					return jsonbPathExists(builder, jsonbNode, path);
+				} else {
+					expression = path.as(String.class);
+				}
+			} else {
+				if (attribute != null
+					&& attribute.getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION) {
+					type = getElementCollectionGenericType(type, attribute);
+				}
+				if (type.isPrimitive()) {
+					type = primitiveToWrapper.get(type);
+				} else if (RSQLJPASupport.getValueTypeMap().containsKey(type)) {
+					type = RSQLJPASupport.getValueTypeMap().get(type); // if you want to treat Enum as String and apply like search, etc
+				}
+				expression = holder.getPath();
+			}
+
+		} else if(selector instanceof Selector.FunctionSelector) {
+			expression = selector.getExpression((column, criteriaBuilder) -> findPropertyPath(column, root).getPath());
+		} else {
+			throw new IllegalArgumentException("Unknown selector type: " + selector.getClass());
+		}
 		if (type == null) {
 			type = String.class;
 		}
 
-        if (node.getArguments().size() > 1) {
+		return computePredicate(node, type, op, expression);
+	}
+
+	private Predicate computePredicate(ComparisonNode node, Class type, ComparisonOperator op, Expression expression) {
+		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
 				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
-				return resolvedExpression.in(listObject);
+				return expression.in(listObject);
 			}
 			if (op.equals(NOT_IN)) {
-				return resolvedExpression.in(listObject).not();
+				return expression.in(listObject).not();
 			}
-			if (op.equals(BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(resolvedExpression, (Comparable) listObject.get(0), (Comparable) listObject.get(1));
+			if (op.equals(BETWEEN) && listObject.size() == 2
+				&& listObject.get(0) instanceof Comparable comp1
+				&& listObject.get(1) instanceof Comparable comp2) {
+				return builder.between(expression, comp1, comp2);
 			}
-			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 && listObject.get(0) instanceof Comparable && listObject.get(1) instanceof Comparable) {
-				return builder.between(resolvedExpression, (Comparable) listObject.get(0), (Comparable) listObject.get(1)).not();
+			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 &&
+				listObject.get(0) instanceof Comparable comp1
+				&& listObject.get(1) instanceof Comparable comp2) {
+				return builder.between(expression, comp1, comp2).not();
 			}
 		} else {
 
 			if (op.equals(IS_NULL)) {
-				return builder.isNull(resolvedExpression);
+				return builder.isNull(expression);
 			}
 			if (op.equals(NOT_NULL)) {
-				return builder.isNotNull(resolvedExpression);
+				return builder.isNotNull(expression);
 			}
 			Object argument = convert(node.getArguments().get(0), type);
 			if (op.equals(IN)) {
-				return builder.equal(resolvedExpression, argument);
+				return builder.equal(expression, argument);
 			}
 			if (op.equals(NOT_IN)) {
-				return builder.notEqual(resolvedExpression, argument);
+				return builder.notEqual(expression, argument);
 			}
 			if (op.equals(LIKE)) {
-				return likePredicate(resolvedExpression.as(String.class), "%" + argument.toString() + "%", builder);
+				return likePredicate(expression.as(String.class), "%" + argument.toString() + "%", builder);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return likePredicate(resolvedExpression.as(String.class), "%" + argument.toString() + "%", builder).not();
+				return likePredicate(expression.as(String.class), "%" + argument.toString() + "%", builder).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
-				return builder.equal(builder.upper(resolvedExpression), argument.toString().toUpperCase());
+				return builder.equal(builder.upper(expression), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return likePredicate(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%", builder);
+				return likePredicate(builder.upper(expression), "%" + argument.toString()
+						.toUpperCase() + "%", builder);
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return likePredicate(builder.upper(resolvedExpression), "%" + argument.toString().toUpperCase() + "%", builder).not();
+				return likePredicate(builder.upper(expression), "%" + argument.toString()
+						.toUpperCase() + "%", builder).not();
 			}
 			if (op.equals(EQUAL)) {
-				return equalPredicate(resolvedExpression, type, argument);
+				return equalPredicate(expression, type, argument);
 			}
 			if (op.equals(NOT_EQUAL)) {
-				return equalPredicate(resolvedExpression, type, argument).not();
+				return equalPredicate(expression, type, argument).not();
 			}
 			if (!Comparable.class.isAssignableFrom(type)) {
 				log.error("Operator {} can be used only for Comparables", op);
@@ -318,16 +362,16 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			Comparable comparable = (Comparable) argument;
 
 			if (op.equals(GREATER_THAN)) {
-				return builder.greaterThan(resolvedExpression, comparable);
+				return builder.greaterThan(expression, comparable);
 			}
 			if (op.equals(GREATER_THAN_OR_EQUAL)) {
-				return builder.greaterThanOrEqualTo(resolvedExpression, comparable);
+				return builder.greaterThanOrEqualTo(expression, comparable);
 			}
 			if (op.equals(LESS_THAN)) {
-				return builder.lessThan(resolvedExpression, comparable);
+				return builder.lessThan(expression, comparable);
 			}
 			if (op.equals(LESS_THAN_OR_EQUAL)) {
-				return builder.lessThanOrEqualTo(resolvedExpression, comparable);
+				return builder.lessThanOrEqualTo(expression, comparable);
 			}
 		}
 		log.error("Unknown operator: {}", op);
