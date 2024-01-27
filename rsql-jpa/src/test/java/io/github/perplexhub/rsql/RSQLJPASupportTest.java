@@ -23,8 +23,10 @@ import jakarta.persistence.criteria.Predicate;
 import io.github.perplexhub.rsql.model.Status;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
+import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -939,6 +941,16 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
+	@Disabled
+	final void testFunctionStaticWhitespace() {
+		String rsql = "@concat[@upper[code]|#12\t3]=='HELLO123'";
+		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
 	final void testPropertyPathMapper() {
 		Map<String, String> propertyPathMapper = new HashMap<>();
 		propertyPathMapper.put("i", "id");
@@ -1102,7 +1114,7 @@ class RSQLJPASupportTest {
 			.extracting(User::getId)
 			.containsExactly(1, 2, 3, 4, 5);
 	}
-	
+
 	@Test
 	void testWithMalformedSort() {
 		Page<User> users = userRepository.findAll(toSort(";;,;,,;"), PageRequest.of(0, 1));
@@ -1138,7 +1150,7 @@ class RSQLJPASupportTest {
 			.extracting(User::getId)
 			.containsExactly(6, 9, 7, 8);
 	}
-	
+
 	@Test
 	void testSortDefaultAsc() {
 		Specification<User> specification = toSort("name");
@@ -1238,7 +1250,7 @@ class RSQLJPASupportTest {
 				.strictEquality(true)
 				.rsqlQuery("name=='^^^ Zoe ***'")
 				.build()));
-		
+
 		assertEquals(1, result.size());
 		assertEquals(result.get(0).getId(), user.getId());
 	}
@@ -1250,7 +1262,7 @@ class RSQLJPASupportTest {
 
 		User user1 = new User();
 		user1.setName("Zoe");
-		
+
 		User user2 = new User();
 		user2.setName("*Zoe");
 

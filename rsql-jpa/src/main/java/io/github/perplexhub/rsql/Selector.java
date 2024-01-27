@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.util.StringUtils;
 
 sealed interface Selector {

@@ -13,8 +13,10 @@ import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import io.github.perplexhub.rsql.RSQLOperators;
 import io.github.perplexhub.rsql.RSQLVisitorBase;
+import io.github.perplexhub.rsql.ResolvedExpression;
 import jakarta.persistence.Column;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.metamodel.Attribute;
@@ -60,25 +62,13 @@ public class JsonbSupport {
     record JsonbPathExpression(String jsonbFunction, String jsonbPath) {
     }
 
-    /**
-     * Builds a jsonb expression for a given keyPath and operator.
-     *
-     * @param builder  the criteria builder
-     * @param node     the comparison node
-     * @param attrPath the attribute jsonbPath
-     * @return the jsonb expression
-     */
-    public static Predicate jsonbPathExists(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath) {
+
+    public static ResolvedExpression jsonbPathExistsExpression(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath) {
         var mayBeInvertedOperator = Optional.ofNullable(NEGATE_OPERATORS.get(node.getOperator()));
         var jsb = new JsonbExpressionBuilder(mayBeInvertedOperator.orElse(node.getOperator()), node.getSelector(), node.getArguments());
         var expression = jsb.getJsonPathExpression();
-        var function = builder.function(expression.jsonbFunction, Boolean.class, attrPath,
-                builder.literal(expression.jsonbPath));
-        if (mayBeInvertedOperator.isPresent()) {
-            return builder.isFalse(function);
-        } else {
-            return builder.isTrue(function);
-        }
+        return ResolvedExpression.ofJson(builder.function(expression.jsonbFunction, Boolean.class, attrPath,
+                builder.literal(expression.jsonbPath)), mayBeInvertedOperator.isPresent());
     }
 
     /**
