@@ -10,8 +10,6 @@ import java.util.stream.Stream;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Predicate;
-import org.springframework.util.StringUtils;
 
 sealed interface Selector {
 
@@ -117,30 +115,28 @@ sealed interface Selector {
 
     record NullValue() {}
 
-    static boolean checkWhiteListedFunction(Selector selector, Collection<String> whiteList) {
+    static void assertWhiteListed(Selector selector, Collection<String> whiteList) {
 
         if(selector instanceof FunctionSelector functionSelector) {
             if (whiteList == null || !matchesInCollection(functionSelector.function, whiteList)) {
-                return false;
+                throw new FunctionNotWhiteListedException(functionSelector.function);
             }
-            return functionSelector.arguments.stream()
-                    .allMatch(argument -> checkWhiteListedFunction(argument, whiteList));
+            functionSelector.arguments
+                    .forEach(argument -> assertWhiteListed(argument, whiteList));
         }
-        return true;
     }
 
-    static boolean checkBlackListedFunction(Selector selector, Collection<String> blackList) {
+    static void assertNotBlackListed(Selector selector, Collection<String> blackList) {
         if (blackList == null || blackList.isEmpty()) {
-            return true;
+            return;
         }
         if(selector instanceof FunctionSelector functionSelector) {
             if(matchesInCollection(functionSelector.function, blackList)) {
-                return false;
+                throw new FunctionBlackListedException(functionSelector.function);
             }
-            return functionSelector.arguments.stream()
-                    .allMatch(argument -> checkBlackListedFunction(argument, blackList));
+            functionSelector.arguments.
+                    forEach(argument -> assertNotBlackListed(argument, blackList));
         }
-        return true;
     }
 
     static boolean matchesInCollection(String value, Collection<String> values) {

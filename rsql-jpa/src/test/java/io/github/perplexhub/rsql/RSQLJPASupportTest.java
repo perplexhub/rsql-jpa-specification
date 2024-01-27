@@ -857,7 +857,7 @@ class RSQLJPASupportTest {
 
 	@Test
 	final void testFunctionRejected() {
-		String rsql = "@upper[@lower[code]==HELLO";
+		String rsql = "@upper[@lower[code]]==HELLO";
 		QuerySupport querySupport = QuerySupport.builder()
 				.rsqlQuery(rsql)
 				.procedureWhiteList(List.of("lower"))
@@ -1251,6 +1251,47 @@ class RSQLJPASupportTest {
 					assertEquals("abc", e.getName());
 					assertEquals(User.class, e.getType());
 				});
+	}
+
+	@Test
+	void testSortWithFunction() {
+		SortSupport sortSupport = SortSupport.builder()
+				.sortQuery("@upper[name],asc")
+				.procedureWhiteList(List.of("upper"))
+				.build();
+		Specification<User> specification = toSort(sortSupport);
+
+		List<User> users = userRepository.findAll(specification);
+
+		Assertions.assertThat(users)
+				.extracting(User::getName)
+				.isSortedAccordingTo(String::compareTo); // asc
+	}
+
+	@Test
+	void testSortNotInWhitelist() {
+		SortSupport sortSupport = SortSupport.builder()
+				.sortQuery("@upper[name],asc")
+				.build();
+		Specification<User> specification = toSort(sortSupport);
+
+		assertThatExceptionOfType(FunctionNotWhiteListedException.class)
+				.isThrownBy(() -> userRepository.findAll(specification))
+				.satisfies(e -> assertEquals("Function 'upper' is not whitelisted", e.getMessage()));
+	}
+
+	@Test
+	void testSortInBlacklist() {
+		SortSupport sortSupport = SortSupport.builder()
+				.procedureWhiteList(List.of(".*er"))
+				.procedureBlackList(List.of("lower"))
+				.sortQuery("@upper[@lower[name]],asc")
+				.build();
+		Specification<User> specification = toSort(sortSupport);
+
+		assertThatExceptionOfType(FunctionBlackListedException.class)
+				.isThrownBy(() -> userRepository.findAll(specification))
+				.satisfies(e -> assertEquals("Function 'lower' is blacklisted", e.getMessage()));
 	}
 
 	@Test

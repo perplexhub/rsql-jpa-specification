@@ -193,7 +193,6 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		log.debug("visit(node:{},root:{})", node, root);
 
 		ComparisonOperator op = node.getOperator();
-
 		if (customPredicates.containsKey(op)) {
 			RSQLCustomPredicate<?> customPredicate = customPredicates.get(op);
 			List<Object> arguments = new ArrayList<>();
@@ -206,31 +205,32 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 
 		Selector selector = Selector.selectorOf(node.getSelector(), builder);
-		if(!Selector.checkWhiteListedFunction(selector, procedureWhiteList)) {
-			throw new RSQLException(String.format("Function %s is not whitelisted", selector));
-		}
+		Selector.assertWhiteListed(selector, procedureWhiteList);
+		Selector.assertNotBlackListed(selector, procedureBlackList);
 
-		if(!Selector.checkBlackListedFunction(selector, procedureBlackList)) {
-			throw new RSQLException(String.format("Function %s is blacklisted", selector));
-		}
-
-		ResolvedExpression resolvedExpression = getResolvedExpression(node, root, selector);
-
+		var resolvedExpression = resolveExpression(node, root, selector);
+		log.debug("Resolved expression: {}", resolvedExpression);
+		//TODO: Use pattern matching when available
 		if(resolvedExpression instanceof ResolvedExpression.JsonbPathExpression jsonbPathExpression) {
-			if (jsonbPathExpression.inverted()) {
-				return builder.isFalse(jsonbPathExpression.expression());
-			} else {
-				return builder.isTrue(jsonbPathExpression.expression());
-			}
+			return jsonPredicate(jsonbPathExpression);
 		} else if (resolvedExpression instanceof ResolvedExpression.PathExpression pathExpression) {
-			return expressionPredicate(node, op, pathExpression);
+			return expressionPredicate(node, pathExpression);
 		} else {
 			throw new IllegalArgumentException("Unknown resolved expression type: " + resolvedExpression.getClass());
 		}
 	}
 
-	private ResolvedExpression getResolvedExpression(ComparisonNode node, From root, Selector selector) {
-
+	/**
+	 * Get the resolved expression for the given node<br>
+	 * If the node points to a jsonb attribute, it will return a {@link ResolvedExpression.JsonbPathExpression}<br>
+	 * If the node points to a regular attribute or a function, it will return a {@link ResolvedExpression.PathExpression}
+	 * @param node The node to resolve
+	 * @param root The root of the query
+	 * @param selector The selector of the node
+	 * @return The resolved expression
+	 */
+	private ResolvedExpression resolveExpression(ComparisonNode node, From root, Selector selector) {
+		//TODO: Use pattern matching when available
 		if(selector instanceof Selector.SingleColumnSelector singleColumnSelector) {
 			var holder = findPropertyPath(singleColumnSelector.column(), root);
 			var attribute = holder.getAttribute();
@@ -266,9 +266,31 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 	}
 
-	private Predicate expressionPredicate(ComparisonNode node, ComparisonOperator op, ResolvedExpression.PathExpression resolvedExpression) {
+	/**
+	 * Transform the given JsonbPathExpression into a {@link Predicate}
+	 *
+	 * @param jsonbPathExpression The JsonbPathExpression to transform
+	 * @return The Predicate
+	 */
+	private Predicate jsonPredicate(ResolvedExpression.JsonbPathExpression jsonbPathExpression) {
+		if (jsonbPathExpression.inverted()) {
+			return builder.isFalse(jsonbPathExpression.expression());
+		} else {
+			return builder.isTrue(jsonbPathExpression.expression());
+		}
+	}
+
+	/**
+	 * Transform the given PathExpression into a {@link Predicate}
+	 *
+	 * @param node The node to transform
+	 * @param resolvedExpression The resolved expression
+	 * @return The Predicate
+	 */
+	private Predicate expressionPredicate(ComparisonNode node, ResolvedExpression.PathExpression resolvedExpression) {
 		Expression expression = resolvedExpression.expression();
 		Class type = resolvedExpression.type();
+		var op = node.getOperator();
 		if (node.getArguments().size() > 1) {
 			List<Object> listObject = new ArrayList<>();
 			for (String argument : node.getArguments()) {
@@ -351,6 +373,13 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		throw new RSQLException("Unknown operator: " + op);
 	}
 
+	/**
+	 * Convert a like expression to a like predicate
+	 *
+	 * @param attributePath The attribute path
+     * @param likeExpression The like expression
+	 * @param builder The criteria builder
+	 */
 	private Predicate likePredicate(Expression attributePath, String likeExpression, CriteriaBuilder builder) {
 		return Optional.ofNullable(this.likeEscapeCharacter)
 				.map(character ->  builder.like(attributePath, likeExpression, character))
@@ -396,5 +425,4 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 
 		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
 	}
-
 }

@@ -54,13 +54,9 @@ class SortUtils {
 
         Selector selector = Selector.selectorOf(property, cb);
 
-        if(!Selector.checkWhiteListedFunction(selector, sortSupport.getProcedureWhiteList())) {
-            throw new RSQLException(String.format("Function %s is not allowed", selector));
-        }
+        Selector.assertWhiteListed(selector, sortSupport.getProcedureWhiteList());
+        Selector.assertNotBlackListed(selector, sortSupport.getProcedureBlackList());
 
-        if(!Selector.checkBlackListedFunction(selector, sortSupport.getProcedureBlackList())) {
-            throw new RSQLException(String.format("Function %s is not allowed", selector));
-        }
         final String direction = parts.length > 1 ? parts[1] : "asc";
 
         final RSQLJPAPredicateConverter converter =

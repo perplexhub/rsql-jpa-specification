@@ -18,7 +18,7 @@ public class SortSupport {
 
     @Override
     public String toString() {
-        return String.format("%s,propertyPathMapper:%s,joinHints:%s",
-                sortQuery, propertyPathMapper, joinHints);
+        return String.format("%s,propertyPathMapper:%s,joinHints:%s,procedureWhiteList:%s,procedureBlackList:%s",
+                sortQuery, propertyPathMapper, joinHints, procedureWhiteList, procedureBlackList);
     }
 }
