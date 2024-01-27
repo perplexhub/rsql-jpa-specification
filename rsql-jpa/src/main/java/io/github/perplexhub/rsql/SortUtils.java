@@ -7,10 +7,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.github.perplexhub.rsql.jsonb.JsonbSupport;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Order;
-import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Root;
 
 import org.springframework.lang.Nullable;
@@ -70,7 +70,7 @@ class SortUtils {
 
         Expression<?> propertyExpression = selector.getExpression((string, builder) ->{
             final RSQLJPAContext rsqljpaContext = converter.findPropertyPath(string, root);
-            final boolean isJson = converter.isJsonType(rsqljpaContext.getAttribute());
+            final boolean isJson = JsonbSupport.isJsonType(rsqljpaContext.getAttribute());
             return isJson
                     ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder)
                     : rsqljpaContext.getPath();
@@ -99,7 +99,7 @@ class SortUtils {
                                                       Map<String, String> mapping,
                                                       CriteriaBuilder builder) {
         String path = PathUtils.expectBestMapping(property, mapping);
-        String jsonbSelector = RSQLJPAPredicateConverter.jsonPathOfSelector(context.getAttribute(), path);
+        String jsonbSelector = JsonbSupport.jsonPathOfSelector(context.getAttribute(), path);
         if(jsonbSelector.contains(".")) {
             var args = new ArrayList<Expression<?>>();
             args.add(context.getPath());

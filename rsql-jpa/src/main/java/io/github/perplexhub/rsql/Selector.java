@@ -1,9 +1,5 @@
 package io.github.perplexhub.rsql;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Expression;
-import org.springframework.util.StringUtils;
-
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
@@ -11,6 +7,10 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import org.springframework.util.StringUtils;
 
 sealed interface Selector {
 

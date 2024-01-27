@@ -1,14 +1,12 @@
 package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
-import static io.github.perplexhub.rsql.jsonb.JsonbSupport.*;
 
-import jakarta.persistence.Column;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.github.perplexhub.rsql.jsonb.JsonbSupport;
 import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
@@ -22,13 +20,10 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.orm.jpa.vendor.Database;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> {
-
-	private static final Set<Database> JSON_SUPPORT = EnumSet.of(Database.POSTGRESQL);
 
 	private final CriteriaBuilder builder;
 	private final Map<String, Path> cachedJoins = new HashMap<>();
@@ -75,8 +70,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
-		var holder = findPropertyPathInternal(propertyPath, startRoot, true);
-		return holder;
+        return findPropertyPathInternal(propertyPath, startRoot, true);
 	}
 
 	private RSQLJPAContext findPropertyPathInternal(String propertyPath, Path startRoot, boolean firstTry) {
@@ -148,7 +142,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					String keyJoin = getKeyJoin(root, mappedProperty);
 					log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
 					root = join(keyJoin, root, mappedProperty);
-				} else if (isJsonType(mappedProperty, classMetadata)) {
+				} else if (JsonbSupport.isJsonType(mappedProperty, classMetadata)) {
 					root = root.get(mappedProperty);
 					attribute = classMetadata.getAttribute(mappedProperty);
 					break;
@@ -172,39 +166,6 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 
 		return RSQLJPAContext.of(root, attribute);
-	}
-
-	private boolean isJsonType(String mappedProperty, ManagedType<?> classMetadata) {
-		return Optional.ofNullable(classMetadata.getAttribute(mappedProperty))
-				.map(this::isJsonType)
-				.orElse(false);
-	}
-	
-	protected boolean isJsonType(Attribute<?, ?> attribute) {
-    	return attribute!=null
-				&& isJsonColumn(attribute)
-				&& getDatabase(attribute)
-					.map(JSON_SUPPORT::contains)
-					.orElse(false);
-	}
-
-	private boolean isJsonColumn(Attribute<?, ?> attribute) {
-		return Optional.ofNullable(attribute)
-				.filter(attr -> attr.getJavaMember() instanceof Field)
-				.map(attr -> ((Field) attr.getJavaMember()))
-				.map(field -> field.getAnnotation(Column.class))
-				.map(Column::columnDefinition)
-				.map("jsonb"::equalsIgnoreCase)
-				.orElse(false);
-	}
-
-	private Optional<Database> getDatabase(Attribute<?, ?> attribute) {
-		return getEntityManagerMap()
-				.values()
-				.stream()
-				.filter(em -> em.getMetamodel().getManagedTypes().contains(attribute.getDeclaringType()))
-				.findFirst()
-				.map(em -> getEntityManagerDatabase().get(em));
 	}
 
 	private String getKeyJoin(Path<?> root, String mappedProperty) {
@@ -261,12 +222,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			var attribute = holder.getAttribute();
 			var path = holder.getPath();
 			type = path.getJavaType();
-			if(isJsonType(attribute)) {
+			if(JsonbSupport.isJsonType(attribute)) {
 				String jsonSelector = PathUtils.expectBestMapping(node.getSelector(), propertyPathMapper);
-				String jsonbPath = jsonPathOfSelector(attribute, jsonSelector);
+				String jsonbPath = JsonbSupport.jsonPathOfSelector(attribute, jsonSelector);
 				if(jsonbPath.contains(".")) {
 					ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
-					return jsonbPathExists(builder, jsonbNode, path);
+					return JsonbSupport.jsonbPathExists(builder, jsonbNode, path);
 				} else {
 					expression = path.as(String.class);
 				}
@@ -376,23 +337,6 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		log.error("Unknown operator: {}", op);
 		throw new RSQLException("Unknown operator: " + op);
-	}
-
-	/**
-	 * Returns the jsonb path for the given attribute path and selector.<br>
-	 * It extracts the jsonb part of the selector that can contains entity references before the jsonb path.
-	 *
-	 * @param attrPath the attribute path
-	 * @param selector the selector
-	 * @return the jsonb path
-	 */
-	protected static String jsonPathOfSelector(Attribute attrPath, String selector) {
-		String attributeName = attrPath.getName();
-		int attributePosition = selector.indexOf(attributeName);
-		if(attributePosition < 0) {
-			throw new IllegalArgumentException("The attribute name [" + attributeName + "] is not part of the selector [" + selector + "]");
-		}
-		return selector.substring(attributePosition + attributeName.length());
 	}
 
 	private Predicate likePredicate(Expression attributePath, String likeExpression, CriteriaBuilder builder) {
