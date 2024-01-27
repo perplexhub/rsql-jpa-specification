@@ -404,4 +404,61 @@ You must use the [ISO 8601](https://json-schema.org/understanding-json-schema/re
 >If your request conform timezone pattern, the library will use `jsonb_path_exists_tz.  
 >Then consider the timezone consideration of the [official documentation](https://www.postgresql.org/docs/current/functions-json.html)
 
+## Stored procedure 
 
+RSQL can call a stored procedure with the following syntax for both search and sort.  
+In order to be authorized to call a stored procedure, it must be `whitelisted` and not `blacklisted`.  
+The only way to whitelist or blacklist a stored procedure is to use the `QuerySupport` when performing the search or the `SortSupport` when performing the sort.
+
+```java
+String rsql = "@concat[greetings|#123]=='HELLO123'";
+QuerySupport querySupport = QuerySupport.builder()
+        .rsqlQuery(rsql)
+        .procedureWhiteList(List.of("concat", "upper"))
+        .build();
+List<Item> companies = itemRepository.findAll(toSpecification(querySupport));
+```
+
+>Regex like expression can be used to whitelist or blacklist stored procedure.
+
+### Syntax
+
+A procedure must be prefixed with `@` and called with `[]` for arguments.
+
+```
+@procedure_name[arg1|arg2|...]
+```
+
+### Arguments
+
+Arguments are separated by `|` and can be:
+* constant (null, boolean, number, string), prefixed with `#`
+* column name
+* other procedure call
+
+```
+@procedure_name[arg1|arg2|...]
+@procedure_name[column1|column2|...]
+@procedure_name[@function_name[arg1|arg2|...]|column1|#textvalue|#123|#true|#false|#null]
+```
+
+For text value, since space is not supported by RSQL, you can use `\t` to replace space.
+
+
+### Usage
+
+#### Search
+
+```java
+String rsql1 = "@upper[code]==HELLO";
+String rsql2 = "@concat[@upper[code]|name]=='TESTTest Lab'";
+String rsql3 = "@concat[@upper[code]|#123]=='HELLO123'";
+```
+
+#### Sort
+
+```java
+String sort1 = "@upper[code],asc";
+String sort2 = "@concat[@upper[code]|name],asc";
+String sort3 = "@concat[@upper[code]|#123],asc";
+```
