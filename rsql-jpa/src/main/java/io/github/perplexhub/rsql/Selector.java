@@ -23,6 +23,16 @@ sealed interface Selector {
     record ValueSelector(Object value, CriteriaBuilder builder) implements Selector {
         @Override
         public Expression<?> getExpression(BiFunction<String, CriteriaBuilder, Expression<?>> columnMapper) {
+            if(value == null) {
+                return builder.nullLiteral(Object.class);
+            }
+            if(value instanceof String stringValue) {
+                //replace tab with space
+                stringValue = stringValue.replace("\t", " ");
+                return builder.literal(stringValue);
+            } else if (value instanceof NullValue) {
+                return builder.nullLiteral(Object.class);
+            }
             return builder.literal(value);
         }
     }
@@ -51,9 +61,6 @@ sealed interface Selector {
         if(column.isBlank()) {
             throw new IllegalArgumentException("Column cannot be blank");
         }
-        if(StringUtils.containsWhitespace(column)) {
-            throw new IllegalArgumentException("Column cannot contain whitespace");
-        }
         if(column.startsWith("@")) {
             int argStart = column.indexOf('[');
             int argEnd = column.lastIndexOf(']');
@@ -80,6 +87,12 @@ sealed interface Selector {
         return new SingleColumnSelector(column, criteriaBuilder);
     }
 
+    static Optional<Object> nullFromString(String value) {
+        if(value.equalsIgnoreCase("null")) {
+            return Optional.of(new NullValue());
+        }
+        return Optional.empty();
+    }
     static Optional<Object> booleanFromString(String value) {
         if (value.equalsIgnoreCase("true")) {
             return Optional.of(Boolean.TRUE);
@@ -102,6 +115,7 @@ sealed interface Selector {
         return Optional.empty();
     }
 
+    record NullValue() {}
 
     static boolean checkWhiteListedFunction(Selector selector, Collection<String> whiteList) {
 

@@ -941,10 +941,26 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
-	@Disabled
-	final void testFunctionStaticWhitespace() {
-		String rsql = "@concat[@upper[code]|#12\t3]=='HELLO123'";
-		List<Company> companies = companyRepository.findAll(toSpecification(rsql));
+	final void testFunctionStaticWhitespaceAsSpace() {
+		String rsql = "@concat[@upper[code]|#12\t3]=='HELLO12 3'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("concat", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionStaticNull() {
+		String rsql = "@coalesce[#null|@upper[code]]=='HELLO'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("coalesce", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
 		long count = companies.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(1L));
