@@ -5,7 +5,9 @@ import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -21,8 +23,10 @@ import jakarta.persistence.criteria.Predicate;
 import io.github.perplexhub.rsql.model.Status;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
+import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -813,6 +817,156 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
+	final void testFunctionOneArgument() {
+		String rsql = "@upper[code]==HELLO";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionTwoArgument() {
+		String rsql = "@concat[@upper[code]|name]=='TESTTest Lab'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("concat", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionNestedArgument() {
+		String rsql = "@concat[@upper[code]|name]=='TESTTest Lab'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("concat", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionRejected() {
+		String rsql = "@upper[@lower[code]]==HELLO";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("lower"))
+				.procedureBlackList(List.of("upper"))
+				.build();
+		Specification<Company> toSpecification = toSpecification(querySupport);
+		assertThrows(RSQLException.class, () -> companyRepository.findAll(toSpecification), "Blacklisted function should throw exception");
+
+		querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("lower"))
+				.procedureBlackList(List.of("up.*"))
+				.build();
+		Specification<Company> toSpecification2 = toSpecification(querySupport);
+		assertThrows(RSQLException.class, () -> companyRepository.findAll(toSpecification2), "Blacklisted function should throw exception");
+
+		querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("lower"))
+				.build();
+		Specification<Company> toSpecification3 = toSpecification(querySupport);
+		assertThrows(RSQLException.class, () -> companyRepository.findAll(toSpecification3), "Not found in whitelist should throw exception");
+	}
+
+	@Test
+	final void testFunctionAccepted() {
+		String rsql = "@upper[code]==HELLO";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("upper"))
+				.procedureBlackList(List.of("lower"))
+				.build();
+		Specification<Company> toSpecification = toSpecification(querySupport);
+		assertDoesNotThrow(() -> companyRepository.findAll(toSpecification), "Whitelisted function should not throw exception");
+
+		querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("up.*"))
+				.build();
+		Specification<Company> toSpecification2 = toSpecification(querySupport);
+		assertDoesNotThrow(() -> companyRepository.findAll(toSpecification2), "Whitelisted function should not throw exception");
+	}
+
+	@Test
+	final void testFunctionStaticArgument() {
+		String rsql = "@concat[@upper[code]|#WORLD]=='HELLOWORLD'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("concat", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionStaticArgument2() {
+		String rsql = "@concat[@upper[code]|##WORLD]=='HELLO#WORLD'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("concat", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionStaticArgument3() {
+		String rsql = "@concat[@upper[code]|#123]=='HELLO123'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("concat", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionStaticWhitespaceAsSpace() {
+		String rsql = "@concat[@upper[code]|#12\t3]=='HELLO12 3'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("concat", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
+	final void testFunctionStaticNull() {
+		String rsql = "@coalesce[#null|@upper[code]]=='HELLO'";
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery(rsql)
+				.procedureWhiteList(List.of("coalesce", "upper"))
+				.build();
+		List<Company> companies = companyRepository.findAll(toSpecification(querySupport));
+		long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+	}
+
+	@Test
 	final void testPropertyPathMapper() {
 		Map<String, String> propertyPathMapper = new HashMap<>();
 		propertyPathMapper.put("i", "id");
@@ -976,7 +1130,7 @@ class RSQLJPASupportTest {
 			.extracting(User::getId)
 			.containsExactly(1, 2, 3, 4, 5);
 	}
-	
+
 	@Test
 	void testWithMalformedSort() {
 		Page<User> users = userRepository.findAll(toSort(";;,;,,;"), PageRequest.of(0, 1));
@@ -1012,7 +1166,7 @@ class RSQLJPASupportTest {
 			.extracting(User::getId)
 			.containsExactly(6, 9, 7, 8);
 	}
-	
+
 	@Test
 	void testSortDefaultAsc() {
 		Specification<User> specification = toSort("name");
@@ -1100,6 +1254,47 @@ class RSQLJPASupportTest {
 	}
 
 	@Test
+	void testSortWithFunction() {
+		SortSupport sortSupport = SortSupport.builder()
+				.sortQuery("@upper[name],asc")
+				.procedureWhiteList(List.of("upper"))
+				.build();
+		Specification<User> specification = toSort(sortSupport);
+
+		List<User> users = userRepository.findAll(specification);
+
+		Assertions.assertThat(users)
+				.extracting(User::getName)
+				.isSortedAccordingTo(String::compareTo); // asc
+	}
+
+	@Test
+	void testSortNotInWhitelist() {
+		SortSupport sortSupport = SortSupport.builder()
+				.sortQuery("@upper[name],asc")
+				.build();
+		Specification<User> specification = toSort(sortSupport);
+
+		assertThatExceptionOfType(FunctionNotWhiteListedException.class)
+				.isThrownBy(() -> userRepository.findAll(specification))
+				.satisfies(e -> assertEquals("Function 'upper' is not whitelisted", e.getMessage()));
+	}
+
+	@Test
+	void testSortInBlacklist() {
+		SortSupport sortSupport = SortSupport.builder()
+				.procedureWhiteList(List.of(".*er"))
+				.procedureBlackList(List.of("lower"))
+				.sortQuery("@upper[@lower[name]],asc")
+				.build();
+		Specification<User> specification = toSort(sortSupport);
+
+		assertThatExceptionOfType(FunctionBlackListedException.class)
+				.isThrownBy(() -> userRepository.findAll(specification))
+				.satisfies(e -> assertEquals("Function 'lower' is blacklisted", e.getMessage()));
+	}
+
+	@Test
 	@Transactional
 	void testStrictEquality() {
 		resetDBBeforeTest();
@@ -1112,7 +1307,7 @@ class RSQLJPASupportTest {
 				.strictEquality(true)
 				.rsqlQuery("name=='^^^ Zoe ***'")
 				.build()));
-		
+
 		assertEquals(1, result.size());
 		assertEquals(result.get(0).getId(), user.getId());
 	}
@@ -1124,7 +1319,7 @@ class RSQLJPASupportTest {
 
 		User user1 = new User();
 		user1.setName("Zoe");
-		
+
 		User user2 = new User();
 		user2.setName("*Zoe");
 

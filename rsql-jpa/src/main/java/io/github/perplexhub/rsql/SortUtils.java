@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.github.perplexhub.rsql.jsonb.JsonbSupport;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Order;
@@ -47,20 +48,32 @@ class SortUtils {
     }
 
     @SuppressWarnings("unchecked")
-    private static Order sortToJpaOrder(final String[] parts, final SortSupport sortSupport, final Root<?> root, final CriteriaBuilder cb) {
-        final String selector = parts[0];
+    private static Order sortToJpaOrder(final String[] parts, final SortSupport sortSupport, final Root<?> root,
+            final CriteriaBuilder cb) {
+        final String property = parts[0];
+
+        Selector selector = Selector.selectorOf(property, cb);
+
+        Selector.assertWhiteListed(selector, sortSupport.getProcedureWhiteList());
+        Selector.assertNotBlackListed(selector, sortSupport.getProcedureBlackList());
+
         final String direction = parts.length > 1 ? parts[1] : "asc";
 
-        final RSQLJPAPredicateConverter rsqljpaPredicateConverter =
-                new RSQLJPAPredicateConverter(cb, sortSupport.getPropertyPathMapper(), null, sortSupport.getJoinHints());
-        final RSQLJPAContext rsqljpaContext = rsqljpaPredicateConverter.findPropertyPath(selector, root, true);
+        final RSQLJPAPredicateConverter converter =
+                new RSQLJPAPredicateConverter(cb, sortSupport.getPropertyPathMapper(), null,
+                        sortSupport.getJoinHints(), sortSupport.getProcedureWhiteList(),
+                        sortSupport.getProcedureBlackList());
 
-        final boolean isJson = rsqljpaPredicateConverter.isJsonType(rsqljpaContext.getAttribute());
-        Expression<?> propertyExpression = isJson ?
-                sortExpressionOfJson(rsqljpaContext, selector, sortSupport.getPropertyPathMapper(), cb) :
-                rsqljpaContext.getPath();
+        Expression<?> propertyExpression = selector.getExpression((string, builder) ->{
+            final RSQLJPAContext rsqljpaContext = converter.findPropertyPath(string, root);
+            final boolean isJson = JsonbSupport.isJsonType(rsqljpaContext.getAttribute());
+            return isJson
+                    ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder)
+                    : rsqljpaContext.getPath();
+        });
 
-        if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2]) && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
+        if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2])
+            && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
             propertyExpression = cb.lower((Expression<String>) propertyExpression);
         }
 
@@ -82,7 +95,7 @@ class SortUtils {
                                                       Map<String, String> mapping,
                                                       CriteriaBuilder builder) {
         String path = PathUtils.expectBestMapping(property, mapping);
-        String jsonbSelector = RSQLJPAPredicateConverter.jsonPathOfSelector(context.getAttribute(), path);
+        String jsonbSelector = JsonbSupport.jsonPathOfSelector(context.getAttribute(), path);
         if(jsonbSelector.contains(".")) {
             var args = new ArrayList<Expression<?>>();
             args.add(context.getPath());

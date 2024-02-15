@@ -44,8 +44,12 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return managedTypeMap != null ? managedTypeMap : Collections.emptyMap();
 	}
 
-	protected Map<String, EntityManager> getEntityManagerMap() {
+	public static Map<String, EntityManager> getEntityManagerMap() {
 		return entityManagerMap != null ? entityManagerMap : Collections.emptyMap();
+	}
+
+	public static Database getDatabase(EntityManager entityManager) {
+		return entityManagerDatabase.get(entityManager);
 	}
 
 	protected abstract Map<String, String> getPropertyPathMapper();
@@ -220,13 +224,11 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	}
 
 	@SneakyThrows
-	protected Class getElementCollectionGenericType(Class type, Attribute attribute) {
+	protected static Class getElementCollectionGenericType(Class type, Attribute attribute) {
 		Member member = attribute.getJavaMember();
-		if (member instanceof Field) {
-			Field field = (Field) member;
+		if (member instanceof Field field) {
 			Type genericType = field.getGenericType();
-			if (genericType instanceof ParameterizedType) {
-				ParameterizedType rawType = (ParameterizedType) genericType;
+			if (genericType instanceof ParameterizedType rawType) {
 				Class elementCollectionClass = Class.forName(rawType.getActualTypeArguments()[0].getTypeName());
 				log.info("Map element collection generic type [{}] to [{}]", attribute.getName(), elementCollectionClass);
 				return elementCollectionClass;

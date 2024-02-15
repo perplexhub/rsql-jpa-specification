@@ -13,7 +13,7 @@ import static io.github.perplexhub.rsql.jsonb.JsonbSupport.*;
 /**
  * Builds a jsonb expression for a given keyPath and operator.
  */
-class JsonbExpressionBuilder {
+public class JsonbExpressionBuilder {
 
     /**
      * The base json type.

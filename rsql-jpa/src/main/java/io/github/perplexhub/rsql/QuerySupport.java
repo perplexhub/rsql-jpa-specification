@@ -4,6 +4,8 @@ import lombok.Builder;
 import lombok.Data;
 
 import jakarta.persistence.criteria.JoinType;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +25,8 @@ public class QuerySupport {
     private Map<String, JoinType> joinHints;
     private Map<Class<?>, List<String>> propertyWhitelist;
     private Map<Class<?>, List<String>> propertyBlacklist;
+    private Collection<String> procedureWhiteList;
+    private Collection<String> procedureBlackList;
 
     public static class QuerySupportBuilder {}
 
