@@ -135,7 +135,7 @@ public class JsonbExpressionBuilder {
             Set.of(NOT_EQUAL, IS_NULL, NOT_IN, NOT_LIKE, IGNORE_CASE_NOT_LIKE, NOT_BETWEEN);
 
     private static final Set<ComparisonOperator> NOT_RELEVANT_FOR_CONVERSION =
-            Set.of(NOT_NULL, LIKE, IGNORE_CASE);
+            Set.of(NOT_NULL, LIKE, IGNORE_CASE, IGNORE_CASE_LIKE);
 
     private static final Set<ComparisonOperator> REQUIRE_NO_ARGUMENTS =
             Set.of(NOT_NULL);
