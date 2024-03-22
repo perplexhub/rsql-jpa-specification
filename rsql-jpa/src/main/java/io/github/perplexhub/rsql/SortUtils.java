@@ -64,16 +64,16 @@ class SortUtils {
                         sortSupport.getJoinHints(), sortSupport.getProcedureWhiteList(),
                         sortSupport.getProcedureBlackList());
 
+        final boolean ic = parts.length > 2 && "ic".equalsIgnoreCase(parts[2]);
         Expression<?> propertyExpression = selector.getExpression((string, builder) ->{
             final RSQLJPAContext rsqljpaContext = converter.findPropertyPath(string, root);
             final boolean isJson = JsonbSupport.isJsonType(rsqljpaContext.getAttribute());
             return isJson
-                    ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder)
+                    ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder, ic)
                     : rsqljpaContext.getPath();
         });
 
-        if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2])
-            && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
+        if (ic && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
             propertyExpression = cb.lower((Expression<String>) propertyExpression);
         }
 
@@ -88,12 +88,14 @@ class SortUtils {
      * @param context  the rsql context
      * @param property the property
      * @param builder  the criteria builder
+     * @param ic a flag indicating if sort is case insensitive
      * @return the jsonb expression
      */
     private static Expression<?> sortExpressionOfJson(RSQLJPAContext context,
                                                       String property,
                                                       Map<String, String> mapping,
-                                                      CriteriaBuilder builder) {
+                                                      CriteriaBuilder builder,
+                                                      boolean ic) {
         String path = PathUtils.expectBestMapping(property, mapping);
         String jsonbSelector = JsonbSupport.jsonPathOfSelector(context.getAttribute(), path);
         if(jsonbSelector.contains(".")) {
@@ -103,7 +105,8 @@ class SortUtils {
                     .skip(1) // skip root
                     .map(builder::literal)
                     .forEach(args::add);
-            return builder.function("jsonb_extract_path", String.class, args.toArray(Expression[]::new));
+            String functionName = ic ? "jsonb_extract_path_text" : "jsonb_extract_path";
+            return builder.function(functionName, String.class, args.toArray(Expression[]::new));
         } else {
             return context.getPath().as(String.class);
         }
