@@ -598,6 +598,7 @@ class RSQLJPASupportPostgresJsonTest {
                 arguments(allCases, "properties.a=like=2", List.of(e2)),
                 arguments(allCases, "properties.a=in=(1,2)", List.of()),
                 arguments(allCases, "properties.a=notlike=1", List.of(e2, e3)),
+                arguments(allCases, "properties.a=ilike=2", List.of(e2)),
                 null
         ).filter(Objects::nonNull);
     }
