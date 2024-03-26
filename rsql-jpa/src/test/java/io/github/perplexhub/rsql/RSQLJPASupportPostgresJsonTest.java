@@ -239,6 +239,7 @@ class RSQLJPASupportPostgresJsonTest {
                 sortByText(),
                 sortByNumber(),
                 sortByNested(),
+                sortByMixedData(),
                 null
         ).filter(Objects::nonNull).flatMap(s -> s);
     }
@@ -647,6 +648,27 @@ class RSQLJPASupportPostgresJsonTest {
         return Stream.of(
                 arguments(allCases, "properties.a.b.c,asc", List.of(e1, e2, e3)),
                 arguments(allCases, "properties.a.b.c,desc", List.of(e3, e2, e1)),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    private static Stream<Arguments> sortByMixedData() {
+        Map<String, Object> data6 = new HashMap<>();
+        data6.put("a", null);
+        data6.put("b", "def");
+        var e1 = new PostgresJsonEntity(Map.of("a", "abc", "b", 987));
+        var e2 = new PostgresJsonEntity(Map.of("a", "ABC", "b", "123"));
+        var e3 = new PostgresJsonEntity(Map.of("a", 123, "b", false));
+        var e4 = new PostgresJsonEntity(Map.of("a", true, "b", true));
+        var e5 = new PostgresJsonEntity(Map.of("a", false, "b", "zyx"));
+        var e6 = new PostgresJsonEntity(data6);
+
+        var allCases = List.of(e1, e2, e3, e4, e5, e6);
+        return Stream.of(
+                arguments(allCases, "properties.a,asc", List.of(e6, e1, e2, e3, e5, e4)),
+                arguments(allCases, "properties.a,desc", List.of(e4, e5, e3, e2, e1, e6)),
+                arguments(allCases, "properties.a,asc,ic;properties.b", List.of(e3, e2, e1, e5, e6, e4)),
+                arguments(allCases, "properties.a,desc,ic;properties.b,desc", List.of(e4, e6, e5, e1, e2, e3)),
                 null
         ).filter(Objects::nonNull);
     }

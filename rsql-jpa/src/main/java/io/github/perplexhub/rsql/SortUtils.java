@@ -47,7 +47,6 @@ class SortUtils {
                 .toArray(String[]::new);
     }
 
-    @SuppressWarnings("unchecked")
     private static Order sortToJpaOrder(final String[] parts, final SortSupport sortSupport, final Root<?> root,
             final CriteriaBuilder cb) {
         final String property = parts[0];
@@ -64,17 +63,17 @@ class SortUtils {
                         sortSupport.getJoinHints(), sortSupport.getProcedureWhiteList(),
                         sortSupport.getProcedureBlackList());
 
-        final boolean ic = parts.length > 2 && "ic".equalsIgnoreCase(parts[2]);
         Expression<?> propertyExpression = selector.getExpression((string, builder) ->{
             final RSQLJPAContext rsqljpaContext = converter.findPropertyPath(string, root);
             final boolean isJson = JsonbSupport.isJsonType(rsqljpaContext.getAttribute());
             return isJson
-                    ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder, ic)
+                    ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder)
                     : rsqljpaContext.getPath();
         });
 
-        if (ic && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
-            propertyExpression = cb.lower((Expression<String>) propertyExpression);
+        if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2])
+            && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
+            propertyExpression = cb.lower(propertyExpression.as(String.class));
         }
 
         return direction.equalsIgnoreCase("asc") ? cb.asc(propertyExpression) : cb.desc(propertyExpression);
@@ -88,14 +87,12 @@ class SortUtils {
      * @param context  the rsql context
      * @param property the property
      * @param builder  the criteria builder
-     * @param ic a flag indicating if sort is case insensitive
      * @return the jsonb expression
      */
     private static Expression<?> sortExpressionOfJson(RSQLJPAContext context,
                                                       String property,
                                                       Map<String, String> mapping,
-                                                      CriteriaBuilder builder,
-                                                      boolean ic) {
+                                                      CriteriaBuilder builder) {
         String path = PathUtils.expectBestMapping(property, mapping);
         String jsonbSelector = JsonbSupport.jsonPathOfSelector(context.getAttribute(), path);
         if(jsonbSelector.contains(".")) {
@@ -105,8 +102,7 @@ class SortUtils {
                     .skip(1) // skip root
                     .map(builder::literal)
                     .forEach(args::add);
-            String functionName = ic ? "jsonb_extract_path_text" : "jsonb_extract_path";
-            return builder.function(functionName, String.class, args.toArray(Expression[]::new));
+            return builder.function("jsonb_extract_path", String.class, args.toArray(Expression[]::new));
         } else {
             return context.getPath().as(String.class);
         }
