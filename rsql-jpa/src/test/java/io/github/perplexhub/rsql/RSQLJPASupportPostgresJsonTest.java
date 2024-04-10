@@ -438,18 +438,25 @@ class RSQLJPASupportPostgresJsonTest {
         var e3 = new PostgresJsonEntity(Map.of("a1", 3));
         var e4 = new PostgresJsonEntity(Map.of("a1", 3.14));
         var e5 = new PostgresJsonEntity(Map.of("a1", 42));
-        var allCases = List.of(e1, e2, e3, e4, e5);
+        var e6 = new PostgresJsonEntity(Map.of("a1", -10));
+        var e7 = new PostgresJsonEntity(Map.of("a1", -3.14));
+        var allCases = List.of(e1, e2, e3, e4, e5, e6, e7);
         return Stream.of(
                 arguments(allCases, "properties.a1==1", List.of(e1)),
                 arguments(allCases, "properties.a1==42", List.of(e5)),
                 arguments(allCases, "properties.a1=ge=2", List.of(e2, e3, e4, e5)),
                 arguments(allCases, "properties.a1=gt=2", List.of(e3, e4, e5)),
-                arguments(allCases, "properties.a1=le=2", List.of(e1, e2)),
-                arguments(allCases, "properties.a1=lt=2", List.of(e1)),
+                arguments(allCases, "properties.a1=le=2", List.of(e1, e2, e6, e7)),
+                arguments(allCases, "properties.a1=lt=2", List.of(e1, e6, e7)),
                 arguments(allCases, "properties.a1=in=(1,2)", List.of(e1, e2)),
-                arguments(allCases, "properties.a1=out=(1,2)", List.of(e3, e4, e5)),
+                arguments(allCases, "properties.a1=out=(1,2)", List.of(e3, e4, e5, e6, e7)),
                 arguments(allCases, "properties.a1=bt=(3,4)", List.of(e3, e4)),
-                arguments(allCases, "properties.a1=nb=(3,4)", List.of(e1, e2, e5)),
+                arguments(allCases, "properties.a1=nb=(3,4)", List.of(e1, e2, e5, e6, e7)),
+                arguments(allCases, "properties.a1=lt=-5", List.of(e6)),
+                arguments(allCases, "properties.a1=lt=-2.05", List.of(e6, e7)),
+                arguments(allCases, "properties.a1=le=-3.14", List.of(e6, e7)),
+                arguments(allCases, "properties.a1=gt=-3", List.of(e1, e2, e3, e4, e5)),
+                arguments(allCases, "properties.a1==-3.14", List.of(e7)),
                 null
         ).filter(Objects::nonNull);
     }

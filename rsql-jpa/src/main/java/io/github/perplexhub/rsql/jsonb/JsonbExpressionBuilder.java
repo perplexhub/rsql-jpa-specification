@@ -125,9 +125,9 @@ public class JsonbExpressionBuilder {
 
     private static final Pattern BOOLEAN_PATTERN = Pattern.compile("^(true|false)$");
 
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("^\\d+\\.\\d+$");
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("^-?\\d+\\.\\d+$");
 
-    private static final Pattern INTEGER_PATTERN = Pattern.compile("^\\d+$");
+    private static final Pattern INTEGER_PATTERN = Pattern.compile("^-?\\d+$");
 
     private static final Pattern WILD_CARD_PATTERN = Pattern.compile("\\*");
 
