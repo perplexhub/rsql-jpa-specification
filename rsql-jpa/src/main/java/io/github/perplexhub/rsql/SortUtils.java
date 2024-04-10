@@ -47,7 +47,6 @@ class SortUtils {
                 .toArray(String[]::new);
     }
 
-    @SuppressWarnings("unchecked")
     private static Order sortToJpaOrder(final String[] parts, final SortSupport sortSupport, final Root<?> root,
             final CriteriaBuilder cb) {
         final String property = parts[0];
@@ -74,7 +73,7 @@ class SortUtils {
 
         if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2])
             && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
-            propertyExpression = cb.lower((Expression<String>) propertyExpression);
+            propertyExpression = cb.lower(propertyExpression.as(String.class));
         }
 
         return direction.equalsIgnoreCase("asc") ? cb.asc(propertyExpression) : cb.desc(propertyExpression);
