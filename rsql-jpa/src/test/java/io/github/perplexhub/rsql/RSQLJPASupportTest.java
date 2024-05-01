@@ -28,6 +28,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
@@ -504,53 +506,37 @@ class RSQLJPASupportTest {
 		assertThat(rsql, count, is(7L));
 	}
 
-	@Test
-	final void testIsNull() {
-		String rsql = "name=isnull=''";
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"name=isnull=''",
+			"name=isnull=",
+			"name=null=''",
+			"name=null=",
+			"name=na=''",
+			"name=na=",
+	})
+	final void testIsNull(String rsql) {
 		List<Company> companys = companyRepository.findAll(toSpecification(rsql));
 		long count = companys.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1L));
-		assertThat(rsql, companys.get(0).getCode(), equalTo("null"));
-		assertThat(rsql, companys.get(0).getName(), is(nullValue()));
 
-		rsql = "name=null=''";
-		companys = companyRepository.findAll(toSpecification(rsql));
-		count = companys.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(1L));
-		assertThat(rsql, companys.get(0).getCode(), equalTo("null"));
-		assertThat(rsql, companys.get(0).getName(), is(nullValue()));
-
-		rsql = "name=na=''";
-		companys = companyRepository.findAll(toSpecification(rsql));
-		count = companys.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(1L));
 		assertThat(rsql, companys.get(0).getCode(), equalTo("null"));
 		assertThat(rsql, companys.get(0).getName(), is(nullValue()));
 	}
 
-	@Test
-	final void testIsNotNull() {
-		String rsql = "name=isnotnull=''";
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"name=isnotnull=''",
+			"name=isnotnull=",
+			"name=notnull=''",
+			"name=notnull=",
+			"name=nn=''",
+			"name=nn="
+	})
+	final void testIsNotNull(String rsql) {
 		List<Company> companys = companyRepository.findAll(toSpecification(rsql));
 		long count = companys.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
-		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 
-		rsql = "name=notnull=''";
-		companys = companyRepository.findAll(toSpecification(rsql));
-		count = companys.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
-		assertThat(rsql, count, is(6L));
-		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
-
-		rsql = "name=nn=''";
-		companys = companyRepository.findAll(toSpecification(rsql));
-		count = companys.size();
-		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(6L));
 		assertThat(rsql, companys.get(0).getName(), is(notNullValue()));
 	}

@@ -146,12 +146,12 @@ filter = "company.id>100"; //greater than
 filter = "company.id<100"; //less than
 filter = "company.id>=100"; //greater than or equal
 filter = "company.id<=100"; //less than or equal
-filter = "company.code=isnull=''"; //is null
-filter = "company.code=null=''"; //is null
-filter = "company.code=na=''"; //is null
-filter = "company.code=nn=''"; //is not null
-filter = "company.code=notnull=''"; //is not null
-filter = "company.code=isnotnull=''"; //is not null
+filter = "company.code=isnull="; //is null
+filter = "company.code=null="; //is null
+filter = "company.code=na="; //is null
+filter = "company.code=nn="; //is not null
+filter = "company.code=notnull="; //is not null
+filter = "company.code=isnotnull="; //is not null
 
 filter = "company.code=='demo';company.id>100"; //and
 filter = "company.code=='demo' and company.id>100"; //and
