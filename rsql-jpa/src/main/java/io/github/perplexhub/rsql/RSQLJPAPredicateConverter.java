@@ -240,7 +240,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				String jsonSelector = PathUtils.expectBestMapping(node.getSelector(), propertyPathMapper);
 				String jsonbPath = JsonbSupport.jsonPathOfSelector(attribute, jsonSelector);
 				if(jsonbPath.contains(".")) {
-					ComparisonNode jsonbNode = new ComparisonNode(node.getOperator(), jsonbPath, node.getArguments());
+					ComparisonNode jsonbNode = node.withSelector(jsonbPath);
 					return JsonbSupport.jsonbPathExistsExpression(builder, jsonbNode, path);
 				} else {
 					return ResolvedExpression.ofPath(path.as(String.class), String.class);
@@ -291,9 +291,10 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		Expression expression = resolvedExpression.expression();
 		Class type = resolvedExpression.type();
 		var op = node.getOperator();
-		if (node.getArguments().size() > 1) {
+		var arguments = node.getArguments();
+		if (arguments.size() > 1) {
 			List<Object> listObject = new ArrayList<>();
-			for (String argument : node.getArguments()) {
+			for (String argument : arguments) {
 				listObject.add(convert(argument, type));
 			}
 			if (op.equals(IN)) {
@@ -320,7 +321,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			if (op.equals(NOT_NULL)) {
 				return builder.isNotNull(expression);
 			}
-			Object argument = convert(node.getArguments().get(0), type);
+			Object argument = convert(arguments.get(0), type);
 			if (op.equals(IN)) {
 				return builder.equal(expression, argument);
 			}
