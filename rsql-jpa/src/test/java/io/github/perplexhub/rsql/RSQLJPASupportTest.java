@@ -11,9 +11,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import io.github.perplexhub.rsql.custom.CustomType;
+import io.github.perplexhub.rsql.model.account.AccountEntity;
+import io.github.perplexhub.rsql.model.account.AddressEntity;
+import io.github.perplexhub.rsql.model.account.AddressHistoryEntity;
+import io.github.perplexhub.rsql.repository.jpa.AccountRepository;
 import io.github.perplexhub.rsql.repository.jpa.custom.CustomTypeRepository;
 import io.github.perplexhub.rsql.custom.EntityWithCustomType;
 import jakarta.persistence.criteria.Expression;
@@ -23,10 +29,8 @@ import jakarta.persistence.criteria.Predicate;
 import io.github.perplexhub.rsql.model.Status;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -63,6 +67,9 @@ class RSQLJPASupportTest {
 
 	@Autowired
 	private CustomTypeRepository customTypeRepository;
+
+	@Autowired
+	AccountRepository accountRepository;
 
 	@BeforeAll
 	static void beforeAll() {
@@ -1362,11 +1369,82 @@ class RSQLJPASupportTest {
 		assertEquals(0, size);
 	}
 
+	@Test
+	void testSearchForActiveSince() { // this is only a simple query test
+		// Given
+		AccountEntity account1 = new AccountEntity("account-ident-0");
+		account1.setAddressHistory(
+				List.of(
+						new AddressHistoryEntity(
+								account1,
+								OffsetDateTime.of(2024, 7, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+								new AddressEntity("Name 1", "some address 1"),
+								new AddressEntity("Name 1", "some other address 2")),
+						new AddressHistoryEntity(
+								account1,
+								OffsetDateTime.of(1900, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+								new AddressEntity("Name 1", "old address 1"),
+								new AddressEntity("Name 1", "old address 1"))));
+		accountRepository.save(account1);
+		// When
+		List<AccountEntity> result = accountRepository.findAll(RSQLJPASupport.rsql("addressHistory.activeSince=ge=2024-06-01T00:00:00Z"));
+		// Then
+		Assertions.assertThat(result).hasSize(1);
+	}
+
+	@Test
+	void testSearchInListWhichContainEmbeddedClass() {
+		// Given
+		AccountEntity account1 = new AccountEntity("account-ident-1");
+		account1.setAddressHistory(
+				List.of(
+						new AddressHistoryEntity(
+								account1,
+								OffsetDateTime.of(2024, 7, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+								new AddressEntity("Name 1", "some address 1"),
+								new AddressEntity("Name 1", "some other address 2")),
+						new AddressHistoryEntity(
+								account1,
+								OffsetDateTime.of(1900, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+								new AddressEntity("Name 1", "old address 1"),
+								new AddressEntity("Name 1", "old address 1"))));
+		accountRepository.save(account1);
+		// When
+		List<AccountEntity> result = accountRepository.findAll(RSQLJPASupport.rsql("addressHistory.invoiceAddress.name=='Name 1'"));
+		// Then
+		Assertions.assertThat(result).hasSize(1);
+	}
+
+	@Test
+	void testSearchWithReducedPathUsingRSQLMapping() {
+		// Given
+		RSQLCommonSupport.addMapping(AccountEntity.class, "invoiceAddress", "addressHistory.invoiceAddress");
+		AccountEntity account1 = new AccountEntity("account-ident-2");
+		account1.setAddressHistory(
+				List.of(
+						new AddressHistoryEntity(
+								account1,
+								OffsetDateTime.of(2024, 7, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+								new AddressEntity("Name 1", "some address 1"),
+								new AddressEntity("Name 1", "some other address 2")),
+						new AddressHistoryEntity(
+								account1,
+								OffsetDateTime.of(1900, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+								new AddressEntity("Name 1", "old address 1"),
+								new AddressEntity("Name 1", "old address 1"))));
+		accountRepository.save(account1);
+		// When
+		List<AccountEntity> result = accountRepository.findAll(RSQLJPASupport.rsql("invoiceAddress.name=='Name 1'"));
+		// Then
+		Assertions.assertThat(result).hasSize(1);
+	}
+
 	@BeforeEach
 	void setUp() {
 		getPropertyWhitelist().clear();
 		getPropertyBlacklist().clear();
 		customTypeRepository.deleteAll();
+		accountRepository.deleteAll();
 	}
 
 }
