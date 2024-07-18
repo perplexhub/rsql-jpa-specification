@@ -303,12 +303,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			if (op.equals(NOT_IN)) {
 				return expression.in(listObject).not();
 			}
-			if (op.equals(BETWEEN) && listObject.size() == 2
+			if (op.equals(BETWEEN)
 				&& listObject.get(0) instanceof Comparable comp1
 				&& listObject.get(1) instanceof Comparable comp2) {
 				return builder.between(expression, comp1, comp2);
 			}
-			if (op.equals(NOT_BETWEEN) && listObject.size() == 2 &&
+			if (op.equals(NOT_BETWEEN) &&
 				listObject.get(0) instanceof Comparable comp1
 				&& listObject.get(1) instanceof Comparable comp2) {
 				return builder.between(expression, comp1, comp2).not();
