@@ -1,6 +1,7 @@
 name: Java Snapshot CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
