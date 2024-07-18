@@ -1,8 +1,12 @@
 package io.github.perplexhub.rsql.model.account;
 
 import jakarta.persistence.Embeddable;
+import lombok.Getter;
+import lombok.Setter;
 
 
+@Setter
+@Getter
 @Embeddable
 public class AddressEntity {
 
@@ -17,19 +21,4 @@ public class AddressEntity {
     public AddressEntity() {
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String value) {
-        this.address = value;
-    }
 }

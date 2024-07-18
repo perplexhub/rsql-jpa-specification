@@ -9,17 +9,23 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.OffsetDateTime;
 
 @Entity
 public class AddressHistoryEntity {
 
+    @Setter
+    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @Column(name = "id", nullable = false)
     private Long id;
 
+    @Setter
+    @Getter
     @ManyToOne
     @JoinColumn(name = "account_ident")
     AccountEntity account;
@@ -36,10 +42,6 @@ public class AddressHistoryEntity {
     @AttributeOverride(name = "address", column = @Column(name = "shipping_address"))
     AddressEntity shippingAddress;
 
-    public AccountEntity getAccount() {return account;}
-
-    public void setAccount(AccountEntity account) {this.account = account;}
-
     public AddressHistoryEntity() {
     }
 
@@ -54,7 +56,4 @@ public class AddressHistoryEntity {
         this.shippingAddress = shippingAddress;
     }
 
-    public Long getId() {return id;}
-
-    public void setId(Long id) {this.id = id;}
 }

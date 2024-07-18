@@ -4,10 +4,14 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Setter
+@Getter
 @Entity
 public class AccountEntity {
 
@@ -24,19 +28,4 @@ public class AccountEntity {
     public AccountEntity() {
     }
 
-    public void setIdent(String ident) {
-        this.ident = ident;
-    }
-
-    public String getIdent() {
-        return ident;
-    }
-
-    public List<AddressHistoryEntity> getAddressHistory() {
-        return addressHistory;
-    }
-
-    public void setAddressHistory(List<AddressHistoryEntity> addressHistory) {
-        this.addressHistory = addressHistory;
-    }
 }
