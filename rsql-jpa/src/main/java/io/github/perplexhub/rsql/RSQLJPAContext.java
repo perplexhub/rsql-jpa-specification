@@ -9,8 +9,8 @@ import lombok.Value;
 @Value(staticConstructor = "of")
 class RSQLJPAContext {
 
-	private Path<?> path;
-	private Attribute<?, ?> attribute;
-	private ManagedType<?> managedType;
+	Path<?> path;
+	Attribute<?, ?> attribute;
+	ManagedType<?> managedType;
 
 }
