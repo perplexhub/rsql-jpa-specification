@@ -72,6 +72,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				RSQLJPAContext context = findPropertyPath(mappedProperty, root);
 				root = context.getPath();
 				attribute = context.getAttribute();
+				classMetadata = context.getManagedType();
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
 					if (Modifier.isAbstract(classMetadata.getJavaType().getModifiers())) {
@@ -153,7 +154,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			accessControl(type, attribute.getName());
 		}
 
-		return RSQLJPAContext.of(root, attribute);
+		return RSQLJPAContext.of(root, attribute, classMetadata);
 	}
 
 	private String getKeyJoin(Path<?> root, String mappedProperty) {
