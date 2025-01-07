@@ -1,6 +1,7 @@
 package io.github.perplexhub.rsql;
 
 import java.lang.reflect.*;
+import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -13,6 +14,7 @@ import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.PluralAttribute;
 
 import lombok.Getter;
+import org.hibernate.metamodel.model.domain.ManagedDomainType;
 import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.orm.jpa.vendor.Database;
@@ -52,6 +54,15 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		return entityManagerDatabase.get(entityManager);
 	}
 
+	public static <T> Attribute<? super T, ?> getAttribute(String property, ManagedType<T> classMetadata) {
+		// W/A found here: https://hibernate.atlassian.net/browse/HHH-18569
+		// breaking change on hibernate side: https://github.com/hibernate/hibernate-orm/pull/6924#discussion_r1250474422
+		if (classMetadata instanceof ManagedDomainType managedDomainType) {
+			return managedDomainType.findSubTypesAttribute(property);
+		}
+		return classMetadata.getAttribute(property);
+	}
+
 	protected abstract Map<String, String> getPropertyPathMapper();
 
 	public Map<Class<?>, Map<String, String>> getPropertyRemapping() {
@@ -71,6 +82,9 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 				object = UUID.fromString(source);
 			} else if (targetType.equals(Date.class) || targetType.equals(java.sql.Date.class)) {
 				object = java.sql.Date.valueOf(LocalDate.parse(source));
+			} else if (targetType.equals(Timestamp.class)) {
+				Date date = java.sql.Date.valueOf(LocalDate.parse(source));
+				return new Timestamp(date.getTime());
 			} else if (targetType.equals(LocalDate.class)) {
 				object = LocalDate.parse(source);
 			} else if (targetType.equals(LocalDateTime.class)) {
@@ -158,10 +172,10 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 	protected <T> Class<?> findPropertyType(String property, ManagedType<T> classMetadata) {
 		Class<?> propertyType = null;
-		if (classMetadata.getAttribute(property).isCollection()) {
-			propertyType = ((PluralAttribute) classMetadata.getAttribute(property)).getBindableJavaType();
+		if (getAttribute(property, classMetadata).isCollection()) {
+			propertyType = ((PluralAttribute) getAttribute(property, classMetadata)).getBindableJavaType();
 		} else {
-			propertyType = classMetadata.getAttribute(property).getJavaType();
+			propertyType = getAttribute(property, classMetadata).getJavaType();
 		}
 		return propertyType;
 	}
@@ -217,7 +231,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 	protected <T> boolean hasPropertyName(String property, ManagedType<T> classMetadata) {
 		try {
-			return classMetadata.getAttribute(property) != null;
+			return getAttribute(property, classMetadata) != null;
 		} catch (IllegalArgumentException e) {
 			return false;
 		}
@@ -238,30 +252,30 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	}
 
 	protected <T> boolean isEmbeddedType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).getPersistentAttributeType() == PersistentAttributeType.EMBEDDED;
+		return getAttribute(property, classMetadata).getPersistentAttributeType() == PersistentAttributeType.EMBEDDED;
 	}
 
 	protected <T> boolean isElementCollectionType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION;
+		return getAttribute(property, classMetadata).getPersistentAttributeType() == PersistentAttributeType.ELEMENT_COLLECTION;
 	}
 
 	protected <T> boolean isAssociationType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).isAssociation();
+		return getAttribute(property, classMetadata).isAssociation();
 	}
 
 	protected <T> boolean isOneToOneAssociationType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).isAssociation()
-				&& PersistentAttributeType.ONE_TO_ONE == classMetadata.getAttribute(property).getPersistentAttributeType();
+		return getAttribute(property, classMetadata).isAssociation()
+				&& PersistentAttributeType.ONE_TO_ONE == getAttribute(property, classMetadata).getPersistentAttributeType();
 	}
 
 	protected <T> boolean isOneToManyAssociationType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).isAssociation()
-				&& PersistentAttributeType.ONE_TO_MANY == classMetadata.getAttribute(property).getPersistentAttributeType();
+		return getAttribute(property, classMetadata).isAssociation()
+				&& PersistentAttributeType.ONE_TO_MANY == getAttribute(property, classMetadata).getPersistentAttributeType();
 	}
 
 	protected <T> boolean isManyToManyAssociationType(String property, ManagedType<T> classMetadata) {
-		return classMetadata.getAttribute(property).isAssociation()
-				&& PersistentAttributeType.MANY_TO_MANY == classMetadata.getAttribute(property).getPersistentAttributeType();
+		return getAttribute(property, classMetadata).isAssociation()
+				&& PersistentAttributeType.MANY_TO_MANY == getAttribute(property, classMetadata).getPersistentAttributeType();
 	}
 
 	static {

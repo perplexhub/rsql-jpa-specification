@@ -20,6 +20,7 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.query.criteria.JpaExpression;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -81,7 +82,6 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		Attribute<?, ?> attribute = null;
 		String resolvedPropertyPath = firstTry? mapPropertyPath(propertyPath) : propertyPath;
 		String[] properties = mapPropertyPath(resolvedPropertyPath).split("\\.");
-
 		for (int i = 0, propertiesLength = properties.length; i < propertiesLength; i++) {
 			String property = properties[i];
 			String mappedProperty = mapProperty(property, classMetadata.getJavaType());
@@ -138,14 +138,14 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			  	}
 			} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 					String previousClass = classMetadata.getJavaType().getName();
-					attribute = classMetadata.getAttribute(property);
+					attribute = RSQLVisitorBase.getAttribute(property, classMetadata);
 					classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
 					String keyJoin = getKeyJoin(root, mappedProperty);
 					log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
 					root = join(keyJoin, root, mappedProperty);
 				} else if (JsonbSupport.isJsonType(mappedProperty, classMetadata)) {
 					root = root.get(mappedProperty);
-					attribute = classMetadata.getAttribute(mappedProperty);
+					attribute = RSQLVisitorBase.getAttribute(mappedProperty, classMetadata);
 					break;
 				} else {
 					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
@@ -156,7 +156,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 						type = embeddedType;
 						classMetadata = getManagedType(embeddedType);
 					} else {
-						attribute = classMetadata.getAttribute(property);
+						attribute = RSQLVisitorBase.getAttribute(property, classMetadata);
 					}
 				}
 			}
@@ -244,7 +244,13 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					ComparisonNode jsonbNode = node.withSelector(jsonbPath);
 					return JsonbSupport.jsonbPathExistsExpression(builder, jsonbNode, path);
 				} else {
-					return ResolvedExpression.ofPath(path.as(String.class), String.class);
+					final Expression expression;
+					if (path instanceof JpaExpression jpaExpression) {
+						expression = jpaExpression.cast(String.class);
+					} else {
+						expression = path.as(String.class);
+					}
+					return ResolvedExpression.ofPath(expression, String.class);
 				}
 			} else {
 				if (attribute != null
