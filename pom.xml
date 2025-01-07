@@ -23,8 +23,8 @@
 		<java.version>17</java.version>
 		<maven.compiler.target>17</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring-boot.version>3.0.0</spring-boot.version>
-		<spring-data-releasetrain.version>2022.0.0</spring-data-releasetrain.version>
+		<spring-boot.version>3.4.1</spring-boot.version>
+		<spring-data-releasetrain.version>2024.1.1</spring-data-releasetrain.version>
 		<querydsl.version>4.1.4</querydsl.version>
 		<rsql-parser.version>2.3.2</rsql-parser.version>
 		<lombok.version>1.18.24</lombok.version>
