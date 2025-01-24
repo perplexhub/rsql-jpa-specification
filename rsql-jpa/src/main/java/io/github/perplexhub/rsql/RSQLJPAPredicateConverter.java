@@ -2,7 +2,9 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
+import cz.jirutka.rsql.parser.ast.LogicalNode;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -429,14 +431,24 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	@Override
 	public Predicate visit(AndNode node, From root) {
 		log.debug("visit(node:{},root:{})", node, root);
-
-		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::and)).get();
+		return visitChildren(node, root, builder::and);
 	}
 
 	@Override
 	public Predicate visit(OrNode node, From root) {
 		log.debug("visit(node:{},root:{})", node, root);
+		return visitChildren(node, root, builder::or);
+	}
 
-		return node.getChildren().stream().map(n -> n.accept(this, root)).collect(Collectors.reducing(builder::or)).get();
+	private Predicate visitChildren(LogicalNode node, From root, BiFunction<Predicate, Predicate, Predicate> reducer) {
+		Predicate result = null;
+
+		for (var child : node) {
+			result = result != null 
+					? reducer.apply(result, child.accept(this, root))
+					: child.accept(this, root);
+		}
+
+		return result;
 	}
 }
