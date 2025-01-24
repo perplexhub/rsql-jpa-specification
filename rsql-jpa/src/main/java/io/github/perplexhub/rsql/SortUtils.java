@@ -13,6 +13,7 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Root;
 
+import org.hibernate.query.criteria.JpaExpression;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
@@ -63,16 +64,16 @@ class SortUtils {
                         sortSupport.getJoinHints(), sortSupport.getProcedureWhiteList(),
                         sortSupport.getProcedureBlackList());
 
+        final boolean ic = parts.length > 2 && "ic".equalsIgnoreCase(parts[2]);
         Expression<?> propertyExpression = selector.getExpression((string, builder) ->{
             final RSQLJPAContext rsqljpaContext = converter.findPropertyPath(string, root);
             final boolean isJson = JsonbSupport.isJsonType(rsqljpaContext.getAttribute());
             return isJson
-                    ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder)
+                    ? sortExpressionOfJson(rsqljpaContext, string, sortSupport.getPropertyPathMapper(), builder, ic)
                     : rsqljpaContext.getPath();
         });
 
-        if (parts.length > 2 && "ic".equalsIgnoreCase(parts[2])
-            && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
+        if (ic && String.class.isAssignableFrom(propertyExpression.getJavaType())) {
             propertyExpression = cb.lower(propertyExpression.as(String.class));
         }
 
@@ -92,7 +93,8 @@ class SortUtils {
     private static Expression<?> sortExpressionOfJson(RSQLJPAContext context,
                                                       String property,
                                                       Map<String, String> mapping,
-                                                      CriteriaBuilder builder) {
+                                                      CriteriaBuilder builder,
+                                                      boolean ic) {
         String path = PathUtils.expectBestMapping(property, mapping);
         String jsonbSelector = JsonbSupport.jsonPathOfSelector(context.getAttribute(), path);
         if(jsonbSelector.contains(".")) {
@@ -102,7 +104,11 @@ class SortUtils {
                     .skip(1) // skip root
                     .map(builder::literal)
                     .forEach(args::add);
-            return builder.function("jsonb_extract_path", String.class, args.toArray(Expression[]::new));
+            Expression<?> expression = builder.function("jsonb_extract_path", Object.class, args.toArray(Expression[]::new));
+            if (ic && expression instanceof JpaExpression<?> jpaExpression) {
+                expression = jpaExpression.cast(String.class);
+            }
+            return expression;
         } else {
             return context.getPath().as(String.class);
         }

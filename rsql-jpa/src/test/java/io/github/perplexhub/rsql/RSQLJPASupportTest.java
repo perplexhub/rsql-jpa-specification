@@ -9,8 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -764,9 +766,9 @@ class RSQLJPASupportTest {
 	@Test
 	final void testBetweenDateTime() {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-		RSQLJPASupport.addConverter(Date.class, s -> {
+		RSQLJPASupport.addConverter(Timestamp.class, s -> {
 			try {
-				return sdf.parse(s);
+				return new Timestamp(sdf.parse(s).getTime());
 			} catch (ParseException e) {
 				return null;
 			}

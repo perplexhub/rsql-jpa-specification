@@ -91,7 +91,7 @@ public class JsonbSupport {
      * @return true if the attribute is a jsonb attribute
      */
     public static boolean isJsonType(String mappedProperty, ManagedType<?> classMetadata) {
-        return Optional.ofNullable(classMetadata.getAttribute(mappedProperty))
+        return Optional.ofNullable(RSQLVisitorBase.getAttribute(mappedProperty, classMetadata))
                 .map(JsonbSupport::isJsonType)
                 .orElse(false);
     }

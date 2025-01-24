@@ -1,5 +1,6 @@
 package io.github.perplexhub.rsql;
 
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -23,9 +24,9 @@ public class Application {
 	@Bean
 	public Object rsqlConfiguration(RSQLCommonSupport rsqlCommonSupport) {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-		RSQLCommonSupport.addConverter(Date.class, s -> {
+		RSQLCommonSupport.addConverter(Timestamp.class, s -> {
 			try {
-				return sdf.parse(s);
+				return new Timestamp(sdf.parse(s).getTime());
 			} catch (Exception e) {
 				return null;
 			}
