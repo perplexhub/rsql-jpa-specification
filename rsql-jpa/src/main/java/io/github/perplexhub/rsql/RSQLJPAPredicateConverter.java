@@ -330,21 +330,19 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return builder.notEqual(expression, argument);
 			}
 			if (op.equals(LIKE)) {
-				return likePredicate(expression.as(String.class), "%" + argument.toString() + "%", builder);
+				return likePredicate(expression, argument, false);
 			}
 			if (op.equals(NOT_LIKE)) {
-				return likePredicate(expression.as(String.class), "%" + argument.toString() + "%", builder).not();
+				return likePredicate(expression, argument, false).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
 				return builder.equal(builder.upper(expression), argument.toString().toUpperCase());
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
-				return likePredicate(builder.upper(expression), "%" + argument.toString()
-						.toUpperCase() + "%", builder);
+				return likePredicate(expression, argument, true);
 			}
 			if (op.equals(IGNORE_CASE_NOT_LIKE)) {
-				return likePredicate(builder.upper(expression), "%" + argument.toString()
-						.toUpperCase() + "%", builder).not();
+				return likePredicate(expression, argument, true).not();
 			}
 			if (op.equals(EQUAL)) {
 				return equalPredicate(expression, type, argument);
@@ -386,6 +384,20 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		return Optional.ofNullable(this.likeEscapeCharacter)
 				.map(character ->  builder.like(attributePath, likeExpression, character))
 				.orElseGet(() -> builder.like(attributePath, likeExpression));
+	}
+
+	private Predicate likePredicate(Expression<?> expression, Object argument, boolean ignoreCase) {
+		String argToUse = String.valueOf(argument);
+		Expression<String> strExpression = expression.as(String.class);
+		if (ignoreCase) {
+			if (HibernateSupport.isHibernateCriteriaBuilder(builder)) {
+				return HibernateSupport.ilike(builder, strExpression, argToUse, likeEscapeCharacter);
+			}
+
+			return likePredicate(builder.upper(strExpression), "%" + argToUse.toUpperCase(Locale.ROOT) + "%", builder);
+		}
+		
+		return likePredicate(strExpression, "%" + argToUse + "%", builder);
 	}
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {
