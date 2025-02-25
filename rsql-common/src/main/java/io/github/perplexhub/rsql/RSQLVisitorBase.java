@@ -15,6 +15,7 @@ import jakarta.persistence.metamodel.PluralAttribute;
 
 import lombok.Getter;
 import org.hibernate.metamodel.model.domain.ManagedDomainType;
+import org.hibernate.metamodel.model.domain.PersistentAttribute;
 import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.orm.jpa.vendor.Database;
@@ -58,6 +59,10 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 		// W/A found here: https://hibernate.atlassian.net/browse/HHH-18569
 		// breaking change on hibernate side: https://github.com/hibernate/hibernate-orm/pull/6924#discussion_r1250474422
 		if (classMetadata instanceof ManagedDomainType managedDomainType) {
+			PersistentAttribute<T,?> attribute = managedDomainType.findAttribute( property );
+			if ( attribute != null ) {
+				return attribute;
+			}
 			return managedDomainType.findSubTypesAttribute(property);
 		}
 		return classMetadata.getAttribute(property);
