@@ -18,10 +18,14 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import io.github.perplexhub.rsql.custom.CustomType;
+import io.github.perplexhub.rsql.model.Project;
+import io.github.perplexhub.rsql.model.AdminProject;
 import io.github.perplexhub.rsql.model.account.AccountEntity;
 import io.github.perplexhub.rsql.model.account.AddressEntity;
 import io.github.perplexhub.rsql.model.account.AddressHistoryEntity;
 import io.github.perplexhub.rsql.repository.jpa.AccountRepository;
+import io.github.perplexhub.rsql.repository.jpa.AdminProjectRepository;
+import io.github.perplexhub.rsql.repository.jpa.ProjectRepository;
 import io.github.perplexhub.rsql.repository.jpa.custom.CustomTypeRepository;
 import io.github.perplexhub.rsql.custom.EntityWithCustomType;
 import jakarta.persistence.criteria.Expression;
@@ -69,6 +73,12 @@ class RSQLJPASupportTest {
 
 	@Autowired
 	private CustomTypeRepository customTypeRepository;
+
+	@Autowired
+	private AdminProjectRepository adminProjectRepository;
+
+	@Autowired
+	private ProjectRepository projectRepository;
 
 	@Autowired
 	AccountRepository accountRepository;
@@ -1438,6 +1448,18 @@ class RSQLJPASupportTest {
 		// When
 		List<AccountEntity> result = accountRepository.findAll(RSQLJPASupport.rsql("invoiceAddress.name=='Name 1'"));
 		// Then
+		Assertions.assertThat(result).hasSize(1);
+	}
+
+	@Test
+	void testSearchByParentAttribute() {
+		List<AdminProject> result = adminProjectRepository.findAll(RSQLJPASupport.rsql("name=='someProjectName'"));
+		Assertions.assertThat(result).hasSize(1);
+	}
+
+	@Test
+	void testSearchBySubtypeAttribute() {
+		List<Project> result = projectRepository.findAll(RSQLJPASupport.rsql("departmentName==someDepartmentName"));
 		Assertions.assertThat(result).hasSize(1);
 	}
 
