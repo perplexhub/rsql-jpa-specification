@@ -5,9 +5,12 @@ import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
 
 import java.sql.Timestamp;
 import java.text.ParseException;
@@ -17,6 +20,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+import cz.jirutka.rsql.parser.RSQLParser;
+import cz.jirutka.rsql.parser.ast.Node;
 import io.github.perplexhub.rsql.custom.CustomType;
 import io.github.perplexhub.rsql.model.Project;
 import io.github.perplexhub.rsql.model.AdminProject;
@@ -28,6 +33,7 @@ import io.github.perplexhub.rsql.repository.jpa.AdminProjectRepository;
 import io.github.perplexhub.rsql.repository.jpa.ProjectRepository;
 import io.github.perplexhub.rsql.repository.jpa.custom.CustomTypeRepository;
 import io.github.perplexhub.rsql.custom.EntityWithCustomType;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -1461,6 +1467,52 @@ class RSQLJPASupportTest {
 	void testSearchBySubtypeAttribute() {
 		List<Project> result = projectRepository.findAll(RSQLJPASupport.rsql("departmentName==someDepartmentName"));
 		Assertions.assertThat(result).hasSize(1);
+	}
+
+	@Test
+	void testNumberFieldTransformer() {
+		RSQLCommonSupport.addFieldTransformer(User.class, "number", value -> value.replaceAll("[^0-9]", ""));
+		String rsql = "number=like='123????'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		for (User user : users)
+			System.out.println(user);
+	}
+
+	@Test
+	void testEmailFieldTransformer() {
+		RSQLCommonSupport.addFieldTransformer(User.class, "email", value -> value.toLowerCase());
+		String rsql = "email=like='TEST@EXAMPLE.COM'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		for (User user : users)
+			System.out.println(user);
+	}
+
+	@Test
+	void testPhoneFieldTransformer() {
+		RSQLCommonSupport.addFieldTransformer(User.class, "phone", value -> value.replaceAll("[^0-9+]", ""));
+		String rsql = "phone=like='+1 (555) 123-4567'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		for (User user : users)
+			System.out.println(user);
+	}
+
+	@Test
+	void testMultipleTransformers() {
+		RSQLCommonSupport.addFieldTransformer(User.class, "number", value -> value.replaceAll("[^0-9]", ""));
+		RSQLCommonSupport.addFieldTransformer(User.class, "email", value -> value.toLowerCase());
+		String rsql = "number=like='123????' and email=like='TEST@EXAMPLE.COM'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		for (User user : users)
+			System.out.println(user);
+	}
+
+	@Test
+	void testTransformerWithInvalidValue() {
+		String rsql = "number=like='abc'";
+		RSQLCommonSupport.addFieldTransformer(User.class, "number", value -> value.replaceAll("[^0-9]", ""));
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		for (User user : users)
+			System.out.println(user);
 	}
 
 	@BeforeEach
