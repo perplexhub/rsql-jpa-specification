@@ -22,6 +22,12 @@ public class User {
 
 	private String name;
 
+	private String number;
+
+	private String email;
+
+	private String phone;
+
 	@ManyToOne
 	@JoinColumn(name = "companyId", referencedColumnName = "id")
 	private Company company;

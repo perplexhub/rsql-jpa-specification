@@ -3,9 +3,9 @@ package io.github.perplexhub.rsql;
 import java.lang.reflect.*;
 import java.sql.Timestamp;
 import java.time.*;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.Attribute;
@@ -16,7 +16,6 @@ import jakarta.persistence.metamodel.PluralAttribute;
 import lombok.Getter;
 import org.hibernate.metamodel.model.domain.ManagedDomainType;
 import org.hibernate.metamodel.model.domain.PersistentAttribute;
-import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.util.StringUtils;
@@ -37,6 +36,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	protected static volatile @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
 	protected static volatile @Setter Map<Class<?>, List<String>> globalPropertyWhitelist;
 	protected static volatile @Setter Map<Class<?>, List<String>> globalPropertyBlacklist;
+	protected static volatile @Setter Map<Class<?>, Map<String, Function<String, ?>>> fieldTransformers;
 	protected static volatile @Setter ConfigurableConversionService defaultConversionService;
 
 	protected @Setter Map<Class<?>, List<String>> propertyWhitelist;
@@ -76,6 +76,25 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 	protected Object convert(String source, Class targetType) {
 		log.debug("convert(source:{},targetType:{})", source, targetType);
+
+		if (source == null) {
+			return null;
+		}
+
+		// Check for field-specific transformer first
+		if (fieldTransformers != null) {
+			Map<String, Function<String, ?>> entityTransformers = fieldTransformers.get(targetType);
+			if (entityTransformers != null) {
+				Function<String, ?> transformer = entityTransformers.get(source);
+				if (transformer != null) {
+					try {
+						return transformer.apply(source);
+					} catch (Exception e) {
+						log.warn("Failed to apply field transformer for {}.{}", targetType, source, e);
+					}
+				}
+			}
+		}
 
 		Object object = null;
 		try {

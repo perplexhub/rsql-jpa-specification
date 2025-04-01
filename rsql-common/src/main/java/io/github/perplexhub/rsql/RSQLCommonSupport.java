@@ -28,6 +28,7 @@ public class RSQLCommonSupport {
 	private @Getter static final Map<Class, Class> valueTypeMap = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class<?>, List<String>> propertyWhitelist = new ConcurrentHashMap<>();
 	private @Getter static final Map<Class<?>, List<String>> propertyBlacklist = new ConcurrentHashMap<>();
+	private @Getter static final Map<Class<?>, Map<String, Function<String, ?>>> fieldTransformers = new ConcurrentHashMap<>();
 	private @Getter static final ConfigurableConversionService conversionService = new DefaultConversionService();
 
 	public RSQLCommonSupport() {
@@ -51,6 +52,7 @@ public class RSQLCommonSupport {
 		RSQLVisitorBase.setPropertyRemapping(getPropertyRemapping());
 		RSQLVisitorBase.setGlobalPropertyWhitelist(getPropertyWhitelist());
 		RSQLVisitorBase.setGlobalPropertyBlacklist(getPropertyBlacklist());
+		RSQLVisitorBase.setFieldTransformers(getFieldTransformers());
 		RSQLVisitorBase.setDefaultConversionService(getConversionService());
 		log.info("RSQLCommonSupport {} is initialized", getVersion());
 	}
@@ -124,6 +126,14 @@ public class RSQLCommonSupport {
 		log.info("Adding entity attribute type map for {} -> {}", valueClass, mappedClass);
 		if (valueClass != null && mappedClass != null) {
 			valueTypeMap.put(valueClass, mappedClass);
+		}
+	}
+
+	public static <T> void addFieldTransformer(Class<?> entityClass, String fieldName, Function<String, ?> transformer) {
+		log.info("Adding field transformer for {}.{}", entityClass, fieldName);
+		if (entityClass != null && fieldName != null && transformer != null) {
+			fieldTransformers.computeIfAbsent(entityClass, k -> new ConcurrentHashMap<>())
+				.put(fieldName, transformer);
 		}
 	}
 
