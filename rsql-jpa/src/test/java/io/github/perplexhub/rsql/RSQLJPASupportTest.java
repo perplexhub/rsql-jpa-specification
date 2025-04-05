@@ -184,6 +184,26 @@ public class RSQLJPASupportTest {
 	}
 
 	@Test
+	public final void testElementCollection1WithJoinHints() {
+		final Map<String, JoinType> joinHints = new HashMap<String, JoinType>(){{put("Company.tags", JoinType.LEFT);}};
+		final String rsql = "tags!=tech,tags=na=''";
+		final List<Company> companies = companyRepository.findAll(toSpecification(rsql, null, joinHints));
+		final long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(4L));
+	}
+
+	@Test
+	public final void testElementCollection2WithJoinHints() {
+		final Map<String, JoinType> joinHints = new HashMap<String, JoinType>(){{put("Company.bigTags", JoinType.LEFT);}};
+		final String rsql = "bigTags.tag!=tech,bigTags.tag=na=''";
+		final List<Company> companies = companyRepository.findAll(toSpecification(rsql, null, joinHints));
+		final long count = companies.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(4L));
+	}
+
+	@Test
 	public final void testToComplexMultiValueMap() {
 		String rsql = "sites.trunks.id==2,id=na=2,company.id=='2',id=na=3,name==''";
 		Map<String, MultiValueMap<String, String>> map = toComplexMultiValueMap(rsql);

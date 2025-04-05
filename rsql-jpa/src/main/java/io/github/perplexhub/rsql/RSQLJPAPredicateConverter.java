@@ -133,7 +133,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 						classMetadata = getManagedElementCollectionType(mappedProperty, classMetadata);
 						String keyJoin = getKeyJoin(root, mappedProperty);
 						log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-						root = join(keyJoin, root, mappedProperty);
+						root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
 					} else {
 						log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
 						root = root.get(mappedProperty);
