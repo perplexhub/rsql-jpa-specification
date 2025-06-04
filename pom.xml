@@ -20,11 +20,11 @@
 		</developer>
 	</developers>
 	<properties>
-		<java.version>1.8</java.version>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<java.version>11</java.version>
+		<maven.compiler.target>11</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring-boot.version>2.0.0.RELEASE</spring-boot.version>
-		<spring-data-releasetrain.version>Kay-RELEASE</spring-data-releasetrain.version>
+		<spring-boot.version>2.7.18</spring-boot.version>
+		<spring-data.version>2021.2.18</spring-data.version>
 		<querydsl.version>4.1.4</querydsl.version>
 		<rsql-parser.version>2.1.0</rsql-parser.version>
 		<lombok.version>1.18.10</lombok.version>
@@ -54,8 +54,8 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.data</groupId>
-				<artifactId>spring-data-releasetrain</artifactId>
-				<version>${spring-data-releasetrain.version}</version>
+				<artifactId>spring-data-bom</artifactId>
+				<version>${spring-data.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>

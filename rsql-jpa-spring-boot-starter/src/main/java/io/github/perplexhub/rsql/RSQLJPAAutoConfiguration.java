@@ -4,7 +4,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toMap;
 
 import io.github.perplexhub.rsql.RSQLJPAAutoConfiguration.HibernateEntityManagerDatabaseConfiguration;
-import jakarta.persistence.EntityManager;
+import javax.persistence.EntityManager;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,7 +13,6 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.dialect.AbstractHANADialect;
-import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.DerbyDialect;
 import org.hibernate.dialect.Dialect;
@@ -67,12 +66,12 @@ public class RSQLJPAAutoConfiguration {
           .filter(Objects::nonNull)
           .collect(collectingAndThen(
               toMap(Entry::getKey, Entry::getValue, (db1, db2) -> db1, IdentityHashMap::new),
-              EntityManagerDatabase::new
+              m -> new EntityManagerDatabase(m)
           ));
     }
 
     private Database toDatabase(Dialect dialect) {
-      if (dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect) {
+      if (dialect instanceof PostgreSQLDialect) {
         return Database.POSTGRESQL;
       } else if (dialect instanceof MySQLDialect) {
         return Database.MYSQL;
@@ -98,7 +97,33 @@ public class RSQLJPAAutoConfiguration {
     }
   }
 
-  record EntityManagerDatabase(Map<EntityManager, Database> value) {
+  public static final class EntityManagerDatabase {
+      private final Map<EntityManager, Database> value;
 
+      public EntityManagerDatabase(Map<EntityManager, Database> value) {
+          this.value = value;
+      }
+
+      public Map<EntityManager, Database> value() {
+          return value;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+          if (this == obj) return true;
+          if (obj == null || getClass() != obj.getClass()) return false;
+          EntityManagerDatabase that = (EntityManagerDatabase) obj;
+          return Objects.equals(value, that.value);
+      }
+
+      @Override
+      public int hashCode() {
+          return Objects.hash(value);
+      }
+
+      @Override
+      public String toString() {
+          return "EntityManagerDatabase[value=" + value + "]";
+      }
   }
 }

@@ -1,10 +1,10 @@
 package io.github.perplexhub.rsql.model;
 
 import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
 @Getter
 @Setter
@@ -24,13 +25,14 @@ import org.hibernate.annotations.Type;
 @ToString
 @Entity
 @NoArgsConstructor
+@TypeDef(name="jsonb", typeClass=JsonType.class)
 public class PostgresJsonEntity {
 
   @Id
   @GeneratedValue
   private UUID id;
 
-  @Type(JsonType.class)
+  @Type(type="jsonb")
   @Column(columnDefinition = "jsonb")
   private Map<String, Object> properties = new HashMap<>();
 

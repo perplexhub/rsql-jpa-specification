@@ -2,7 +2,7 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
 
-import jakarta.persistence.Column;
+import javax.persistence.Column;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;

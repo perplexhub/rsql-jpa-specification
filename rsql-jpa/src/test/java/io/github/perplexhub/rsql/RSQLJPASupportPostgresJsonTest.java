@@ -6,7 +6,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
 import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository;
-import jakarta.persistence.EntityManager;
+import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -26,9 +26,11 @@ class RSQLJPASupportPostgresJsonTest {
 
   @Autowired
   private PostgresJsonEntityRepository repository;
+  @Autowired 
+  private EntityManager em;
 
   @BeforeEach
-  void setup(@Autowired EntityManager em) {
+  void setup() {
     RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
   }
 
@@ -43,7 +45,8 @@ class RSQLJPASupportPostgresJsonTest {
   @MethodSource("data")
   void testJson(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
     //given
-    repository.saveAllAndFlush(users);
+    repository.saveAll(users);
+    repository.flush();
 
     //when
     List<PostgresJsonEntity> result = repository.findAll(toSpecification(rsql));

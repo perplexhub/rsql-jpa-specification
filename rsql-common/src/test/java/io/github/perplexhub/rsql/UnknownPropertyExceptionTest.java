@@ -3,7 +3,7 @@ package io.github.perplexhub.rsql;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.perplexhub.rsql.model.User;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class UnknownPropertyExceptionTest {
 
