@@ -1,6 +1,5 @@
 package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static io.github.perplexhub.rsql.RSQLQueryDslSupport.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;

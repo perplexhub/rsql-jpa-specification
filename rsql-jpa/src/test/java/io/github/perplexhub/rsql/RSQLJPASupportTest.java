@@ -1,6 +1,5 @@
 package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.RSQLCommonSupport.*;
 import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
