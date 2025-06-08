@@ -72,15 +72,15 @@ class RSQLJPASupportPostgresJsonTest {
   }
 
   private static Stream<Arguments> equalsData() {
-    var e1 = new PostgresJsonEntity(Map.of("a1", "b1"));
-    var e2 = new PostgresJsonEntity(Map.of("a1", Map.of("a11", Map.of("a111", "b1"))));
+    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a1", "b1"));
+    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a1", Map.of("a11", Map.of("a111", "b1"))));
 
-    var e3 = new PostgresJsonEntity(e1);
-    var e4 = new PostgresJsonEntity(e2);
+    PostgresJsonEntity e3 = new PostgresJsonEntity(e1);
+    PostgresJsonEntity e4 = new PostgresJsonEntity(e2);
 
-    var e5 = new PostgresJsonEntity(Map.of("a", "b1"));
-    var e6 = new PostgresJsonEntity(Map.of("a", "b2"));
-    var e7 = new PostgresJsonEntity(Map.of("a", "c1"));
+    PostgresJsonEntity e5 = new PostgresJsonEntity(Map.of("a", "b1"));
+    PostgresJsonEntity e6 = new PostgresJsonEntity(Map.of("a", "b2"));
+    PostgresJsonEntity e7 = new PostgresJsonEntity(Map.of("a", "c1"));
 
     return Stream.of(
         arguments(List.of(e1, e2), "properties.a1==b1", List.of(e1)),
@@ -97,10 +97,10 @@ class RSQLJPASupportPostgresJsonTest {
   }
 
   private static Stream<Arguments> inData() {
-    var e1 = new PostgresJsonEntity(Map.of("a", "b1"));
-    var e2 = new PostgresJsonEntity(Map.of("a", "b2"));
-    var e3 = new PostgresJsonEntity(Map.of("a", "c1"));
-    var e4 = new PostgresJsonEntity(Map.of("a", "d1"));
+    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "b1"));
+    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b2"));
+    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c1"));
+    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("a", "d1"));
 
     return Stream.of(
         arguments(List.of(e1, e2, e3, e4), "properties.a=in=(b1, c1)", List.of(e1, e3)),
@@ -111,10 +111,10 @@ class RSQLJPASupportPostgresJsonTest {
   }
 
   private static Stream<Arguments> betweenData() {
-    var e1 = new PostgresJsonEntity(Map.of("a", "a"));
-    var e2 = new PostgresJsonEntity(Map.of("a", "b"));
-    var e3 = new PostgresJsonEntity(Map.of("a", "c"));
-    var e4 = new PostgresJsonEntity(Map.of("a", "d"));
+    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "a"));
+    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b"));
+    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c"));
+    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("a", "d"));
 
     return Stream.of(
         arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(a, c)", List.of(e1, e2, e3)),
@@ -123,9 +123,9 @@ class RSQLJPASupportPostgresJsonTest {
   }
 
   private static Stream<Arguments> likeData() {
-    var e1 = new PostgresJsonEntity(Map.of("a", "a b c"));
-    var e2 = new PostgresJsonEntity(Map.of("a", "b c d"));
-    var e3 = new PostgresJsonEntity(Map.of("a", "c d e"));
+    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "a b c"));
+    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b c d"));
+    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c d e"));
 
     return Stream.of(
         arguments(List.of(e1, e2, e3), "properties.a=ke='a b'", List.of(e1)),
@@ -144,10 +144,10 @@ class RSQLJPASupportPostgresJsonTest {
   }
 
   private static Stream<Arguments> gtLtData() {
-    var e1 = new PostgresJsonEntity(Map.of("a", "a"));
-    var e2 = new PostgresJsonEntity(Map.of("a", "b"));
-    var e3 = new PostgresJsonEntity(Map.of("a", "c"));
-    var e4 = new PostgresJsonEntity(Map.of("a", "d"));
+    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "a"));
+    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b"));
+    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c"));
+    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("a", "d"));
 
     return Stream.of(
         arguments(List.of(e1, e2, e3, e4), "properties.a>=a", List.of(e1, e2, e3, e4)),
@@ -160,10 +160,10 @@ class RSQLJPASupportPostgresJsonTest {
   }
 
   private static Stream<Arguments> miscData() {
-    var e1 = new PostgresJsonEntity(Map.of("a", "b1"));
-    var e2 = new PostgresJsonEntity(Map.of("a", "b2"));
-    var e3 = new PostgresJsonEntity(Map.of("b", "c1"));
-    var e4 = new PostgresJsonEntity(Map.of("b", "d1"));
+    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "b1"));
+    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b2"));
+    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("b", "c1"));
+    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("b", "d1"));
 
     return Stream.of(
         arguments(List.of(e1, e2, e3, e4), "properties.a=nn=''", List.of(e1, e2)),

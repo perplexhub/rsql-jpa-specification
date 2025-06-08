@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.dialect.AbstractHANADialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.DerbyDialect;
@@ -42,7 +43,7 @@ public class RSQLJPAAutoConfiguration {
   public RSQLCommonSupport rsqlCommonSupport(Map<String, EntityManager> entityManagerMap,
       ObjectProvider<EntityManagerDatabase> entityManagerDatabaseProvider) {
     log.info("RSQLJPAAutoConfiguration.rsqlCommonSupport(entityManagerMap:{})", entityManagerMap.size());
-    var entityManagerDatabase = entityManagerDatabaseProvider.getIfAvailable(() -> new EntityManagerDatabase(Map.of()));
+    EntityManagerDatabase entityManagerDatabase = entityManagerDatabaseProvider.getIfAvailable(() -> new EntityManagerDatabase(Map.of()));
 
     return new RSQLJPASupport(entityManagerMap, entityManagerDatabase.value());
   }
@@ -56,8 +57,8 @@ public class RSQLJPAAutoConfiguration {
     public EntityManagerDatabase entityManagerDatabase(ObjectProvider<EntityManager> entityManagers) {
       return entityManagers.stream()
           .map(entityManager -> {
-            var sessionFactory = entityManager.unwrap(Session.class).getSessionFactory();
-            var dialect = ((SessionFactoryImpl) sessionFactory).getJdbcServices().getDialect();
+            SessionFactory sessionFactory = entityManager.unwrap(Session.class).getSessionFactory();
+            Dialect dialect = ((SessionFactoryImpl) sessionFactory).getJdbcServices().getDialect();
 
             return Optional.ofNullable(toDatabase(dialect))
                 .map(db -> Map.entry(entityManager, db))

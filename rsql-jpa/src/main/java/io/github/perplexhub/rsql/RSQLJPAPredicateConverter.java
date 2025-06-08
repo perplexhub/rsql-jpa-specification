@@ -326,10 +326,10 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	private Expression<?> getJsonExpression(Path<?> path, Attribute attribute, ComparisonNode node) {
-		var database = getDatabase(attribute).orElse(null);
+		Database database = getDatabase(attribute).orElse(null);
 
 		if (database == Database.POSTGRESQL) {
-			var args = new ArrayList<Expression<?>>();
+			List<Expression<?>> args = new ArrayList<Expression<?>>();
 			args.add(path);
 
 			Stream.of(node.getSelector().split("\\."))
