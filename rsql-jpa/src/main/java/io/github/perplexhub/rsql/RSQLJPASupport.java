@@ -32,7 +32,7 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public RSQLJPASupport(Map<String, EntityManager> entityManagerMap) {
-		this(entityManagerMap, Map.of());
+		this(entityManagerMap, new HashMap<>());
 	}
 	
 	public RSQLJPASupport(Map<String, EntityManager> entityManagerMap, Map<EntityManager, Database> entityManagerDatabase) {

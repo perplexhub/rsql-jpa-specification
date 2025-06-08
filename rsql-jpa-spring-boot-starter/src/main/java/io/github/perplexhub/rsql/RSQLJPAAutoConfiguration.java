@@ -1,19 +1,14 @@
 package io.github.perplexhub.rsql;
 
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toMap;
 
 import io.github.perplexhub.rsql.RSQLJPAAutoConfiguration.HibernateEntityManagerDatabaseConfiguration;
 import javax.persistence.EntityManager;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.dialect.AbstractHANADialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.DerbyDialect;
 import org.hibernate.dialect.Dialect;
@@ -32,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.orm.jpa.vendor.Database;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Configuration
@@ -43,7 +39,7 @@ public class RSQLJPAAutoConfiguration {
   public RSQLCommonSupport rsqlCommonSupport(Map<String, EntityManager> entityManagerMap,
       ObjectProvider<EntityManagerDatabase> entityManagerDatabaseProvider) {
     log.info("RSQLJPAAutoConfiguration.rsqlCommonSupport(entityManagerMap:{})", entityManagerMap.size());
-    EntityManagerDatabase entityManagerDatabase = entityManagerDatabaseProvider.getIfAvailable(() -> new EntityManagerDatabase(Map.of()));
+    EntityManagerDatabase entityManagerDatabase = entityManagerDatabaseProvider.getIfAvailable(() -> new EntityManagerDatabase(new HashMap()));
 
     return new RSQLJPASupport(entityManagerMap, entityManagerDatabase.value());
   }
@@ -53,22 +49,20 @@ public class RSQLJPAAutoConfiguration {
   static
   class HibernateEntityManagerDatabaseConfiguration {
 
+    @Transactional
     @Bean
     public EntityManagerDatabase entityManagerDatabase(ObjectProvider<EntityManager> entityManagers) {
-      return entityManagers.stream()
-          .map(entityManager -> {
-            SessionFactory sessionFactory = entityManager.unwrap(Session.class).getSessionFactory();
-            Dialect dialect = ((SessionFactoryImpl) sessionFactory).getJdbcServices().getDialect();
+      Map<EntityManager, Database> value = new HashMap<>();
+      EntityManager entityManager = entityManagers.getIfAvailable();
+      SessionFactory sessionFactory = entityManager.unwrap(Session.class).getSessionFactory();
+      Dialect dialect = ((SessionFactoryImpl) sessionFactory).getJdbcServices().getDialect();
 
-            return Optional.ofNullable(toDatabase(dialect))
-                .map(db -> Map.entry(entityManager, db))
-                .orElse(null);
-          })
-          .filter(Objects::nonNull)
-          .collect(collectingAndThen(
-              toMap(Entry::getKey, Entry::getValue, (db1, db2) -> db1, IdentityHashMap::new),
-              m -> new EntityManagerDatabase(m)
-          ));
+      Database db = toDatabase(dialect);
+      if (db != null) {
+        value.put(entityManager, db);
+      }
+
+      return new EntityManagerDatabase(value);
     }
 
     private Database toDatabase(Dialect dialect) {
@@ -86,8 +80,6 @@ public class RSQLJPAAutoConfiguration {
         return Database.DB2;
       } else if (dialect instanceof H2Dialect) {
         return Database.H2;
-      } else if (dialect instanceof AbstractHANADialect) {
-        return Database.HANA;
       } else if (dialect instanceof HSQLDialect) {
         return Database.HSQL;
       } else if (dialect instanceof SybaseDialect) {

@@ -141,7 +141,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 						log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
 						root = join(keyJoin, root, mappedProperty);
 					} else if (isJsonType(mappedProperty, classMetadata)) {
-            root = root.get(mappedProperty);
+						root = root.get(mappedProperty);
 						attribute = classMetadata.getAttribute(mappedProperty);
 						break;
 					} else {
@@ -338,7 +338,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					.map(expr -> expr.as(String.class))
 					.forEach(args::add);
 
-			return builder.function("jsonb_extract_path_text", String.class, args.toArray(Expression[]::new));	
+			return builder.function("jsonb_extract_path_text", String.class, args.toArray(new Expression[0]));
 		}
 
 		return path;

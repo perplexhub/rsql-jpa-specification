@@ -2,48 +2,72 @@ package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLJPASupport.toSpecification;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
 import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository;
 import javax.persistence.EntityManager;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.rules.SpringClassRule;
+import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
 @SpringBootTest
 @ActiveProfiles("postgres")
-class RSQLJPASupportPostgresJsonTest {
+@RunWith(Parameterized.class)
+public class RSQLJPASupportPostgresJsonTest {
+  @ClassRule
+  public static final SpringClassRule scr = new SpringClassRule();
+
+  @Rule
+  public final SpringMethodRule smr = new SpringMethodRule();
 
   @Autowired
   private PostgresJsonEntityRepository repository;
   @Autowired 
   private EntityManager em;
-
-  @BeforeEach
-  void setup() {
-    RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
+  
+  private List<PostgresJsonEntity> users;
+  private String rsql;
+  private List<PostgresJsonEntity> expected;
+  
+  public RSQLJPASupportPostgresJsonTest(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
+    this.users = users;
+    this.rsql = rsql;
+    this.expected = expected;
   }
 
-  @AfterEach
-  void tearDown() {
+  @Before
+  public void setup() {
+    Map<EntityManager, Database> map = new HashMap<>();
+    map.put(em, Database.POSTGRESQL);
+    RSQLVisitorBase.setEntityManagerDatabase(map);
+  }
+
+  @After
+  public void tearDown() {
     repository.deleteAll();
     repository.flush();
-    RSQLVisitorBase.setEntityManagerDatabase(Map.of());
+    RSQLVisitorBase.setEntityManagerDatabase(new HashMap<>());
   }
 
-  @ParameterizedTest
-  @MethodSource("data")
-  void testJson(List<PostgresJsonEntity> users, String rsql, List<PostgresJsonEntity> expected) {
+  @Test
+  public void testJson() {
     //given
     repository.saveAll(users);
     repository.flush();
@@ -59,118 +83,193 @@ class RSQLJPASupportPostgresJsonTest {
     users.forEach(e -> e.setId(null));
   }
 
-  static Stream<Arguments> data() {
-    return Stream.of(
-            equalsData(),
-            inData(),
-            betweenData(),
-            likeData(),
-            gtLtData(),
-            miscData()
-        )
-        .flatMap(s -> s);
+  @Parameters
+  public static Collection<Object[]> data() {
+    List<Object[]> data = new ArrayList<>();
+    data.addAll(equalsData());
+    data.addAll(inData());
+    data.addAll(betweenData());
+    data.addAll(likeData());
+    data.addAll(gtLtData());
+    data.addAll(miscData());
+    return data;
   }
 
-  private static Stream<Arguments> equalsData() {
-    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a1", "b1"));
-    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a1", Map.of("a11", Map.of("a111", "b1"))));
+  private static Collection<Object[]> equalsData() {
+    Map<String, Object> map1 = new HashMap<>();
+    map1.put("a1", "b1");
+    PostgresJsonEntity e1 = new PostgresJsonEntity(map1);
+    
+    Map<String, Object> innerMap = new HashMap<>();
+    Map<String, Object> innerInnerMap = new HashMap<>();
+    innerInnerMap.put("a111", "b1");
+    innerMap.put("a11", innerInnerMap);
+    Map<String, Object> map2 = new HashMap<>();
+    map2.put("a1", innerMap);
+    PostgresJsonEntity e2 = new PostgresJsonEntity(map2);
 
     PostgresJsonEntity e3 = new PostgresJsonEntity(e1);
     PostgresJsonEntity e4 = new PostgresJsonEntity(e2);
 
-    PostgresJsonEntity e5 = new PostgresJsonEntity(Map.of("a", "b1"));
-    PostgresJsonEntity e6 = new PostgresJsonEntity(Map.of("a", "b2"));
-    PostgresJsonEntity e7 = new PostgresJsonEntity(Map.of("a", "c1"));
+    Map<String, Object> map5 = new HashMap<>();
+    map5.put("a", "b1");
+    PostgresJsonEntity e5 = new PostgresJsonEntity(map5);
+    
+    Map<String, Object> map6 = new HashMap<>();
+    map6.put("a", "b2");
+    PostgresJsonEntity e6 = new PostgresJsonEntity(map6);
+    
+    Map<String, Object> map7 = new HashMap<>();
+    map7.put("a", "c1");
+    PostgresJsonEntity e7 = new PostgresJsonEntity(map7);
 
-    return Stream.of(
-        arguments(List.of(e1, e2), "properties.a1==b1", List.of(e1)),
-        arguments(List.of(e1, e2), "properties.a1!=b1", List.of(e2)),
-        arguments(List.of(e1, e2), "properties.a1=ic=B1", List.of(e1)),
-        arguments(List.of(e1, e2), "properties.a1==b2", List.of()),
-        arguments(List.of(e3, e4), "properties.a1.a11.a111==b1", List.of(e4)),
-        arguments(List.of(e3, e4), "properties.a1.a11.a111==b2", List.of()),
+    List<Object[]> data = new ArrayList<>();
+    data.add(new Object[] {Arrays.asList(e1, e2), "properties.a1==b1", Arrays.asList(e1)});
+    data.add(new Object[] {Arrays.asList(e1, e2), "properties.a1!=b1", Arrays.asList(e2)});
+    data.add(new Object[] {Arrays.asList(e1, e2), "properties.a1=ic=B1", Arrays.asList(e1)});
+    data.add(new Object[] {Arrays.asList(e1, e2), "properties.a1==b2", Arrays.asList()});
+    data.add(new Object[] {Arrays.asList(e3, e4), "properties.a1.a11.a111==b1", Arrays.asList(e4)});
+    data.add(new Object[] {Arrays.asList(e3, e4), "properties.a1.a11.a111==b2", Arrays.asList()});
 
-        arguments(List.of(e5, e6, e7), "properties.a==b*", List.of(e5, e6)),
-        arguments(List.of(e5, e6, e7), "properties.a==c*", List.of(e7)),
-        arguments(List.of(e5, e6, e7), "properties.a==*1", List.of(e5, e7))
-    );
+    data.add(new Object[] {Arrays.asList(e5, e6, e7), "properties.a==b*", Arrays.asList(e5, e6)});
+    data.add(new Object[] {Arrays.asList(e5, e6, e7), "properties.a==c*", Arrays.asList(e7)});
+    data.add(new Object[] {Arrays.asList(e5, e6, e7), "properties.a==*1", Arrays.asList(e5, e7)});
+    
+    return data;
   }
 
-  private static Stream<Arguments> inData() {
-    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "b1"));
-    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b2"));
-    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c1"));
-    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("a", "d1"));
+  private static Collection<Object[]> inData() {
+    Map<String, Object> map1 = new HashMap<>();
+    map1.put("a", "b1");
+    PostgresJsonEntity e1 = new PostgresJsonEntity(map1);
+    
+    Map<String, Object> map2 = new HashMap<>();
+    map2.put("a", "b2");
+    PostgresJsonEntity e2 = new PostgresJsonEntity(map2);
+    
+    Map<String, Object> map3 = new HashMap<>();
+    map3.put("a", "c1");
+    PostgresJsonEntity e3 = new PostgresJsonEntity(map3);
+    
+    Map<String, Object> map4 = new HashMap<>();
+    map4.put("a", "d1");
+    PostgresJsonEntity e4 = new PostgresJsonEntity(map4);
 
-    return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a=in=(b1, c1)", List.of(e1, e3)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=out=(b1, c1)", List.of(e2, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=in=(b1)", List.of(e1)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=out=(b1)", List.of(e2, e3, e4))
-    );
+    List<Object[]> data = new ArrayList<>();
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=in=(b1, c1)", Arrays.asList(e1, e3)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=out=(b1, c1)", Arrays.asList(e2, e4)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=in=(b1)", Arrays.asList(e1)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=out=(b1)", Arrays.asList(e2, e3, e4)});
+    
+    return data;
   }
 
-  private static Stream<Arguments> betweenData() {
-    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "a"));
-    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b"));
-    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c"));
-    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("a", "d"));
+  private static Collection<Object[]> betweenData() {
+    Map<String, Object> map1 = new HashMap<>();
+    map1.put("a", "a");
+    PostgresJsonEntity e1 = new PostgresJsonEntity(map1);
+    
+    Map<String, Object> map2 = new HashMap<>();
+    map2.put("a", "b");
+    PostgresJsonEntity e2 = new PostgresJsonEntity(map2);
+    
+    Map<String, Object> map3 = new HashMap<>();
+    map3.put("a", "c");
+    PostgresJsonEntity e3 = new PostgresJsonEntity(map3);
+    
+    Map<String, Object> map4 = new HashMap<>();
+    map4.put("a", "d");
+    PostgresJsonEntity e4 = new PostgresJsonEntity(map4);
 
-    return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a=bt=(a, c)", List.of(e1, e2, e3)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=nb=(b, d)", List.of(e1))
-    );
+    List<Object[]> data = new ArrayList<>();
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=bt=(a, c)", Arrays.asList(e1, e2, e3)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=nb=(b, d)", Arrays.asList(e1)});
+    
+    return data;
   }
 
-  private static Stream<Arguments> likeData() {
-    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "a b c"));
-    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b c d"));
-    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c d e"));
+  private static Collection<Object[]> likeData() {
+    Map<String, Object> map1 = new HashMap<>();
+    map1.put("a", "a b c");
+    PostgresJsonEntity e1 = new PostgresJsonEntity(map1);
+    
+    Map<String, Object> map2 = new HashMap<>();
+    map2.put("a", "b c d");
+    PostgresJsonEntity e2 = new PostgresJsonEntity(map2);
+    
+    Map<String, Object> map3 = new HashMap<>();
+    map3.put("a", "c d e");
+    PostgresJsonEntity e3 = new PostgresJsonEntity(map3);
 
-    return Stream.of(
-        arguments(List.of(e1, e2, e3), "properties.a=ke='a b'", List.of(e1)),
-        arguments(List.of(e1, e2, e3), "properties.a=ke='b c'", List.of(e1, e2)),
-        arguments(List.of(e1, e2, e3), "properties.a=ke='c d'", List.of(e2, e3)),
-        arguments(List.of(e1, e2, e3), "properties.a=ke='d e'", List.of(e3)),
+    List<Object[]> data = new ArrayList<>();
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ke='a b'", Arrays.asList(e1)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ke='b c'", Arrays.asList(e1, e2)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ke='c d'", Arrays.asList(e2, e3)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ke='d e'", Arrays.asList(e3)});
 
-        arguments(List.of(e1, e2, e3), "properties.a=ik='A B'", List.of(e1)),
-        arguments(List.of(e1, e2, e3), "properties.a=ik='B C'", List.of(e1, e2)),
-        arguments(List.of(e1, e2, e3), "properties.a=ik='C D'", List.of(e2, e3)),
-        arguments(List.of(e1, e2, e3), "properties.a=ik='D E'", List.of(e3)),
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ik='A B'", Arrays.asList(e1)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ik='B C'", Arrays.asList(e1, e2)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ik='C D'", Arrays.asList(e2, e3)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ik='D E'", Arrays.asList(e3)});
 
-        arguments(List.of(e1, e2, e3), "properties.a=nk='a b'", List.of(e2, e3)),
-        arguments(List.of(e1, e2, e3), "properties.a=ni='A B'", List.of(e2, e3))
-    );
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=nk='a b'", Arrays.asList(e2, e3)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3), "properties.a=ni='A B'", Arrays.asList(e2, e3)});
+    
+    return data;
   }
 
-  private static Stream<Arguments> gtLtData() {
-    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "a"));
-    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b"));
-    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("a", "c"));
-    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("a", "d"));
+  private static Collection<Object[]> gtLtData() {
+    Map<String, Object> map1 = new HashMap<>();
+    map1.put("a", "a");
+    PostgresJsonEntity e1 = new PostgresJsonEntity(map1);
+    
+    Map<String, Object> map2 = new HashMap<>();
+    map2.put("a", "b");
+    PostgresJsonEntity e2 = new PostgresJsonEntity(map2);
+    
+    Map<String, Object> map3 = new HashMap<>();
+    map3.put("a", "c");
+    PostgresJsonEntity e3 = new PostgresJsonEntity(map3);
+    
+    Map<String, Object> map4 = new HashMap<>();
+    map4.put("a", "d");
+    PostgresJsonEntity e4 = new PostgresJsonEntity(map4);
 
-    return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a>=a", List.of(e1, e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a>a", List.of(e2, e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<a", List.of()),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<=a", List.of(e1)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<b", List.of(e1)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a<=d", List.of(e1, e2, e3, e4))
-    );
+    List<Object[]> data = new ArrayList<>();
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a>=a", Arrays.asList(e1, e2, e3, e4)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a>a", Arrays.asList(e2, e3, e4)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a<a", Arrays.asList()});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a<=a", Arrays.asList(e1)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a<b", Arrays.asList(e1)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a<=d", Arrays.asList(e1, e2, e3, e4)});
+    
+    return data;
   }
 
-  private static Stream<Arguments> miscData() {
-    PostgresJsonEntity e1 = new PostgresJsonEntity(Map.of("a", "b1"));
-    PostgresJsonEntity e2 = new PostgresJsonEntity(Map.of("a", "b2"));
-    PostgresJsonEntity e3 = new PostgresJsonEntity(Map.of("b", "c1"));
-    PostgresJsonEntity e4 = new PostgresJsonEntity(Map.of("b", "d1"));
+  private static Collection<Object[]> miscData() {
+    Map<String, Object> map1 = new HashMap<>();
+    map1.put("a", "b1");
+    PostgresJsonEntity e1 = new PostgresJsonEntity(map1);
+    
+    Map<String, Object> map2 = new HashMap<>();
+    map2.put("a", "b2");
+    PostgresJsonEntity e2 = new PostgresJsonEntity(map2);
+    
+    Map<String, Object> map3 = new HashMap<>();
+    map3.put("b", "c1");
+    PostgresJsonEntity e3 = new PostgresJsonEntity(map3);
+    
+    Map<String, Object> map4 = new HashMap<>();
+    map4.put("b", "d1");
+    PostgresJsonEntity e4 = new PostgresJsonEntity(map4);
 
-    return Stream.of(
-        arguments(List.of(e1, e2, e3, e4), "properties.a=nn=''", List.of(e1, e2)),
-        arguments(List.of(e1, e2, e3, e4), "properties.a=na=''", List.of(e3, e4)),
+    List<Object[]> data = new ArrayList<>();
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=nn=''", Arrays.asList(e1, e2)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.a=na=''", Arrays.asList(e3, e4)});
 
-        arguments(List.of(e1, e2, e3, e4), "properties.b=nn=''", List.of(e3, e4)),
-        arguments(List.of(e1, e2, e3, e4), "properties.b=na=''", List.of(e1, e2))
-    );
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.b=nn=''", Arrays.asList(e3, e4)});
+    data.add(new Object[] {Arrays.asList(e1, e2, e3, e4), "properties.b=na=''", Arrays.asList(e1, e2)});
+    
+    return data;
   }
 }

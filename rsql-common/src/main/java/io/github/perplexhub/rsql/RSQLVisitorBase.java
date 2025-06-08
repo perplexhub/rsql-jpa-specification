@@ -13,7 +13,6 @@ import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.PluralAttribute;
 
 import lombok.Getter;
-import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.util.StringUtils;
@@ -29,7 +28,7 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 	protected static volatile @Setter Map<Class, ManagedType> managedTypeMap;
 	protected static volatile @Setter Map<String, EntityManager> entityManagerMap;
-	protected static volatile @Setter @Getter Map<EntityManager, Database> entityManagerDatabase = Map.of();
+	protected static volatile @Setter @Getter Map<EntityManager, Database> entityManagerDatabase = new HashMap();
 	protected static final Map<Class, Class> primitiveToWrapper;
 	protected static volatile @Setter Map<Class<?>, Map<String, String>> propertyRemapping;
 	protected static volatile @Setter Map<Class<?>, List<String>> globalPropertyWhitelist;
