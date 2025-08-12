@@ -1,17 +1,7 @@
 package io.github.perplexhub.rsql.jsonb;
 
 
-import cz.jirutka.rsql.parser.ast.ComparisonNode;
-import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import io.github.perplexhub.rsql.RSQLOperators;
-import io.github.perplexhub.rsql.RSQLVisitorBase;
-import io.github.perplexhub.rsql.ResolvedExpression;
-import jakarta.persistence.Column;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.ManagedType;
-import org.springframework.orm.jpa.vendor.Database;
+import static io.github.perplexhub.rsql.RSQLVisitorBase.getEntityManagerMap;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
@@ -19,7 +9,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static io.github.perplexhub.rsql.RSQLVisitorBase.getEntityManagerMap;
+import cz.jirutka.rsql.parser.ast.ComparisonNode;
+import cz.jirutka.rsql.parser.ast.ComparisonOperator;
+import io.github.perplexhub.rsql.RSQLOperators;
+import io.github.perplexhub.rsql.RSQLVisitorBase;
+import io.github.perplexhub.rsql.ResolvedExpression;
+import jakarta.persistence.Column;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.ManagedType;
+import org.springframework.orm.jpa.vendor.Database;
 
 /**
  * Support for jsonb expression.
