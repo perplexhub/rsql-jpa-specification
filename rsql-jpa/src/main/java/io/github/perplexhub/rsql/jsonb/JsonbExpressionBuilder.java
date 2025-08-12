@@ -161,10 +161,6 @@ public class JsonbExpressionBuilder {
             Map.entry(BETWEEN, "(%1$s >= %2$s && %1$s <= %3$s)")
     );
 
-    private static final String JSONB_PATH_EXISTS = "jsonb_path_exists";
-
-    private static final String JSONB_PATH_EXISTS_TZ = "jsonb_path_exists_tz";
-
     private final ComparisonOperator operator;
     private final String keyPath;
     private final List<ArgValue> values;

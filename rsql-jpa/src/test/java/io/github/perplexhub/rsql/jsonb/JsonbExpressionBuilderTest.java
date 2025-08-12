@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class JsonbExpressionBuilderTest {
@@ -35,6 +36,27 @@ class JsonbExpressionBuilderTest {
         var expression = builder.getJsonPathExpression();
         assertEquals(expectedJsonbFunction, expression.jsonbFunction());
         assertEquals(expectedJsonbPath, expression.jsonbPath());
+    }
+
+    @ParameterizedTest
+    @MethodSource("customized")
+    void testJsonbPathExpressionCustomized(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
+        String jsonbPathExists = JsonbSupport.JSONB_PATH_EXISTS;
+        String jsonbPathExistsTz = JsonbSupport.JSONB_PATH_EXISTS_TZ;
+        try {
+            JsonbSupport.JSONB_PATH_EXISTS = "my_jsonb_path_exists";
+            JsonbSupport.JSONB_PATH_EXISTS_TZ = "my_jsonb_path_exists_tz";
+            JsonbSupport.DATE_TIME_SUPPORT = true;
+            JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments);
+            var expression = builder.getJsonPathExpression();
+            assertEquals(expectedJsonbFunction, expression.jsonbFunction());
+            assertEquals(expectedJsonbPath, expression.jsonbPath());
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            JsonbSupport.JSONB_PATH_EXISTS = jsonbPathExists;
+            JsonbSupport.JSONB_PATH_EXISTS_TZ = jsonbPathExistsTz;
+        }
     }
 
     static Stream<Arguments> data() {
@@ -74,6 +96,17 @@ class JsonbExpressionBuilderTest {
                 arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1,1"), "jsonb_path_exists", "$.equal_key ? (@ == \"1,1\")"),
                 arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1 1"), "jsonb_path_exists", "$.equal_key ? (@ == \"1 1\")"),
                 arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1970-01-01"), "jsonb_path_exists", "$.equal_key ? (@ == \"1970-01-01\")"),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    static Stream<Arguments> customized() {
+
+        return Stream.of(
+                arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("value"), "my_jsonb_path_exists", "$.equal_key ? (@ == \"value\")"),
+                arguments(RSQLOperators.GREATER_THAN, "json.greater_than_key", Collections.singletonList("value"), "my_jsonb_path_exists", "$.greater_than_key ? (@ > \"value\")"),
+                arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1970-01-01T00:00:00.000"), "my_jsonb_path_exists", "$.equal_key ? (@.datetime() == \"1970-01-01T00:00:00.000\".datetime())"),
+                arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1970-01-01T00:00:00.000Z"), "my_jsonb_path_exists_tz", "$.equal_key ? (@.datetime() == \"1970-01-01T00:00:00.000Z\".datetime())"),
                 null
         ).filter(Objects::nonNull);
     }

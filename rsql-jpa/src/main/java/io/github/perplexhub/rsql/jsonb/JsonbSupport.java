@@ -1,14 +1,6 @@
 package io.github.perplexhub.rsql.jsonb;
 
 
-import static io.github.perplexhub.rsql.RSQLVisitorBase.getEntityManagerMap;
-
-import java.lang.reflect.Field;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import io.github.perplexhub.rsql.RSQLOperators;
@@ -16,12 +8,18 @@ import io.github.perplexhub.rsql.RSQLVisitorBase;
 import io.github.perplexhub.rsql.ResolvedExpression;
 import jakarta.persistence.Column;
 import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.ManagedType;
 import org.springframework.orm.jpa.vendor.Database;
+
+import java.lang.reflect.Field;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static io.github.perplexhub.rsql.RSQLVisitorBase.getEntityManagerMap;
 
 /**
  * Support for jsonb expression.
@@ -29,6 +27,16 @@ import org.springframework.orm.jpa.vendor.Database;
 public class JsonbSupport {
 
     public static boolean DATE_TIME_SUPPORT = false;
+
+    /**
+     * Postgresql {@code jsonb_path_exists} function to use
+     */
+    public static String JSONB_PATH_EXISTS = "jsonb_path_exists";
+
+    /**
+     * Postgresql {@code jsonb_path_exists_tz} function to use
+     */
+    public static String JSONB_PATH_EXISTS_TZ = "jsonb_path_exists_tz";
 
     private static final Set<Database> JSON_SUPPORT = EnumSet.of(Database.POSTGRESQL);
 
