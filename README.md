@@ -1,6 +1,6 @@
 # rsql-jpa-specification
 
-[![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
+[![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql?filter=5.*)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
 [![Release Workflow Status](https://img.shields.io/github/actions/workflow/status/perplexhub/rsql-jpa-specification/release.yml?label=Release&style=plastic)](https://github.com/perplexhub/rsql-jpa-specification/actions/workflows/release.yml)
 [![Snapshot Workflow Status](https://img.shields.io/github/actions/workflow/status/perplexhub/rsql-jpa-specification/snapshot.yml?label=Snapshot&style=plastic)](https://github.com/perplexhub/rsql-jpa-specification/actions/workflows/snapshot.yml)
 [![PR Workflow Status](https://img.shields.io/github/actions/workflow/status/perplexhub/rsql-jpa-specification/pull_request.yml?label=Pull%20Request&style=plastic)](https://github.com/perplexhub/rsql-jpa-specification/actions/workflows/pull_request.yml)
@@ -17,7 +17,7 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
 
 ## Add rsql-jpa-spring-boot-starter for RSQL to Spring JPA translation
 
-### Maven dependency for rsql-jpa-spring-boot-starter  [![](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql-jpa-spring-boot-starter?label=%20&color=black)](https://central.sonatype.com/artifact/io.github.perplexhub/rsql-jpa-spring-boot-starter/versions)
+### Maven dependency for rsql-jpa-spring-boot-starter  [![](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql-jpa-spring-boot-starter?label=%20&color=black&filter=5.*)](https://central.sonatype.com/artifact/io.github.perplexhub/rsql-jpa-spring-boot-starter/versions)
 
 ```xml
   <dependency>
@@ -43,7 +43,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
 ## Add rsql-querydsl-spring-boot-starter for RSQL to Spring JPA and QueryDSL translation
 
-### Maven dependency for rsql-querydsl-spring-boot-starter [![](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql-querydsl-spring-boot-starter?label=%20&color=black)](https://central.sonatype.com/artifact/io.github.perplexhub/rsql-querydsl-spring-boot-starter/versions)
+### Maven dependency for rsql-querydsl-spring-boot-starter [![](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql-querydsl-spring-boot-starter?label=%20&color=black&filter=5.*)](https://central.sonatype.com/artifact/io.github.perplexhub/rsql-querydsl-spring-boot-starter/versions)
 
 ```xml
   <dependency>
