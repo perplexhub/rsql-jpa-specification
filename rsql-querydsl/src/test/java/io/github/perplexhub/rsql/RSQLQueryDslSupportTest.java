@@ -1,6 +1,5 @@
 package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.RSQLJPASupport.*;
 import static io.github.perplexhub.rsql.RSQLQueryDslSupport.*;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
@@ -15,7 +14,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import io.github.perplexhub.rsql.model.*;
@@ -48,7 +46,7 @@ public class RSQLQueryDslSupportTest {
 		assertThat(rsql, users.get(0).getId(), equalTo(1));
 	}
 
-		@Test
+	@Test
 	public final void testEnumILike() {
 		RSQLJPASupport.addEntityAttributeTypeMap(Status.class, String.class);
 		String rsql = "status==*A*";

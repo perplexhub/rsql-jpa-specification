@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.lang.Nullable;
+import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.util.StringUtils;
 
 import cz.jirutka.rsql.parser.RSQLParser;
@@ -31,7 +32,12 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 	}
 
 	public RSQLJPASupport(Map<String, EntityManager> entityManagerMap) {
+		this(entityManagerMap, new HashMap<>());
+	}
+	
+	public RSQLJPASupport(Map<String, EntityManager> entityManagerMap, Map<EntityManager, Database> entityManagerDatabase) {
 		super(entityManagerMap);
+		RSQLVisitorBase.setEntityManagerDatabase(entityManagerDatabase);
 	}
 
 	public static <T> Specification<T> rsql(final String rsqlQuery) {
