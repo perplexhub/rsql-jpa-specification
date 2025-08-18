@@ -10,7 +10,7 @@ Translate RSQL query into org.springframework.data.jpa.domain.Specification or c
 ## SpringBoot 3 Support
 rsql-jpa-specification supports SpringBoot 3 since version 6.x. (Contributed by [chriseteka](https://github.com/chriseteka))
 
-For SpringBoot 2 users, please continue to use [version 5.x](https://github.com/perplexhub/rsql-jpa-specification/tree/5.x).
+For SpringBoot 2 users, please continue to use [version 5.x](https://github.com/perplexhub/rsql-jpa-specification/tree/5.x). [![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql?filter=5.*)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
 
 
 [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/rsql-common/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
