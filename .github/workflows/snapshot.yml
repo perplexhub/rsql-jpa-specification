@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[maven-release-plugin] prepare')"
 
+    env:
+      MAVEN_REPO_USERNAME: ${{ secrets.nexus_username }}
+      MAVEN_REPO_PASSWORD: ${{ secrets.nexus_password }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
