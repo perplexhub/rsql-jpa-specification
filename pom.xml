@@ -297,4 +297,13 @@
 			<url>https://central.sonatype.com/repository/maven-snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
+	<settings>
+		<servers>
+			<server>
+				<id>central</id>
+				<username>${env.MAVEN_REPO_USERNAME}</username>
+				<password>${env.MAVEN_REPO_PASSWORD}</password>
+			</server>
+		</servers>
+	</settings>
 </project>
