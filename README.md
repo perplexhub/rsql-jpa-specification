@@ -21,7 +21,7 @@ For SpringBoot 2 users, please continue to use [version 5.x](https://github.com/
 
 ## Maven Repository
 
-<https://oss.sonatype.org/#nexus-search;gav~io.github.perplexhub~rsql*>
+<https://central.sonatype.com/search?q=io.github.perplexhub+rsql>
 
 ## Add rsql-jpa-spring-boot-starter for RSQL to Spring JPA translation
 
