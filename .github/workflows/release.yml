@@ -8,6 +8,9 @@ jobs:
     
     if: github.actor == github.event.repository.owner.login
 
+    env:
+      MAVEN_REPO_USERNAME: ${{ secrets.nexus_username }}
+      MAVEN_REPO_PASSWORD: ${{ secrets.nexus_password }}
     steps:
     - uses: actions/checkout@v2
       with:
