@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.perplexhub</groupId>
 	<artifactId>rsql</artifactId>
-	<version>6.0.28-SNAPSHOT</version>
+	<version>6.0.33-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>io.github.perplexhub - RSQL</name>
 	<inceptionYear>2018</inceptionYear>
@@ -88,18 +88,17 @@
 	</dependencyManagement>
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.sonatype.plugins</groupId>
-				<artifactId>nexus-staging-maven-plugin</artifactId>
-				<version>1.6.13</version>
+	        <plugin>
+				<groupId>org.sonatype.central</groupId>
+				<artifactId>central-publishing-maven-plugin</artifactId>
+				<version>0.8.0</version>
 				<extensions>true</extensions>
 				<configuration>
-					<serverId>ossrh</serverId>
-					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-					<autoReleaseAfterClose>true</autoReleaseAfterClose>
-					<stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
+					<publishingServerId>central</publishingServerId>
+					<autoPublish>true</autoPublish>
+					<waitUntil>validated</waitUntil>
 				</configuration>
-			</plugin>
+	        </plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.10.1</version>
@@ -296,8 +295,8 @@
 	</profiles>
 	<distributionManagement>
 		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<id>central</id>
+			<url>https://central.sonatype.com/repository/maven-snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
 </project>
