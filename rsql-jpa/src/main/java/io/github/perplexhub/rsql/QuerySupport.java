@@ -27,6 +27,14 @@ public class QuerySupport {
     private Map<Class<?>, List<String>> propertyBlacklist;
     private Collection<String> procedureWhiteList;
     private Collection<String> procedureBlackList;
+    /**
+     * Postgresql {@code jsonb_path_exists} function to use
+     */
+    private String jsonbPathExists;
+    /**
+     * Postgresql {@code jsonb_path_exists_tz} function to use
+     */
+    private String jsonbPathExistsTz;
 
     public static class QuerySupportBuilder {}
 

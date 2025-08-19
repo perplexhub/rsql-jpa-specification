@@ -15,6 +15,9 @@ import static io.github.perplexhub.rsql.jsonb.JsonbSupport.*;
  */
 public class JsonbExpressionBuilder {
 
+    private final String jsonbPathExistsTz;
+    private final String jsonbPathExists;
+
     /**
      * The base json type.
      */
@@ -161,11 +164,19 @@ public class JsonbExpressionBuilder {
             Map.entry(BETWEEN, "(%1$s >= %2$s && %1$s <= %3$s)")
     );
 
+    private static final String JSONB_PATH_EXISTS = "jsonb_path_exists";
+
+    private static final String JSONB_PATH_EXISTS_TZ = "jsonb_path_exists_tz";
+
     private final ComparisonOperator operator;
     private final String keyPath;
     private final List<ArgValue> values;
 
     JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args) {
+        this(operator, keyPath, args, null, null);
+    }
+
+    JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args, String jsonbPathExists, String jsonbPathExistsTz) {
         this.operator = Objects.requireNonNull(operator);
         this.keyPath = Objects.requireNonNull(keyPath);
         if(FORBIDDEN_NEGATION.contains(operator)) {
@@ -185,6 +196,8 @@ public class JsonbExpressionBuilder {
             throw new IllegalArgumentException("Operator " + operator + " requires at least one value");
         }
         this.values = findMoreTypes(operator, candidateValues);
+        this.jsonbPathExistsTz = jsonbPathExistsTz == null ? JSONB_PATH_EXISTS_TZ : jsonbPathExistsTz;
+        this.jsonbPathExists = jsonbPathExists == null ? JSONB_PATH_EXISTS : jsonbPathExists;
     }
 
     /**
@@ -206,7 +219,7 @@ public class JsonbExpressionBuilder {
         List<String> templateArguments = new ArrayList<>();
         templateArguments.add(valueReference);
         templateArguments.addAll(valuesToCompare);
-        var function = isDateTimeTz ? JSONB_PATH_EXISTS_TZ : JSONB_PATH_EXISTS;
+        var function = isDateTimeTz ? jsonbPathExistsTz : jsonbPathExists;
         var expression = String.format("%s ? %s", targetPath, String.format(comparisonTemplate, templateArguments.toArray()));
         return new JsonbPathExpression(function, expression);
     }

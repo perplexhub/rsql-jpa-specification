@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -542,9 +543,9 @@ class RSQLJPASupportPostgresJsonTest {
         var e3 = new PostgresJsonEntity(Map.of("a", "2020-01-01T00:00:00"));
         var allCases = List.of(e1, e2, e3);
         return Stream.of(
-            arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+00:00", List.of(e2, e3)),
-            arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+01:00", List.of(e2, e3)),
-            arguments(allCases, "properties.a=lt=2022-01-01T00:00:00+01:00", List.of(e1, e2, e3)),
+                arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+00:00", List.of(e2, e3)),
+                arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+01:00", List.of(e2, e3)),
+                arguments(allCases, "properties.a=lt=2022-01-01T00:00:00+01:00", List.of(e1, e2, e3)),
                 null
         ).filter(Objects::nonNull);
     }
@@ -720,5 +721,24 @@ class RSQLJPASupportPostgresJsonTest {
         HashMap<String, Object> nullValue = new HashMap<>();
         nullValue.put(key, null);
         return nullValue;
+    }
+
+    @Sql(statements = "CREATE OR REPLACE FUNCTION my_jsonb_path_exists(arg1 jsonb,arg2 jsonpath) RETURNS boolean AS 'SELECT $1 @? $2' LANGUAGE 'sql' IMMUTABLE;")
+    @Sql(statements = "DROP FUNCTION IF EXISTS my_jsonb_path_exists;", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    @ParameterizedTest
+    @MethodSource("data")
+    void testJsonSearchCustomFunction(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
+        //given
+        repository.saveAllAndFlush(entities);
+
+        //when
+        List<PostgresJsonEntity> result = repository.findAll(toSpecification(new QuerySupport.QuerySupportBuilder().rsqlQuery(rsql).jsonbPathExists("my_jsonb_path_exists").build()));
+
+        //then
+        assertThat(result)
+                .hasSameSizeAs(expected)
+                .containsExactlyInAnyOrderElementsOf(expected);
+
+        entities.forEach(e -> e.setId(null));
     }
 }

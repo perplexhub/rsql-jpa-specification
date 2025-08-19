@@ -40,22 +40,11 @@ class JsonbExpressionBuilderTest {
     @ParameterizedTest
     @MethodSource("customized")
     void testJsonbPathExpressionCustomized(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
-        String jsonbPathExists = JsonbSupport.JSONB_PATH_EXISTS;
-        String jsonbPathExistsTz = JsonbSupport.JSONB_PATH_EXISTS_TZ;
-        try {
-            JsonbSupport.JSONB_PATH_EXISTS = "my_jsonb_path_exists";
-            JsonbSupport.JSONB_PATH_EXISTS_TZ = "my_jsonb_path_exists_tz";
-            JsonbSupport.DATE_TIME_SUPPORT = true;
-            JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments);
-            var expression = builder.getJsonPathExpression();
-            assertEquals(expectedJsonbFunction, expression.jsonbFunction());
-            assertEquals(expectedJsonbPath, expression.jsonbPath());
-        } catch (Exception e) {
-            throw e;
-        } finally {
-            JsonbSupport.JSONB_PATH_EXISTS = jsonbPathExists;
-            JsonbSupport.JSONB_PATH_EXISTS_TZ = jsonbPathExistsTz;
-        }
+        JsonbSupport.DATE_TIME_SUPPORT = true;
+        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, "my_jsonb_path_exists", "my_jsonb_path_exists_tz");
+        var expression = builder.getJsonPathExpression();
+        assertEquals(expectedJsonbFunction, expression.jsonbFunction());
+        assertEquals(expectedJsonbPath, expression.jsonbPath());
     }
 
     static Stream<Arguments> data() {
