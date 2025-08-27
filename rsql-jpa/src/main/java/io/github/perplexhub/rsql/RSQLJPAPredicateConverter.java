@@ -8,6 +8,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.github.perplexhub.rsql.jsonb.JsonbExtractor;
 import io.github.perplexhub.rsql.jsonb.JsonbSupport;
 import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.Attribute;
@@ -37,8 +38,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	private final Collection<String> procedureBlackList;
 	private final boolean strictEquality;
 	private final Character likeEscapeCharacter;
-    private final String jsonbPathExists;
-    private final String jsonbPathExistsTz;
+    private final JsonbExtractor jsonbExtractor;
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder, Map<String, String> propertyPathMapper) {
 		this(builder, propertyPathMapper, null, null);
@@ -64,19 +64,18 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
                                      Collection<String> proceduresBlackList,
                                      boolean strictEquality,
                                      Character likeEscapeCharacter) {
-        this(builder, propertyPathMapper, customPredicates, joinHints, proceduresWhiteList, proceduresBlackList, strictEquality, likeEscapeCharacter, null, null);
+        this(builder, propertyPathMapper, customPredicates, joinHints, proceduresWhiteList, proceduresBlackList, strictEquality, likeEscapeCharacter, JsonbExtractor.DEFAULT);
     }
 
 	public RSQLJPAPredicateConverter(CriteriaBuilder builder,
-			Map<String, String> propertyPathMapper,
-			List<RSQLCustomPredicate<?>> customPredicates,
-			Map<String, JoinType> joinHints,
-			Collection<String> proceduresWhiteList,
-			Collection<String> proceduresBlackList,
-			boolean strictEquality,
-			Character likeEscapeCharacter,
-            String jsonbPathExists,
-            String jsonbPathExistsTz) {
+                                     Map<String, String> propertyPathMapper,
+                                     List<RSQLCustomPredicate<?>> customPredicates,
+                                     Map<String, JoinType> joinHints,
+                                     Collection<String> proceduresWhiteList,
+                                     Collection<String> proceduresBlackList,
+                                     boolean strictEquality,
+                                     Character likeEscapeCharacter,
+                                     JsonbExtractor jsonbExtractor) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
@@ -85,8 +84,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		this.procedureBlackList = proceduresBlackList != null ? proceduresBlackList : Collections.emptyList();
 		this.strictEquality = strictEquality;
 		this.likeEscapeCharacter = likeEscapeCharacter;
-        this.jsonbPathExists = jsonbPathExists;
-        this.jsonbPathExistsTz = jsonbPathExistsTz;
+        this.jsonbExtractor = jsonbExtractor;
 	}
 
 	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
@@ -261,7 +259,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				String jsonbPath = JsonbSupport.jsonPathOfSelector(attribute, jsonSelector);
 				if(jsonbPath.contains(".")) {
 					ComparisonNode jsonbNode = node.withSelector(jsonbPath);
-					return JsonbSupport.jsonbPathExistsExpression(builder, jsonbNode, path, jsonbPathExists, jsonbPathExistsTz);
+					return JsonbSupport.jsonbPathExistsExpression(builder, jsonbNode, path, jsonbExtractor);
 				} else {
 					final Expression expression;
 					if (path instanceof JpaExpression jpaExpression) {

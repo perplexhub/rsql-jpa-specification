@@ -17,6 +17,7 @@ public class JsonbExpressionBuilder {
 
     private final String jsonbPathExistsTz;
     private final String jsonbPathExists;
+    private final boolean useDateTime;
 
     /**
      * The base json type.
@@ -173,10 +174,10 @@ public class JsonbExpressionBuilder {
     private final List<ArgValue> values;
 
     JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args) {
-        this(operator, keyPath, args, null, null);
+        this(operator, keyPath, args, JsonbExtractor.DEFAULT);
     }
 
-    JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args, String jsonbPathExists, String jsonbPathExistsTz) {
+    JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args, JsonbExtractor extractor) {
         this.operator = Objects.requireNonNull(operator);
         this.keyPath = Objects.requireNonNull(keyPath);
         if(FORBIDDEN_NEGATION.contains(operator)) {
@@ -195,9 +196,10 @@ public class JsonbExpressionBuilder {
         if(REQUIRE_AT_LEAST_ONE_ARGUMENT.contains(operator) && candidateValues.isEmpty()) {
             throw new IllegalArgumentException("Operator " + operator + " requires at least one value");
         }
+        this.useDateTime = extractor.useDateTime();
+        this.jsonbPathExistsTz = extractor.pathExistsTz();
+        this.jsonbPathExists = extractor.pathExists();
         this.values = findMoreTypes(operator, candidateValues);
-        this.jsonbPathExistsTz = jsonbPathExistsTz == null ? JSONB_PATH_EXISTS_TZ : jsonbPathExistsTz;
-        this.jsonbPathExists = jsonbPathExists == null ? JSONB_PATH_EXISTS : jsonbPathExists;
     }
 
     /**
@@ -243,7 +245,7 @@ public class JsonbExpressionBuilder {
             return values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList();
         }
 
-        List<ArgConverter> argConverters = DATE_TIME_SUPPORT ?
+        List<ArgConverter> argConverters = useDateTime ?
                 List.of(DATE_TIME_CONVERTER, DATE_TIME_CONVERTER_TZ, NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER)
                 : List.of(NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER);
         Optional<ArgConverter> candidateConverter = argConverters.stream()

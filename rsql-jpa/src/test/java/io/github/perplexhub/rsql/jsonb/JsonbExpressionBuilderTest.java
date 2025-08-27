@@ -20,8 +20,7 @@ class JsonbExpressionBuilderTest {
     @ParameterizedTest
     @MethodSource("data")
     void testJsonbPathExpression(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
-        JsonbSupport.DATE_TIME_SUPPORT = false;
-        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments);
+        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, JsonbExtractor.DEFAULT);
         var expression = builder.getJsonPathExpression();
         assertEquals(expectedJsonbFunction, expression.jsonbFunction());
         assertEquals(expectedJsonbPath, expression.jsonbPath());
@@ -30,8 +29,7 @@ class JsonbExpressionBuilderTest {
     @ParameterizedTest
     @MethodSource("temporal")
     void testJsonbPathExpressionWithTemporal(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
-        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments);
+        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, JsonbExtractorSupport.builder().useDateTime(true).build());
         var expression = builder.getJsonPathExpression();
         assertEquals(expectedJsonbFunction, expression.jsonbFunction());
         assertEquals(expectedJsonbPath, expression.jsonbPath());
@@ -40,8 +38,7 @@ class JsonbExpressionBuilderTest {
     @ParameterizedTest
     @MethodSource("customized")
     void testJsonbPathExpressionCustomized(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
-        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, "my_jsonb_path_exists", "my_jsonb_path_exists_tz");
+        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, JsonbExtractorSupport.builder().pathExists("my_jsonb_path_exists").pathExistsTz("my_jsonb_path_exists_tz").useDateTime(true).build());
         var expression = builder.getJsonPathExpression();
         assertEquals(expectedJsonbFunction, expression.jsonbFunction());
         assertEquals(expectedJsonbPath, expression.jsonbPath());

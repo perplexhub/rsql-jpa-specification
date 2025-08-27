@@ -1,5 +1,6 @@
 package io.github.perplexhub.rsql;
 
+import io.github.perplexhub.rsql.jsonb.JsonbExtractor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -27,20 +28,14 @@ public class QuerySupport {
     private Map<Class<?>, List<String>> propertyBlacklist;
     private Collection<String> procedureWhiteList;
     private Collection<String> procedureBlackList;
-    /**
-     * Postgresql {@code jsonb_path_exists} function to use
-     */
-    private String jsonbPathExists;
-    /**
-     * Postgresql {@code jsonb_path_exists_tz} function to use
-     */
-    private String jsonbPathExistsTz;
+    @Builder.Default
+    private JsonbExtractor jsonbExtractor = JsonbExtractor.DEFAULT;
 
     public static class QuerySupportBuilder {}
 
     @Override
     public String toString() {
-        return String.format("%s,distinct:%b,propertyPathMapper:%s,customPredicates:%d,joinHints:%s,propertyWhitelist:%s,propertyBlacklist:%s,jsonbPathExists:%s,jsonbPathExistsTz:%s",
-                rsqlQuery, distinct, propertyPathMapper, customPredicates == null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist, jsonbPathExists, jsonbPathExistsTz);
+        return String.format("%s,distinct:%b,propertyPathMapper:%s,customPredicates:%d,joinHints:%s,propertyWhitelist:%s,propertyBlacklist:%s,jsonbExtractor:%s",
+                rsqlQuery, distinct, propertyPathMapper, customPredicates == null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist, jsonbExtractor);
     }
 }

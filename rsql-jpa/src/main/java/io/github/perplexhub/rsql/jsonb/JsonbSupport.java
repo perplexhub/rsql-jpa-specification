@@ -26,8 +26,6 @@ import org.springframework.orm.jpa.vendor.Database;
  */
 public class JsonbSupport {
 
-    public static boolean DATE_TIME_SUPPORT = false;
-
     private static final Set<Database> JSON_SUPPORT = EnumSet.of(Database.POSTGRESQL);
 
     private static final Map<ComparisonOperator, ComparisonOperator> NEGATE_OPERATORS =
@@ -61,9 +59,9 @@ public class JsonbSupport {
     }
 
 
-    public static ResolvedExpression jsonbPathExistsExpression(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath, String jsonbPathExists, String jsonbPathExistsTz) {
+    public static ResolvedExpression jsonbPathExistsExpression(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath, JsonbExtractor extractor) {
         var mayBeInvertedOperator = Optional.ofNullable(NEGATE_OPERATORS.get(node.getOperator()));
-        var jsb = new JsonbExpressionBuilder(mayBeInvertedOperator.orElse(node.getOperator()), node.getSelector(), node.getArguments(), jsonbPathExists, jsonbPathExistsTz);
+        var jsb = new JsonbExpressionBuilder(mayBeInvertedOperator.orElse(node.getOperator()), node.getSelector(), node.getArguments(), extractor);
         var expression = jsb.getJsonPathExpression();
         return ResolvedExpression.ofJson(builder.function(expression.jsonbFunction, Boolean.class, attrPath,
                 builder.literal(expression.jsonbPath)), mayBeInvertedOperator.isPresent());

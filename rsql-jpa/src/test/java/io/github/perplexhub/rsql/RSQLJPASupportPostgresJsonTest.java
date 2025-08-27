@@ -1,6 +1,6 @@
 package io.github.perplexhub.rsql;
 
-import io.github.perplexhub.rsql.jsonb.JsonbSupport;
+import io.github.perplexhub.rsql.jsonb.JsonbExtractorSupport;
 import io.github.perplexhub.rsql.model.EntityWithJsonb;
 import io.github.perplexhub.rsql.model.JsonbEntity;
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
@@ -48,7 +48,6 @@ class RSQLJPASupportPostgresJsonTest {
     void setup(@Autowired EntityManager em) {
         RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
         clear();
-        JsonbSupport.DATE_TIME_SUPPORT = false;
     }
 
     @AfterEach
@@ -84,12 +83,11 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("temporalData")
     void testJsonSearchOfTemporal(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         repository.saveAllAndFlush(entities);
 
         //when
-        List<PostgresJsonEntity> result = repository.findAll(toSpecification(rsql));
+        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbExtractor(JsonbExtractorSupport.builder().useDateTime(true).build()).build()));
 
         //then
         assertThat(result)
@@ -162,7 +160,6 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("sortByRelation")
     void testJsonSortOnRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
                 .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
@@ -184,7 +181,6 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("sortByMappedRelation")
     void testJsonSortOnMappedRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
                 .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
@@ -732,7 +728,7 @@ class RSQLJPASupportPostgresJsonTest {
         repository.saveAllAndFlush(entities);
 
         //when
-        List<PostgresJsonEntity> result = repository.findAll(toSpecification(new QuerySupport.QuerySupportBuilder().rsqlQuery(rsql).jsonbPathExists("my_jsonb_path_exists").build()));
+        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbExtractor(JsonbExtractorSupport.builder().pathExists("my_jsonb_path_exists").build()).build()));
 
         //then
         assertThat(result)
