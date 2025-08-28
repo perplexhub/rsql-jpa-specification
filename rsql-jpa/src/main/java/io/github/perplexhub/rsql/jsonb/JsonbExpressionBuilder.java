@@ -15,9 +15,7 @@ import static io.github.perplexhub.rsql.jsonb.JsonbSupport.*;
  */
 public class JsonbExpressionBuilder {
 
-    private final String jsonbPathExistsTz;
-    private final String jsonbPathExists;
-    private final boolean useDateTime;
+    private final JsonbConfiguration configuration;
 
     /**
      * The base json type.
@@ -165,19 +163,15 @@ public class JsonbExpressionBuilder {
             Map.entry(BETWEEN, "(%1$s >= %2$s && %1$s <= %3$s)")
     );
 
-    private static final String JSONB_PATH_EXISTS = "jsonb_path_exists";
-
-    private static final String JSONB_PATH_EXISTS_TZ = "jsonb_path_exists_tz";
-
     private final ComparisonOperator operator;
     private final String keyPath;
     private final List<ArgValue> values;
 
     JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args) {
-        this(operator, keyPath, args, JsonbExtractor.DEFAULT);
+        this(operator, keyPath, args, JsonbConfiguration.DEFAULT);
     }
 
-    JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args, JsonbExtractor extractor) {
+    JsonbExpressionBuilder(ComparisonOperator operator, String keyPath, List<String> args, JsonbConfiguration configuration) {
         this.operator = Objects.requireNonNull(operator);
         this.keyPath = Objects.requireNonNull(keyPath);
         if(FORBIDDEN_NEGATION.contains(operator)) {
@@ -196,9 +190,7 @@ public class JsonbExpressionBuilder {
         if(REQUIRE_AT_LEAST_ONE_ARGUMENT.contains(operator) && candidateValues.isEmpty()) {
             throw new IllegalArgumentException("Operator " + operator + " requires at least one value");
         }
-        this.useDateTime = extractor.useDateTime();
-        this.jsonbPathExistsTz = extractor.pathExistsTz();
-        this.jsonbPathExists = extractor.pathExists();
+        this.configuration = configuration;
         this.values = findMoreTypes(operator, candidateValues);
     }
 
@@ -221,7 +213,7 @@ public class JsonbExpressionBuilder {
         List<String> templateArguments = new ArrayList<>();
         templateArguments.add(valueReference);
         templateArguments.addAll(valuesToCompare);
-        var function = isDateTimeTz ? jsonbPathExistsTz : jsonbPathExists;
+        var function = isDateTimeTz ? configuration.pathExistsTz() : configuration.pathExists();
         var expression = String.format("%s ? %s", targetPath, String.format(comparisonTemplate, templateArguments.toArray()));
         return new JsonbPathExpression(function, expression);
     }
@@ -245,7 +237,7 @@ public class JsonbExpressionBuilder {
             return values.stream().map(s -> new ArgValue(s, BaseJsonType.STRING)).toList();
         }
 
-        List<ArgConverter> argConverters = useDateTime ?
+        List<ArgConverter> argConverters = configuration.useDateTime() ?
                 List.of(DATE_TIME_CONVERTER, DATE_TIME_CONVERTER_TZ, NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER)
                 : List.of(NUMBER_CONVERTER, BOOLEAN_ARG_CONVERTER);
         Optional<ArgConverter> candidateConverter = argConverters.stream()

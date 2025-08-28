@@ -3,9 +3,9 @@ package io.github.perplexhub.rsql.jsonb;
 /**
  * jsonb expression configuration
  */
-public interface JsonbExtractor {
+public interface JsonbConfiguration {
 
-    JsonbExtractor DEFAULT = new JsonbExtractor() {
+    JsonbConfiguration DEFAULT = new JsonbConfiguration() {
 
         @Override
         public String pathExists() {

@@ -1,6 +1,6 @@
 package io.github.perplexhub.rsql;
 
-import io.github.perplexhub.rsql.jsonb.JsonbExtractor;
+import io.github.perplexhub.rsql.jsonb.JsonbConfiguration;
 import lombok.Builder;
 import lombok.Data;
 
@@ -29,13 +29,13 @@ public class QuerySupport {
     private Collection<String> procedureWhiteList;
     private Collection<String> procedureBlackList;
     @Builder.Default
-    private JsonbExtractor jsonbExtractor = JsonbExtractor.DEFAULT;
+    private JsonbConfiguration jsonbConfiguration = JsonbConfiguration.DEFAULT;
 
     public static class QuerySupportBuilder {}
 
     @Override
     public String toString() {
-        return String.format("%s,distinct:%b,propertyPathMapper:%s,customPredicates:%d,joinHints:%s,propertyWhitelist:%s,propertyBlacklist:%s,jsonbExtractor:%s",
-                rsqlQuery, distinct, propertyPathMapper, customPredicates == null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist, jsonbExtractor);
+        return String.format("%s,distinct:%b,propertyPathMapper:%s,customPredicates:%d,joinHints:%s,propertyWhitelist:%s,propertyBlacklist:%s,jsonbConfiguration:%s",
+                rsqlQuery, distinct, propertyPathMapper, customPredicates == null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist, jsonbConfiguration);
     }
 }

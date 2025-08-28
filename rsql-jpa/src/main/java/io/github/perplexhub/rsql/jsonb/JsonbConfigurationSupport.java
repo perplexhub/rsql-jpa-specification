@@ -10,14 +10,14 @@ import lombok.experimental.Accessors;
 @Builder
 @Accessors(fluent = true)
 @Getter
-public class JsonbExtractorSupport implements JsonbExtractor {
+public final class JsonbConfigurationSupport implements JsonbConfiguration {
 
     @Builder.Default
-    private final String pathExists = JsonbExtractor.DEFAULT.pathExists();
+    private final String pathExists = JsonbConfiguration.DEFAULT.pathExists();
     @Builder.Default
-    private final String pathExistsTz = JsonbExtractor.DEFAULT.pathExistsTz();
+    private final String pathExistsTz = JsonbConfiguration.DEFAULT.pathExistsTz();
     @Builder.Default
-    private final boolean useDateTime = JsonbExtractor.DEFAULT.useDateTime();
+    private final boolean useDateTime = JsonbConfiguration.DEFAULT.useDateTime();
 
     @Override
     public String toString() {

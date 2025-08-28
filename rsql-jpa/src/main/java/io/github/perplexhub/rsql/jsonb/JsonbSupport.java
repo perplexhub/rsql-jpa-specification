@@ -59,9 +59,9 @@ public class JsonbSupport {
     }
 
 
-    public static ResolvedExpression jsonbPathExistsExpression(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath, JsonbExtractor extractor) {
+    public static ResolvedExpression jsonbPathExistsExpression(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath, JsonbConfiguration configuration) {
         var mayBeInvertedOperator = Optional.ofNullable(NEGATE_OPERATORS.get(node.getOperator()));
-        var jsb = new JsonbExpressionBuilder(mayBeInvertedOperator.orElse(node.getOperator()), node.getSelector(), node.getArguments(), extractor);
+        var jsb = new JsonbExpressionBuilder(mayBeInvertedOperator.orElse(node.getOperator()), node.getSelector(), node.getArguments(), configuration);
         var expression = jsb.getJsonPathExpression();
         return ResolvedExpression.ofJson(builder.function(expression.jsonbFunction, Boolean.class, attrPath,
                 builder.literal(expression.jsonbPath)), mayBeInvertedOperator.isPresent());

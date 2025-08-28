@@ -1,6 +1,6 @@
 package io.github.perplexhub.rsql;
 
-import io.github.perplexhub.rsql.jsonb.JsonbExtractorSupport;
+import io.github.perplexhub.rsql.jsonb.JsonbConfigurationSupport;
 import io.github.perplexhub.rsql.model.EntityWithJsonb;
 import io.github.perplexhub.rsql.model.JsonbEntity;
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
@@ -87,7 +87,7 @@ class RSQLJPASupportPostgresJsonTest {
         repository.saveAllAndFlush(entities);
 
         //when
-        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbExtractor(JsonbExtractorSupport.builder().useDateTime(true).build()).build()));
+        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbConfiguration(JsonbConfigurationSupport.builder().useDateTime(true).build()).build()));
 
         //then
         assertThat(result)
@@ -728,7 +728,7 @@ class RSQLJPASupportPostgresJsonTest {
         repository.saveAllAndFlush(entities);
 
         //when
-        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbExtractor(JsonbExtractorSupport.builder().pathExists("my_jsonb_path_exists").build()).build()));
+        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbConfiguration(JsonbConfigurationSupport.builder().pathExists("my_jsonb_path_exists").build()).build()));
 
         //then
         assertThat(result)
