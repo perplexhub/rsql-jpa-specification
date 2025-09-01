@@ -1,23 +1,20 @@
 package io.github.perplexhub.rsql.jsonb;
 
 import lombok.Builder;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 
 /**
  * convenient way to define configuration, based on default values
  */
 @Builder
-@Accessors(fluent = true)
-@Getter
-public final class JsonbConfigurationSupport implements JsonbConfiguration {
+public record JsonbConfigurationSupport(String pathExists, String pathExistsTz, boolean useDateTime) implements JsonbConfiguration {
 
-    @Builder.Default
-    private final String pathExists = JsonbConfiguration.DEFAULT.pathExists();
-    @Builder.Default
-    private final String pathExistsTz = JsonbConfiguration.DEFAULT.pathExistsTz();
-    @Builder.Default
-    private final boolean useDateTime = JsonbConfiguration.DEFAULT.useDateTime();
+    public static class JsonbConfigurationSupportBuilder {
+        JsonbConfigurationSupportBuilder() {
+            pathExists = DEFAULT.pathExists();
+            pathExistsTz = DEFAULT.pathExistsTz();
+            useDateTime = DEFAULT.useDateTime();
+        }
+    }
 
     @Override
     public String toString() {
