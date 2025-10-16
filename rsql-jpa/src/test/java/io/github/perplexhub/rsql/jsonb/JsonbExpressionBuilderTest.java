@@ -20,8 +20,7 @@ class JsonbExpressionBuilderTest {
     @ParameterizedTest
     @MethodSource("data")
     void testJsonbPathExpression(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
-        JsonbSupport.DATE_TIME_SUPPORT = false;
-        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments);
+        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, JsonbConfiguration.DEFAULT);
         var expression = builder.getJsonPathExpression();
         assertEquals(expectedJsonbFunction, expression.jsonbFunction());
         assertEquals(expectedJsonbPath, expression.jsonbPath());
@@ -30,8 +29,16 @@ class JsonbExpressionBuilderTest {
     @ParameterizedTest
     @MethodSource("temporal")
     void testJsonbPathExpressionWithTemporal(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
-        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments);
+        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, JsonbConfiguration.builder().useDateTime(true).build());
+        var expression = builder.getJsonPathExpression();
+        assertEquals(expectedJsonbFunction, expression.jsonbFunction());
+        assertEquals(expectedJsonbPath, expression.jsonbPath());
+    }
+
+    @ParameterizedTest
+    @MethodSource("customized")
+    void testJsonbPathExpressionCustomized(ComparisonOperator operator, String keyPath, List<String> arguments, String expectedJsonbFunction, String expectedJsonbPath) {
+        JsonbExpressionBuilder builder = new JsonbExpressionBuilder(operator, keyPath, arguments, JsonbConfiguration.builder().pathExists("my_jsonb_path_exists").pathExistsTz("my_jsonb_path_exists_tz").useDateTime(true).build());
         var expression = builder.getJsonPathExpression();
         assertEquals(expectedJsonbFunction, expression.jsonbFunction());
         assertEquals(expectedJsonbPath, expression.jsonbPath());
@@ -74,6 +81,17 @@ class JsonbExpressionBuilderTest {
                 arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1,1"), "jsonb_path_exists", "$.equal_key ? (@ == \"1,1\")"),
                 arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1 1"), "jsonb_path_exists", "$.equal_key ? (@ == \"1 1\")"),
                 arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1970-01-01"), "jsonb_path_exists", "$.equal_key ? (@ == \"1970-01-01\")"),
+                null
+        ).filter(Objects::nonNull);
+    }
+
+    static Stream<Arguments> customized() {
+
+        return Stream.of(
+                arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("value"), "my_jsonb_path_exists", "$.equal_key ? (@ == \"value\")"),
+                arguments(RSQLOperators.GREATER_THAN, "json.greater_than_key", Collections.singletonList("value"), "my_jsonb_path_exists", "$.greater_than_key ? (@ > \"value\")"),
+                arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1970-01-01T00:00:00.000"), "my_jsonb_path_exists", "$.equal_key ? (@.datetime() == \"1970-01-01T00:00:00.000\".datetime())"),
+                arguments(RSQLOperators.EQUAL, "json.equal_key", Collections.singletonList("1970-01-01T00:00:00.000Z"), "my_jsonb_path_exists_tz", "$.equal_key ? (@.datetime() == \"1970-01-01T00:00:00.000Z\".datetime())"),
                 null
         ).filter(Objects::nonNull);
     }

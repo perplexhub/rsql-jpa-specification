@@ -16,9 +16,7 @@ import io.github.perplexhub.rsql.RSQLVisitorBase;
 import io.github.perplexhub.rsql.ResolvedExpression;
 import jakarta.persistence.Column;
 import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.ManagedType;
 import org.springframework.orm.jpa.vendor.Database;
@@ -27,8 +25,6 @@ import org.springframework.orm.jpa.vendor.Database;
  * Support for jsonb expression.
  */
 public class JsonbSupport {
-
-    public static boolean DATE_TIME_SUPPORT = false;
 
     private static final Set<Database> JSON_SUPPORT = EnumSet.of(Database.POSTGRESQL);
 
@@ -63,9 +59,9 @@ public class JsonbSupport {
     }
 
 
-    public static ResolvedExpression jsonbPathExistsExpression(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath) {
+    public static ResolvedExpression jsonbPathExistsExpression(CriteriaBuilder builder, ComparisonNode node, Path<?> attrPath, JsonbConfiguration configuration) {
         var mayBeInvertedOperator = Optional.ofNullable(NEGATE_OPERATORS.get(node.getOperator()));
-        var jsb = new JsonbExpressionBuilder(mayBeInvertedOperator.orElse(node.getOperator()), node.getSelector(), node.getArguments());
+        var jsb = new JsonbExpressionBuilder(mayBeInvertedOperator.orElse(node.getOperator()), node.getSelector(), node.getArguments(), configuration);
         var expression = jsb.getJsonPathExpression();
         return ResolvedExpression.ofJson(builder.function(expression.jsonbFunction, Boolean.class, attrPath,
                 builder.literal(expression.jsonbPath)), mayBeInvertedOperator.isPresent());

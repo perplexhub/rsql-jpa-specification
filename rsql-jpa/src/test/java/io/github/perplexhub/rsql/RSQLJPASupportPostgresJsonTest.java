@@ -1,6 +1,6 @@
 package io.github.perplexhub.rsql;
 
-import io.github.perplexhub.rsql.jsonb.JsonbSupport;
+import io.github.perplexhub.rsql.jsonb.JsonbConfiguration;
 import io.github.perplexhub.rsql.model.EntityWithJsonb;
 import io.github.perplexhub.rsql.model.JsonbEntity;
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,7 +48,6 @@ class RSQLJPASupportPostgresJsonTest {
     void setup(@Autowired EntityManager em) {
         RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
         clear();
-        JsonbSupport.DATE_TIME_SUPPORT = false;
     }
 
     @AfterEach
@@ -83,12 +83,11 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("temporalData")
     void testJsonSearchOfTemporal(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         repository.saveAllAndFlush(entities);
 
         //when
-        List<PostgresJsonEntity> result = repository.findAll(toSpecification(rsql));
+        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbConfiguration(JsonbConfiguration.builder().useDateTime(true).build()).build()));
 
         //then
         assertThat(result)
@@ -161,7 +160,6 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("sortByRelation")
     void testJsonSortOnRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
                 .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
@@ -183,7 +181,6 @@ class RSQLJPASupportPostgresJsonTest {
     @ParameterizedTest
     @MethodSource("sortByMappedRelation")
     void testJsonSortOnMappedRelation(List<JsonbEntity> jsonbEntities, String rsql, List<JsonbEntity> expected) {
-        JsonbSupport.DATE_TIME_SUPPORT = true;
         //given
         Collection<EntityWithJsonb> entitiesWithJsonb = jsonbEntityRepository.saveAllAndFlush(jsonbEntities).stream()
                 .map(jsonbEntity -> EntityWithJsonb.builder().jsonb(jsonbEntity).build())
@@ -542,9 +539,9 @@ class RSQLJPASupportPostgresJsonTest {
         var e3 = new PostgresJsonEntity(Map.of("a", "2020-01-01T00:00:00"));
         var allCases = List.of(e1, e2, e3);
         return Stream.of(
-            arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+00:00", List.of(e2, e3)),
-            arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+01:00", List.of(e2, e3)),
-            arguments(allCases, "properties.a=lt=2022-01-01T00:00:00+01:00", List.of(e1, e2, e3)),
+                arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+00:00", List.of(e2, e3)),
+                arguments(allCases, "properties.a=ge=1970-01-02T00:00:00+01:00", List.of(e2, e3)),
+                arguments(allCases, "properties.a=lt=2022-01-01T00:00:00+01:00", List.of(e1, e2, e3)),
                 null
         ).filter(Objects::nonNull);
     }
@@ -720,5 +717,24 @@ class RSQLJPASupportPostgresJsonTest {
         HashMap<String, Object> nullValue = new HashMap<>();
         nullValue.put(key, null);
         return nullValue;
+    }
+
+    @Sql(statements = "CREATE OR REPLACE FUNCTION my_jsonb_path_exists(arg1 jsonb,arg2 jsonpath) RETURNS boolean AS 'SELECT $1 @? $2' LANGUAGE 'sql' IMMUTABLE;")
+    @Sql(statements = "DROP FUNCTION IF EXISTS my_jsonb_path_exists;", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+    @ParameterizedTest
+    @MethodSource("data")
+    void testJsonSearchCustomFunction(List<PostgresJsonEntity> entities, String rsql, List<PostgresJsonEntity> expected) {
+        //given
+        repository.saveAllAndFlush(entities);
+
+        //when
+        List<PostgresJsonEntity> result = repository.findAll(toSpecification(QuerySupport.builder().rsqlQuery(rsql).jsonbConfiguration(JsonbConfiguration.builder().pathExists("my_jsonb_path_exists").build()).build()));
+
+        //then
+        assertThat(result)
+                .hasSameSizeAs(expected)
+                .containsExactlyInAnyOrderElementsOf(expected);
+
+        entities.forEach(e -> e.setId(null));
     }
 }

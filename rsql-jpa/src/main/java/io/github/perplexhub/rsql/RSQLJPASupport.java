@@ -127,7 +127,8 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 			RSQLJPAPredicateConverter visitor = new RSQLJPAPredicateConverter(cb, querySupport.getPropertyPathMapper(),
 					querySupport.getCustomPredicates(), querySupport.getJoinHints(),
 					querySupport.getProcedureWhiteList(), querySupport.getProcedureBlackList(),
-					querySupport.isStrictEquality(), querySupport.getLikeEscapeCharacter());
+					querySupport.isStrictEquality(), querySupport.getLikeEscapeCharacter(),
+                    querySupport.getJsonbConfiguration());
 
 			visitor.setPropertyWhitelist(querySupport.getPropertyWhitelist());
 			visitor.setPropertyBlacklist(querySupport.getPropertyBlacklist());
