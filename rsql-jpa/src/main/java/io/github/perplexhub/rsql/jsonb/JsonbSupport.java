@@ -30,9 +30,6 @@ import org.springframework.util.ClassUtils;
  */
 public class JsonbSupport {
 
-    /**
-     * is annotation present  on classpath ?
-     */
     private static final boolean isHibernatePresent = ClassUtils.isPresent(
             "org.hibernate.annotations.JdbcTypeCode", JsonbSupport.class.getClassLoader());
 
@@ -109,7 +106,7 @@ public class JsonbSupport {
      * @return true if the attribute is a jsonb attribute
      */
     private static boolean isJsonColumn(Attribute<?, ?> attribute) {
-        return isJsonbColumn(attribute) || isJdbcTypeCodeJSON(attribute);
+        return isJsonbColumn(attribute) || isJdbcTypeCodeJson(attribute);
     }
 
     /**
@@ -131,7 +128,7 @@ public class JsonbSupport {
      * @param attribute the attribute
      * @return true if the column is a jsonb column
      */
-    private static boolean isJdbcTypeCodeJSON(Attribute<?, ?> attribute) {
+    private static boolean isJdbcTypeCodeJson(Attribute<?, ?> attribute) {
         return isHibernatePresent && getFieldAnnotation(attribute, JdbcTypeCode.class)
                 .map(JdbcTypeCode::value)
                 .map(code -> SqlTypes.JSON == code)
