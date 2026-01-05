@@ -3,6 +3,7 @@ package io.github.perplexhub.rsql.jsonb;
 
 import static io.github.perplexhub.rsql.RSQLVisitorBase.getEntityManagerMap;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.Map;
@@ -19,12 +20,18 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.ManagedType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.orm.jpa.vendor.Database;
+import org.springframework.util.ClassUtils;
 
 /**
  * Support for jsonb expression.
  */
 public class JsonbSupport {
+
+    private static final boolean isHibernatePresent = ClassUtils.isPresent(
+            "org.hibernate.annotations.JdbcTypeCode", JsonbSupport.class.getClassLoader());
 
     private static final Set<Database> JSON_SUPPORT = EnumSet.of(Database.POSTGRESQL);
 
@@ -99,14 +106,42 @@ public class JsonbSupport {
      * @return true if the attribute is a jsonb attribute
      */
     private static boolean isJsonColumn(Attribute<?, ?> attribute) {
+        return isJsonbColumn(attribute) || isJdbcTypeCodeJson(attribute);
+    }
+
+    /**
+     * Returns whether the given attribute is a jsonb column.
+     *
+     * @param attribute the attribute
+     * @return true if the column is a jsonb column
+     */
+    private static boolean isJsonbColumn(Attribute<?, ?> attribute) {
+        return getFieldAnnotation(attribute, Column.class)
+                .map(Column::columnDefinition)
+                .map(s -> s.toLowerCase().startsWith("jsonb"))
+                .orElse(false);
+    }
+
+    /**
+     * Returns whether the given attribute is annotated with {@link JdbcTypeCode} and {@code value == SqlTypes.JSON}.
+     *
+     * @param attribute the attribute
+     * @return true if the column is a jsonb column
+     */
+    private static boolean isJdbcTypeCodeJson(Attribute<?, ?> attribute) {
+        return isHibernatePresent && getFieldAnnotation(attribute, JdbcTypeCode.class)
+                .map(JdbcTypeCode::value)
+                .map(code -> SqlTypes.JSON == code)
+                .orElse(false);
+    }
+
+    private static <T extends Annotation> Optional<T> getFieldAnnotation(Attribute<?, ?> attribute, Class<T> annotationClass) {
         return Optional.ofNullable(attribute)
                 .filter(attr -> attr.getJavaMember() instanceof Field)
                 .map(attr -> ((Field) attr.getJavaMember()))
-                .map(field -> field.getAnnotation(Column.class))
-                .map(Column::columnDefinition)
-                .map("jsonb"::equalsIgnoreCase)
-                .orElse(false);
+                .map(field -> field.getAnnotation(annotationClass));
     }
+
 
     /**
      * Returns the database of the given attribute.

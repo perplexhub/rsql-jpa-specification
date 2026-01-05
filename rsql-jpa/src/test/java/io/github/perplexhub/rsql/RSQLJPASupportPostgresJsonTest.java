@@ -1,15 +1,18 @@
 package io.github.perplexhub.rsql;
 
 import io.github.perplexhub.rsql.jsonb.JsonbConfiguration;
+import io.github.perplexhub.rsql.model.AnotherJsonbEntity;
 import io.github.perplexhub.rsql.model.EntityWithJsonb;
 import io.github.perplexhub.rsql.model.JsonbEntity;
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
+import io.github.perplexhub.rsql.repository.jpa.postgres.AnotherJsonbEntityRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.EntityWithJsonbRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.JsonbEntityRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,6 +46,9 @@ class RSQLJPASupportPostgresJsonTest {
 
     @Autowired
     private JsonbEntityRepository jsonbEntityRepository;
+
+    @Autowired
+    private AnotherJsonbEntityRepository anotherJsonbEntityRepository;
 
     @BeforeEach
     void setup(@Autowired EntityManager em) {
@@ -736,5 +742,17 @@ class RSQLJPASupportPostgresJsonTest {
                 .containsExactlyInAnyOrderElementsOf(expected);
 
         entities.forEach(e -> e.setId(null));
+    }
+
+    @Test
+    void testAlternateJsonColumnDefinitions() {
+        anotherJsonbEntityRepository.saveAllAndFlush(List.of(
+                AnotherJsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\":\"b\",\"c\":1}").other("{\"d\":\"e\"}").build(),
+                AnotherJsonbEntity.builder().id(UUID.randomUUID()).data("{\"a\":\"q\",\"c\":2}").other("{\"d\":\"h\"}").build()
+        ));
+        assertThat(anotherJsonbEntityRepository.findAll(toSpecification("data.a==b"))).hasSize(1);
+        assertThat(anotherJsonbEntityRepository.findAll(toSpecification("other.d==h"))).hasSize(1);
+        assertThat(anotherJsonbEntityRepository.findAll(toSpecification("generated.a==b"))).hasSize(1);
+        assertThat(anotherJsonbEntityRepository.findAll(toSpecification("formula.c==1"))).hasSize(1);;
     }
 }
