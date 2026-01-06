@@ -1,7 +1,6 @@
-package io.github.perplexhub.rsql.jsonb;
+package io.github.perplexhub.rsql;
 
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import io.github.perplexhub.rsql.RSQLOperators;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

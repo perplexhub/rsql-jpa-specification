@@ -1,4 +1,4 @@
-package io.github.perplexhub.rsql.jsonb;
+package io.github.perplexhub.rsql;
 
 
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
@@ -8,12 +8,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.github.perplexhub.rsql.RSQLOperators.*;
-import static io.github.perplexhub.rsql.jsonb.JsonbSupport.*;
+import static io.github.perplexhub.rsql.JsonbSupport.*;
 
 /**
  * Builds a jsonb expression for a given keyPath and operator.
  */
-public class JsonbExpressionBuilder {
+final class JsonbExpressionBuilder {
 
     private final JsonbConfiguration configuration;
 

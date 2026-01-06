@@ -1,6 +1,5 @@
 package io.github.perplexhub.rsql;
 
-import io.github.perplexhub.rsql.jsonb.JsonbConfiguration;
 import io.github.perplexhub.rsql.model.AnotherJsonbEntity;
 import io.github.perplexhub.rsql.model.EntityWithJsonb;
 import io.github.perplexhub.rsql.model.JsonbEntity;

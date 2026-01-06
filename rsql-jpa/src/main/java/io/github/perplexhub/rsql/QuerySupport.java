@@ -1,6 +1,5 @@
 package io.github.perplexhub.rsql;
 
-import io.github.perplexhub.rsql.jsonb.JsonbConfiguration;
 import lombok.Builder;
 import lombok.Data;
 

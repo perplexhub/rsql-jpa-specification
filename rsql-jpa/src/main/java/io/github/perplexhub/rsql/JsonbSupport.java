@@ -1,5 +1,4 @@
-package io.github.perplexhub.rsql.jsonb;
-
+package io.github.perplexhub.rsql;
 
 import static io.github.perplexhub.rsql.RSQLVisitorBase.getEntityManagerMap;
 
@@ -12,9 +11,6 @@ import java.util.Set;
 
 import cz.jirutka.rsql.parser.ast.ComparisonNode;
 import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import io.github.perplexhub.rsql.RSQLOperators;
-import io.github.perplexhub.rsql.RSQLVisitorBase;
-import io.github.perplexhub.rsql.ResolvedExpression;
 import jakarta.persistence.Column;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
@@ -23,15 +19,11 @@ import jakarta.persistence.metamodel.ManagedType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.orm.jpa.vendor.Database;
-import org.springframework.util.ClassUtils;
 
 /**
  * Support for jsonb expression.
  */
-public class JsonbSupport {
-
-    private static final boolean isHibernatePresent = ClassUtils.isPresent(
-            "org.hibernate.annotations.JdbcTypeCode", JsonbSupport.class.getClassLoader());
+final class JsonbSupport {
 
     private static final Set<Database> JSON_SUPPORT = EnumSet.of(Database.POSTGRESQL);
 
@@ -44,6 +36,9 @@ public class JsonbSupport {
                     RSQLOperators.IGNORE_CASE_NOT_LIKE, RSQLOperators.IGNORE_CASE_LIKE,
                     RSQLOperators.NOT_BETWEEN, RSQLOperators.BETWEEN
             );
+
+    private JsonbSupport() {
+    }
 
     /**
      * Returns the jsonb path for the given attribute path and selector.<br>
@@ -129,7 +124,7 @@ public class JsonbSupport {
      * @return true if the column is a jsonb column
      */
     private static boolean isJdbcTypeCodeJson(Attribute<?, ?> attribute) {
-        return isHibernatePresent && getFieldAnnotation(attribute, JdbcTypeCode.class)
+        return HibernateSupport.isHibernatePresent() && getFieldAnnotation(attribute, JdbcTypeCode.class)
                 .map(JdbcTypeCode::value)
                 .map(code -> SqlTypes.JSON == code)
                 .orElse(false);
@@ -141,7 +136,6 @@ public class JsonbSupport {
                 .map(attr -> ((Field) attr.getJavaMember()))
                 .map(field -> field.getAnnotation(annotationClass));
     }
-
 
     /**
      * Returns the database of the given attribute.

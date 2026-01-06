@@ -14,6 +14,10 @@ final class HibernateSupport {
   private HibernateSupport() {
   }
 
+  static boolean isHibernatePresent() {
+    return isHibernatePresent;
+  }
+
   static boolean isHibernateCriteriaBuilder(CriteriaBuilder cb) {
     return isHibernatePresent && cb instanceof HibernateCriteriaBuilder;
   }
