@@ -85,6 +85,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
         this.jsonbConfiguration = jsonbConfiguration;
 	}
 
+	private static <X> Path<X> getPath(Path<X> path, String attribute) {
+		return HibernateSupport.isHibernatePath(path)
+				? HibernateSupport.getPathIncludeSubtypes(path, attribute)
+				: path.get(attribute);
+	}
+
 	RSQLJPAContext findPropertyPath(String propertyPath, Path startRoot) {
         return findPropertyPathInternal(propertyPath, startRoot, true);
 	}
@@ -145,7 +151,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					}
 					if (lookAheadPropertyIsId || lookAheadProperty == null) {
 						log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
-						root = root.get(mappedProperty);
+						root = getPath(root, mappedProperty);
 					} else {
 						log.debug("Create a join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
 						root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
@@ -159,12 +165,12 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					log.debug("Create a element collection join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
 					root = join(keyJoin, root, mappedProperty, joinHints.get(keyJoin));
 				} else if (JsonbSupport.isJsonType(mappedProperty, classMetadata)) {
-					root = root.get(mappedProperty);
+					root = getPath(root, mappedProperty);
 					attribute = RSQLVisitorBase.getAttribute(mappedProperty, classMetadata);
 					break;
 				} else {
 					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
-					root = root.get(mappedProperty);
+					root = getPath(root, mappedProperty);
 
 					if (isEmbeddedType(mappedProperty, classMetadata)) {
 						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);

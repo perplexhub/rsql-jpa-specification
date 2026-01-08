@@ -2,8 +2,10 @@ package io.github.perplexhub.rsql;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.sqm.tree.domain.SqmPath;
 import org.springframework.util.ClassUtils;
 
 final class HibernateSupport {
@@ -32,5 +34,17 @@ final class HibernateSupport {
     return escapeChar != null
         ? hcb.ilike(expression, pattern, escapeChar)
         : hcb.ilike(expression, pattern);
+  }
+
+  static boolean isHibernatePath(Path<?> path) {
+    return isHibernatePresent && path instanceof SqmPath<?>;
+  }
+
+  static <X> Path<X> getPathIncludeSubtypes(Path<X> path, String attributeName) {
+    var sqmPath = ((SqmPath<X>) path).get(attributeName, true);
+    @SuppressWarnings("unchecked")
+    var result = (Path<X>) sqmPath;
+
+    return result;
   }
 }

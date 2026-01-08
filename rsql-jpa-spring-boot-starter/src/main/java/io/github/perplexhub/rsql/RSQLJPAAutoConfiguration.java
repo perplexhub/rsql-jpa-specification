@@ -12,12 +12,11 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
-import org.hibernate.dialect.AbstractHANADialect;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
-import org.hibernate.dialect.DerbyDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.H2Dialect;
+import org.hibernate.dialect.HANADialect;
 import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
@@ -80,13 +79,11 @@ public class RSQLJPAAutoConfiguration {
         return Database.SQL_SERVER;
       } else if (dialect instanceof OracleDialect) {
         return Database.ORACLE;
-      } else if (dialect instanceof DerbyDialect) {
-        return Database.DERBY;
       } else if (dialect instanceof DB2Dialect) {
         return Database.DB2;
       } else if (dialect instanceof H2Dialect) {
         return Database.H2;
-      } else if (dialect instanceof AbstractHANADialect) {
+      } else if (dialect instanceof HANADialect) {
         return Database.HANA;
       } else if (dialect instanceof HSQLDialect) {
         return Database.HSQL;
