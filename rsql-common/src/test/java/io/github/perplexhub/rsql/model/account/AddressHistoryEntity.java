@@ -1,5 +1,6 @@
 package io.github.perplexhub.rsql.model.account;
 
+import jakarta.persistence.AssociationOverride;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -35,11 +36,13 @@ public class AddressHistoryEntity {
     @Embedded
     @AttributeOverride(name = "name", column = @Column(name = "invoice_name"))
     @AttributeOverride(name = "address", column = @Column(name = "invoice_address"))
+    @AssociationOverride(name = "city", joinColumns = @JoinColumn(name = "invoice_cityId", referencedColumnName = "id"))
     AddressEntity invoiceAddress;
 
     @Embedded
     @AttributeOverride(name = "name", column = @Column(name = "shipping_name"))
     @AttributeOverride(name = "address", column = @Column(name = "shipping_address"))
+    @AssociationOverride(name = "city", joinColumns = @JoinColumn(name = "shipping_cityId", referencedColumnName = "id"))
     AddressEntity shippingAddress;
 
     public AddressHistoryEntity() {

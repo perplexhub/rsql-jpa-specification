@@ -162,17 +162,18 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					root = root.get(mappedProperty);
 					attribute = RSQLVisitorBase.getAttribute(mappedProperty, classMetadata);
 					break;
+				} else if (isEmbeddedType(mappedProperty, classMetadata)) {
+					String previousClass = classMetadata.getJavaType().getName();
+					String keyJoin = getKeyJoin(root, mappedProperty);
+					Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
+					type = embeddedType;
+					classMetadata = getManagedType(embeddedType);
+					log.debug("Create a embedded join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+					root = join(keyJoin, root, mappedProperty, null);
 				} else {
 					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
 					root = root.get(mappedProperty);
-
-					if (isEmbeddedType(mappedProperty, classMetadata)) {
-						Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
-						type = embeddedType;
-						classMetadata = getManagedType(embeddedType);
-					} else {
-						attribute = RSQLVisitorBase.getAttribute(property, classMetadata);
-					}
+					attribute = RSQLVisitorBase.getAttribute(property, classMetadata);
 				}
 			}
 		}

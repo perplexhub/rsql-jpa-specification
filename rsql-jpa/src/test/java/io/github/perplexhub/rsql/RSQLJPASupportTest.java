@@ -18,6 +18,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import io.github.perplexhub.rsql.custom.CustomType;
+import io.github.perplexhub.rsql.model.City;
 import io.github.perplexhub.rsql.model.Project;
 import io.github.perplexhub.rsql.model.AdminProject;
 import io.github.perplexhub.rsql.model.account.AccountEntity;
@@ -28,6 +29,7 @@ import io.github.perplexhub.rsql.repository.jpa.AdminProjectRepository;
 import io.github.perplexhub.rsql.repository.jpa.ProjectRepository;
 import io.github.perplexhub.rsql.repository.jpa.custom.CustomTypeRepository;
 import io.github.perplexhub.rsql.custom.EntityWithCustomType;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -45,6 +47,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
@@ -82,6 +85,9 @@ class RSQLJPASupportTest {
 
 	@Autowired
 	AccountRepository accountRepository;
+
+    @Autowired
+	EntityManager em;
 
 	@BeforeAll
 	static void beforeAll() {
@@ -1483,7 +1489,55 @@ class RSQLJPASupportTest {
 		Assertions.assertThat(result).hasSize(1);
 	}
 
-	@BeforeEach
+    @Test
+    @Transactional
+    @Rollback(true)
+    void testSearchByEmbeddedAssociationAttribute() {
+        // Given
+        City city1 = new City(101,"Praha", null);
+        em.persist(city1);
+		City city2 = new City(102,"Brno", null);
+		em.persist(city2);
+        AccountEntity account1 = new AccountEntity("account-ident-1");
+        account1.setAddressHistory(
+                List.of(
+                        new AddressHistoryEntity(
+                                account1,
+                                OffsetDateTime.of(2024, 7, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+                                new AddressEntity("Name 1", "some address 1", city1),
+                                new AddressEntity("Name 1", "some other address 2")),
+                        new AddressHistoryEntity(
+                                account1,
+                                OffsetDateTime.of(1900, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+                                new AddressEntity("Name 1", "old address 1", city2),
+                                new AddressEntity("Name 1", "old address 1"))));
+        accountRepository.save(account1);
+		AccountEntity account2 = new AccountEntity("account-ident-2");
+		account2.setAddressHistory(
+				List.of(
+						new AddressHistoryEntity(
+								account2,
+								OffsetDateTime.of(2024, 7, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+								new AddressEntity("Name 1", "some address 1", null),
+								new AddressEntity("Name 1", "some other address 2"))));
+		accountRepository.save(account2);
+        // When
+        List<AccountEntity> result = accountRepository.findAll(RSQLJPASupport.rsql("addressHistory.invoiceAddress.city.name=='Praha'"));
+        // Then
+        Assertions.assertThat(result).hasSize(1);
+
+		// When
+		List<AccountEntity> result1 = accountRepository.findAll(RSQLJPASupport.toSpecification(QuerySupport.builder()
+				.rsqlQuery("addressHistory.invoiceAddress.city.name=isnull=")
+						.joinHints(Map.of(
+								"AddressEntity.city", JoinType.LEFT
+						))
+				.build()));
+		// Then
+		Assertions.assertThat(result1).hasSize(1);
+    }
+
+    @BeforeEach
 	void setUp() {
 		getPropertyWhitelist().clear();
 		getPropertyBlacklist().clear();
