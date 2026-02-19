@@ -58,7 +58,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		Path path = entityClass;
 		ManagedType<?> classMetadata = getManagedType(path.getType());
 		Attribute<?, ?> attribute = null;
-		String mappedPropertyPath = "";
+		StringBuilder mappedPropertyPath = new StringBuilder();
 
 		String[] properties = propertyPath.split("\\.");
 
@@ -67,7 +67,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			if (!mappedProperty.equals(property)) {
 				RSQLQueryDslContext holder = findPropertyPath(mappedProperty, path);
 				attribute = holder.getAttribute();
-				mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + holder.getPropertyPath();
+				mappedPropertyPath.append(mappedPropertyPath.length() > 0 ? "." : "").append(holder.getPropertyPath());
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
 					throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
@@ -82,7 +82,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					if (path instanceof CollectionPathBase) {
 						path = (Path) ((CollectionPathBase) path).any();
 					}
-					mappedPropertyPath = "";
+					mappedPropertyPath = new StringBuilder();
 				} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 					String previousClass = classMetadata.getJavaType().getName();
 					attribute = classMetadata.getAttribute(property);
@@ -99,7 +99,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 						if (path instanceof CollectionPathBase) {
 							path = (Path) ((CollectionPathBase) path).any();
 						}
-						mappedPropertyPath = "";
+						mappedPropertyPath = new StringBuilder();
 					}
 				} else {
 					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
@@ -109,7 +109,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					} else {
 						attribute = classMetadata.getAttribute(property);
 					}
-					mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + mappedProperty;
+					mappedPropertyPath.append((!mappedPropertyPath.isEmpty()) ? "." : "").append(mappedProperty);
 				}
 			}
 		}
@@ -118,7 +118,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			accessControl(path.getType(), attribute.getName());
 		}
 
-		return RSQLQueryDslContext.of(mappedPropertyPath, attribute, path);
+		return RSQLQueryDslContext.of(mappedPropertyPath.toString(), attribute, path);
 	}
 
 	@Override
