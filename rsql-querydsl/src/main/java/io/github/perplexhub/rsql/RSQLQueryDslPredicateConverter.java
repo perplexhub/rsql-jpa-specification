@@ -1,6 +1,22 @@
 package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.RSQLOperators.*;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CollectionPathBase;
+import com.querydsl.core.types.dsl.ComparableEntityPath;
+import com.querydsl.core.types.dsl.EnumPath;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringExpression;
+import cz.jirutka.rsql.parser.ast.AndNode;
+import cz.jirutka.rsql.parser.ast.ComparisonNode;
+import cz.jirutka.rsql.parser.ast.ComparisonOperator;
+import cz.jirutka.rsql.parser.ast.OrNode;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
+import jakarta.persistence.metamodel.ManagedType;
+import lombok.Getter;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,20 +24,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
-import jakarta.persistence.metamodel.ManagedType;
-
-import com.querydsl.core.types.Path;
-import com.querydsl.core.types.dsl.*;
-
-import cz.jirutka.rsql.parser.ast.AndNode;
-import cz.jirutka.rsql.parser.ast.ComparisonNode;
-import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import cz.jirutka.rsql.parser.ast.OrNode;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import static io.github.perplexhub.rsql.RSQLOperators.BETWEEN;
+import static io.github.perplexhub.rsql.RSQLOperators.EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.GREATER_THAN;
+import static io.github.perplexhub.rsql.RSQLOperators.GREATER_THAN_OR_EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.IGNORE_CASE;
+import static io.github.perplexhub.rsql.RSQLOperators.IGNORE_CASE_LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.IGNORE_CASE_NOT_LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.IN;
+import static io.github.perplexhub.rsql.RSQLOperators.IS_NULL;
+import static io.github.perplexhub.rsql.RSQLOperators.LESS_THAN;
+import static io.github.perplexhub.rsql.RSQLOperators.LESS_THAN_OR_EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_BETWEEN;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_IN;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_NULL;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
