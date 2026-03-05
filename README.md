@@ -8,9 +8,11 @@
 Translate RSQL query into org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate and support entities association query.
 
 ## SpringBoot 4 Support
-rsql-jpa-specification supports SpringBoot 4 since version 7.x.
+rsql-jpa-specification supports SpringBoot 4 since version 7.x. [![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql?filter=7.*)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
+
 
 For SpringBoot 2 users, please continue to use [version 5.x](https://github.com/perplexhub/rsql-jpa-specification/tree/5.x). [![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql?filter=5.*)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
+
 For SpringBoot 3 users, please continue to use [version 6.x](https://github.com/perplexhub/rsql-jpa-specification/tree/6.x). [![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql?filter=6.*)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
 
 
