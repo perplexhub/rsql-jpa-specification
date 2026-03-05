@@ -7,10 +7,11 @@
 
 Translate RSQL query into org.springframework.data.jpa.domain.Specification or com.querydsl.core.types.Predicate and support entities association query.
 
-## SpringBoot 3 Support
-rsql-jpa-specification supports SpringBoot 3 since version 6.x. (Contributed by [chriseteka](https://github.com/chriseteka))
+## SpringBoot 4 Support
+rsql-jpa-specification supports SpringBoot 4 since version 7.x.
 
 For SpringBoot 2 users, please continue to use [version 5.x](https://github.com/perplexhub/rsql-jpa-specification/tree/5.x). [![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql?filter=5.*)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
+For SpringBoot 3 users, please continue to use [version 6.x](https://github.com/perplexhub/rsql-jpa-specification/tree/6.x). [![Maven Central (Releases)](https://img.shields.io/maven-central/v/io.github.perplexhub/rsql?filter=6.*)](https://central.sonatype.com/search?q=io.github.perplexhub+rsql)
 
 
 [Supported Operators](https://github.com/perplexhub/rsql-jpa-specification/blob/master/rsql-common/src/main/java/io/github/perplexhub/rsql/RSQLOperators.java)
@@ -101,8 +102,8 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
 ```xml
   <properties>
-    <spring-boot.version>3.0.0</spring-boot.version>
-    <spring-data-releasetrain.version>2022.0.0</spring-data-releasetrain.version>
+    <spring-boot.version>4.0.3</spring-boot.version>
+    <spring-data-releasetrain.version>2025.1.3</spring-data-releasetrain.version>
     <querydsl.version>4.1.4</querydsl.version>
   </properties>
 ```
