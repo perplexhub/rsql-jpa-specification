@@ -8,6 +8,7 @@ import jakarta.persistence.metamodel.Attribute;
 import org.hibernate.metamodel.model.domain.SingularPersistentAttribute;
 import org.hibernate.query.sqm.tree.domain.SqmSingularJoin;
 
+import org.hibernate.query.sqm.tree.domain.SqmSingularPersistentAttribute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -58,7 +59,7 @@ class JoinUtilsTest {
 
     @Test
     void testGetOrCreateJoinReturnsJoinWhenFetchExists() {
-        final Attribute<?, ?> attribute = mock(SingularPersistentAttribute.class);
+        final Attribute<?, ?> attribute = mock(SqmSingularPersistentAttribute.class);
         when(attribute.getName()).thenReturn(ATTRIBUTE);
 
         final Fetch<?, ?> fetch = mock(SqmSingularJoin.class);
@@ -76,7 +77,7 @@ class JoinUtilsTest {
 
     @Test
     void testGetOrCreateJoinReturnsJoinOfTypeWhenFetchExists() {
-        final Attribute<?, ?> attribute = mock(SingularPersistentAttribute.class);
+        final Attribute<?, ?> attribute = mock(SqmSingularPersistentAttribute.class);
         when(attribute.getName()).thenReturn(ATTRIBUTE);
 
         final Fetch<?, ?> fetch = mock(SqmSingularJoin.class);
