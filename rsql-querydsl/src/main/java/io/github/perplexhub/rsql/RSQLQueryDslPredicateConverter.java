@@ -1,6 +1,22 @@
 package io.github.perplexhub.rsql;
 
-import static io.github.perplexhub.rsql.RSQLOperators.*;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CollectionPathBase;
+import com.querydsl.core.types.dsl.ComparableEntityPath;
+import com.querydsl.core.types.dsl.EnumPath;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringExpression;
+import cz.jirutka.rsql.parser.ast.AndNode;
+import cz.jirutka.rsql.parser.ast.ComparisonNode;
+import cz.jirutka.rsql.parser.ast.ComparisonOperator;
+import cz.jirutka.rsql.parser.ast.OrNode;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
+import jakarta.persistence.metamodel.ManagedType;
+import lombok.Getter;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,20 +24,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.metamodel.Attribute;
-import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
-import jakarta.persistence.metamodel.ManagedType;
-
-import com.querydsl.core.types.Path;
-import com.querydsl.core.types.dsl.*;
-
-import cz.jirutka.rsql.parser.ast.AndNode;
-import cz.jirutka.rsql.parser.ast.ComparisonNode;
-import cz.jirutka.rsql.parser.ast.ComparisonOperator;
-import cz.jirutka.rsql.parser.ast.OrNode;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import static io.github.perplexhub.rsql.RSQLOperators.BETWEEN;
+import static io.github.perplexhub.rsql.RSQLOperators.EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.GREATER_THAN;
+import static io.github.perplexhub.rsql.RSQLOperators.GREATER_THAN_OR_EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.IGNORE_CASE;
+import static io.github.perplexhub.rsql.RSQLOperators.IGNORE_CASE_LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.IGNORE_CASE_NOT_LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.IN;
+import static io.github.perplexhub.rsql.RSQLOperators.IS_NULL;
+import static io.github.perplexhub.rsql.RSQLOperators.LESS_THAN;
+import static io.github.perplexhub.rsql.RSQLOperators.LESS_THAN_OR_EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_BETWEEN;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_EQUAL;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_IN;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_LIKE;
+import static io.github.perplexhub.rsql.RSQLOperators.NOT_NULL;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -39,7 +58,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 		Path path = entityClass;
 		ManagedType<?> classMetadata = getManagedType(path.getType());
 		Attribute<?, ?> attribute = null;
-		String mappedPropertyPath = "";
+		StringBuilder mappedPropertyPath = new StringBuilder();
 
 		String[] properties = propertyPath.split("\\.");
 
@@ -48,7 +67,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			if (!mappedProperty.equals(property)) {
 				RSQLQueryDslContext holder = findPropertyPath(mappedProperty, path);
 				attribute = holder.getAttribute();
-				mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + holder.getPropertyPath();
+				mappedPropertyPath.append(mappedPropertyPath.length() > 0 ? "." : "").append(holder.getPropertyPath());
 			} else {
 				if (!hasPropertyName(mappedProperty, classMetadata)) {
 					throw new UnknownPropertyException(mappedProperty, classMetadata.getJavaType());
@@ -63,7 +82,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					if (path instanceof CollectionPathBase) {
 						path = (Path) ((CollectionPathBase) path).any();
 					}
-					mappedPropertyPath = "";
+					mappedPropertyPath = new StringBuilder();
 				} else if (isElementCollectionType(mappedProperty, classMetadata)) {
 					String previousClass = classMetadata.getJavaType().getName();
 					attribute = classMetadata.getAttribute(property);
@@ -80,7 +99,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 						if (path instanceof CollectionPathBase) {
 							path = (Path) ((CollectionPathBase) path).any();
 						}
-						mappedPropertyPath = "";
+						mappedPropertyPath = new StringBuilder();
 					}
 				} else {
 					log.debug("Create property path for type [{}] property [{}].", classMetadata.getJavaType().getName(), mappedProperty);
@@ -90,7 +109,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 					} else {
 						attribute = classMetadata.getAttribute(property);
 					}
-					mappedPropertyPath += (mappedPropertyPath.length() > 0 ? "." : "") + mappedProperty;
+					mappedPropertyPath.append((!mappedPropertyPath.isEmpty()) ? "." : "").append(mappedProperty);
 				}
 			}
 		}
@@ -99,7 +118,7 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 			accessControl(path.getType(), attribute.getName());
 		}
 
-		return RSQLQueryDslContext.of(mappedPropertyPath, attribute, path);
+		return RSQLQueryDslContext.of(mappedPropertyPath.toString(), attribute, path);
 	}
 
 	@Override
