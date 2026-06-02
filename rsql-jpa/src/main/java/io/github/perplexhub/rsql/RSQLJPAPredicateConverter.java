@@ -266,13 +266,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					ComparisonNode jsonbNode = node.withSelector(jsonbPath);
 					return JsonbSupport.jsonbPathExistsExpression(builder, jsonbNode, path, jsonbConfiguration);
 				} else {
-					final Expression expression;
-					if (path instanceof JpaExpression jpaExpression) {
-						expression = jpaExpression.cast(String.class);
-					} else {
-						expression = path.as(String.class);
-					}
-					return ResolvedExpression.ofPath(expression, String.class);
+					return ResolvedExpression.ofPath(textualExpression(path), String.class);
 				}
 			} else {
 				if (attribute != null
@@ -350,7 +344,8 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 			if (op.equals(NOT_NULL)) {
 				return builder.isNotNull(expression);
 			}
-			Object argument = convert(arguments.get(0), type);
+			boolean preserveTextualArgument = preservesTextualArgument(op);
+			Object argument = preserveTextualArgument ? arguments.get(0) : convert(arguments.get(0), type);
 			if (op.equals(IN)) {
 				return builder.equal(expression, argument);
 			}
@@ -364,7 +359,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 				return likePredicate(expression, argument, false).not();
 			}
 			if (op.equals(IGNORE_CASE)) {
-				return builder.equal(builder.upper(expression), argument.toString().toUpperCase());
+				return ignoreCasePredicate(expression, argument);
 			}
 			if (op.equals(IGNORE_CASE_LIKE)) {
 				return likePredicate(expression, argument, true);
@@ -402,6 +397,15 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 	}
 
 	/**
+	 * Operators that compare the textual representation of an expression must keep their
+	 * RSQL argument raw instead of converting it to the expression's Java type first.
+	 */
+	static boolean preservesTextualArgument(ComparisonOperator op) {
+		return op.equals(LIKE) || op.equals(NOT_LIKE) || op.equals(IGNORE_CASE)
+				|| op.equals(IGNORE_CASE_LIKE) || op.equals(IGNORE_CASE_NOT_LIKE);
+	}
+
+	/**
 	 * Convert a like expression to a like predicate
 	 *
 	 * @param attributePath The attribute path
@@ -416,7 +420,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 
 	private Predicate likePredicate(Expression<?> expression, Object argument, boolean ignoreCase) {
 		String argToUse = String.valueOf(argument);
-		Expression<String> strExpression = expression.as(String.class);
+		Expression<String> strExpression = textualExpression(expression);
 		if (ignoreCase) {
 			if (HibernateSupport.isHibernateCriteriaBuilder(builder)) {
 				return HibernateSupport.ilike(builder, strExpression, argToUse, likeEscapeCharacter);
@@ -426,6 +430,20 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		}
 		
 		return likePredicate(strExpression, "%" + argToUse + "%", builder);
+	}
+
+	private Predicate ignoreCasePredicate(Expression<?> expression, Object argument) {
+		Expression<String> strExpression = textualExpression(expression);
+		String argToUse = String.valueOf(argument);
+
+		return builder.equal(builder.upper(strExpression), argToUse.toUpperCase(Locale.ROOT));
+	}
+
+	private Expression<String> textualExpression(Expression<?> expression) {
+		if (expression instanceof JpaExpression<?> jpaExpression) {
+			return jpaExpression.cast(String.class);
+		}
+		return expression.as(String.class);
 	}
 
 	private Predicate equalPredicate(Expression expr, Class type, Object argument) {

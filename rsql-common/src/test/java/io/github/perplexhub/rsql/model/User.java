@@ -2,6 +2,7 @@ package io.github.perplexhub.rsql.model;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.persistence.*;
 
@@ -21,6 +22,8 @@ public class User {
 	private Integer id;
 
 	private String name;
+
+	private UUID externalId;
 
 	@ManyToOne
 	@JoinColumn(name = "companyId", referencedColumnName = "id")

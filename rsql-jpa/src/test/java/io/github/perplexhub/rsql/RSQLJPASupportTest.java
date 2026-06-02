@@ -41,6 +41,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -172,6 +173,42 @@ class RSQLJPASupportTest {
 		log.info("rsql: {} -> count: {}", querySupport.getRsqlQuery(), count);
 		assertThat(querySupport.getRsqlQuery(), count, is(1L));
 		assertThat(querySupport.getRsqlQuery(), users.get(0).getName(), equalTo("February"));
+	}
+
+	@Test
+	final void testLikeOnUuidField() {
+		String rsql = "externalId=like='1111-4111'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+		assertThat(rsql, users.get(0).getExternalId(), equalTo(UUID.fromString("11111111-1111-4111-8111-111111111111")));
+	}
+
+	@Test
+	final void testIgnoreCaseLikeOnUuidField() {
+		String rsql = "externalId=ilike='AAAAAAAA'";
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(1L));
+		assertThat(rsql, users.get(0).getExternalId(), equalTo(UUID.fromString("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")));
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"=like=,1111-4111,1",
+			"=notlike=,1111-4111,1",
+			"=icase=,AAAAAAAA,0",
+			"=ilike=,AAAAAAAA,1",
+			"=inotlike=,AAAAAAAA,1"
+	})
+	final void testTextualOperatorsPreserveRsqlArgumentOnUuidField(String operator, String value, long expectedCount) {
+		String rsql = String.format("externalId%s'%s'", operator, value);
+		List<User> users = userRepository.findAll(toSpecification(rsql));
+		long count = users.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(expectedCount));
 	}
 
 	@Test

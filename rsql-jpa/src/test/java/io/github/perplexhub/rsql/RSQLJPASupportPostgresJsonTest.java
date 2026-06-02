@@ -4,10 +4,12 @@ import io.github.perplexhub.rsql.model.AnotherJsonbEntity;
 import io.github.perplexhub.rsql.model.EntityWithJsonb;
 import io.github.perplexhub.rsql.model.JsonbEntity;
 import io.github.perplexhub.rsql.model.PostgresJsonEntity;
+import io.github.perplexhub.rsql.model.User;
 import io.github.perplexhub.rsql.repository.jpa.postgres.AnotherJsonbEntityRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.EntityWithJsonbRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.JsonbEntityRepository;
 import io.github.perplexhub.rsql.repository.jpa.postgres.PostgresJsonEntityRepository;
+import io.github.perplexhub.rsql.repository.jpa.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,9 @@ class RSQLJPASupportPostgresJsonTest {
     @Autowired
     private AnotherJsonbEntityRepository anotherJsonbEntityRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @BeforeEach
     void setup(@Autowired EntityManager em) {
         RSQLVisitorBase.setEntityManagerDatabase(Map.of(em, Database.POSTGRESQL));
@@ -62,10 +67,32 @@ class RSQLJPASupportPostgresJsonTest {
     }
 
     private void clear() {
+        userRepository.deleteAll();
+        userRepository.flush();
         repository.deleteAll();
         repository.flush();
         entityWithJsonbRepository.deleteAll();
         entityWithJsonbRepository.flush();
+        jsonbEntityRepository.deleteAll();
+        jsonbEntityRepository.flush();
+        anotherJsonbEntityRepository.deleteAll();
+        anotherJsonbEntityRepository.flush();
+    }
+
+    @Test
+    void testLikeOnUuidFieldWithExactUuid() {
+        UUID externalId = UUID.fromString("11111111-1111-4111-8111-111111111111");
+        User user = new User();
+        user.setName("January");
+        user.setExternalId(externalId);
+        userRepository.saveAndFlush(user);
+
+        List<User> result = userRepository.findAll(toSpecification("externalId=like='11111111-1111-4111-8111-111111111111'"));
+
+        assertThat(result)
+                .hasSize(1)
+                .extracting(User::getExternalId)
+                .containsExactly(externalId);
     }
 
     @ParameterizedTest

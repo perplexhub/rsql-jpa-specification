@@ -1,4 +1,4 @@
-insert into users(id, name, company_id, create_date, status, city_id) values(1, 'January', 1, '2018-01-01', 'STARTED', 1);
+insert into users(id, name, company_id, create_date, status, city_id, external_id) values(1, 'January', 1, '2018-01-01', 'STARTED', 1, '11111111-1111-4111-8111-111111111111');
 insert into users(id, name, company_id, create_date, status, city_id) values(2, 'February', 1, '2018-02-01', 'STARTED', 2);
 insert into users(id, name, company_id, create_date, status, city_id) values(3, 'March', 2, '2018-03-01', 'STARTED', 3);
 insert into users(id, name, company_id, create_date, status) values(4, 'April', 2, '2018-04-01', 'STARTED');
@@ -7,6 +7,6 @@ insert into users(id, name, company_id, create_date, status) values(6, 'June', 2
 insert into users(id, name, company_id, create_date, status) values(7, 'July', 3, '2018-07-01', 'ACTIVE');
 insert into users(id, name, company_id, create_date, status) values(8, 'August', 3, '2018-08-01', 'ACTIVE');
 insert into users(id, name, company_id, create_date, status) values(9, 'September', 4, '2018-09-01', 'ACTIVE');
-insert into users(id, name, company_id, create_date, status) values(10, 'October', 5, '2018-10-01', 'FINISHED');
+insert into users(id, name, company_id, create_date, status, external_id) values(10, 'October', 5, '2018-10-01', 'FINISHED', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 insert into users(id, name, company_id, create_date, status) values(11, 'November', 5, '2018-11-01', 'FINISHED');
 insert into users(id, name, company_id, create_date, status) values(12, 'December', 5, '2018-12-01', 'CANCELLED');
