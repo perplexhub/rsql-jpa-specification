@@ -5,6 +5,7 @@ import java.util.Properties;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.core.convert.ConversionService;
 import org.springframework.util.StringUtils;
 
 import com.querydsl.core.types.Path;
@@ -30,11 +31,15 @@ public class RSQLQueryDslSupport extends RSQLJPASupport {
 	}
 
 	public static BooleanExpression toPredicate(final String rsqlQuery, final Path qClazz, final Map<String, String> propertyPathMapper) {
+		return toPredicate(rsqlQuery, qClazz, propertyPathMapper, null);
+	}
+
+	public static BooleanExpression toPredicate(final String rsqlQuery, final Path qClazz, final Map<String, String> propertyPathMapper, final ConversionService conversionService) {
 		log.debug("toPredicate({},qClazz:{},propertyPathMapper:{})", rsqlQuery, qClazz);
 		if (StringUtils.hasText(rsqlQuery)) {
 			return new RSQLParser(RSQLOperators.supportedOperators())
 					.parse(rsqlQuery)
-					.accept(new RSQLQueryDslPredicateConverter(propertyPathMapper), qClazz);
+					.accept(new RSQLQueryDslPredicateConverter(propertyPathMapper, conversionService), qClazz);
 		} else {
 			return null;
 		}

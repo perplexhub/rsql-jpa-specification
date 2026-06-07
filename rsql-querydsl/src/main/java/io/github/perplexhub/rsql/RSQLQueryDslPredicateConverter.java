@@ -22,6 +22,7 @@ import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionService;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -30,8 +31,13 @@ public class RSQLQueryDslPredicateConverter extends RSQLVisitorBase<BooleanExpre
 	private final @Getter Map<String, String> propertyPathMapper;
 
 	public RSQLQueryDslPredicateConverter(Map<String, String> propertyPathMapper) {
+		this(propertyPathMapper, null);
+	}
+
+	public RSQLQueryDslPredicateConverter(Map<String, String> propertyPathMapper, ConversionService conversionService) {
 		super();
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
+		setConversionService(conversionService);
 	}
 
 	@SneakyThrows
