@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,8 @@ class RSQLQueryDslSupportTest {
 		when(conversionService.convert("1", Integer.class)).thenReturn(2);
 
 		String rsql = "id==1";
-		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user, null, conversionService));
+		List<User> users = new ArrayList<>();
+		userRepository.findAll(toPredicate(rsql, QUser.user, null, conversionService)).forEach(users::add);
 
 		assertThat(rsql, users.size(), is(1));
 		assertThat(rsql, users.get(0).getId(), equalTo(2));
