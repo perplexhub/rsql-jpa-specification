@@ -38,6 +38,11 @@ class RSQLVisitorBaseTest {
     RSQLVisitorBase.setDefaultConversionService(new DefaultConversionService());
   }
 
+  @AfterEach
+  void resetDefaultConversionService() {
+    RSQLVisitorBase.setDefaultConversionService(new DefaultConversionService());
+  }
+
   @Test
   void testConversionException() {
     assertThatExceptionOfType(ConversionException.class)
