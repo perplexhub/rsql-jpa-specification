@@ -252,6 +252,8 @@ repository.findAll(toPredicate(filter, QUser.user, propertyPathMapper), pageable
 
 ## Custom Value Converter
 
+Converters registered with `addConverter` are stored in the library-wide conversion service and are shared by the JVM.
+
 ```java
 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 RSQLJPASupport.addConverter(Date.class, s -> {
@@ -261,6 +263,24 @@ RSQLJPASupport.addConverter(Date.class, s -> {
 		return null;
 	}
 });
+```
+
+## Per-query ConversionService
+
+For applications that need isolated conversion rules, `QuerySupport` can carry a Spring `ConversionService` used only for that query. If no per-query service is supplied, RSQL keeps using the global converters registered through `RSQLJPASupport.addConverter(...)`.
+
+```java
+Specification<User> spec = RSQLJPASupport.toSpecification(QuerySupport.builder()
+	.rsqlQuery("createdAt==2026-06-06")
+	.conversionService(applicationConversionService)
+	.build());
+```
+
+QueryDSL predicates can receive the same per-query service through the four-argument overload:
+
+```java
+BooleanExpression predicate = RSQLQueryDslSupport.toPredicate(
+	filter, QUser.user, propertyPathMapper, applicationConversionService);
 ```
 
 ## Custom Operator & Predicate
