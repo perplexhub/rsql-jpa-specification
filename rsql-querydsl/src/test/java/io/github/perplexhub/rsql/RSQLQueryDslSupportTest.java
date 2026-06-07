@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import java.util.HashMap;
@@ -15,6 +17,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.convert.ConversionService;
 
 import io.github.perplexhub.rsql.model.*;
 import io.github.perplexhub.rsql.repository.querydsl.CompanyRepository;
@@ -34,6 +37,20 @@ class RSQLQueryDslSupportTest {
 
 	@Autowired
 	private TrunkGroupRepository trunkGroupRepository;
+
+	@Test
+	final void testConversionServiceTakesPrecedence() {
+		ConversionService conversionService = mock(ConversionService.class);
+		when(conversionService.canConvert(String.class, Integer.class)).thenReturn(true);
+		when(conversionService.convert("1", Integer.class)).thenReturn(2);
+
+		String rsql = "id==1";
+		List<User> users = (List<User>) userRepository.findAll(toPredicate(rsql, QUser.user, null, conversionService));
+
+		assertThat(rsql, users.size(), is(1));
+		assertThat(rsql, users.get(0).getId(), equalTo(2));
+		assertThat(rsql, users.get(0).getName(), equalTo("February"));
+	}
 
 	@Test
 	final void testQueryMultiLevelAttribute() {

@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.InstanceOfAssertFactories.LOCAL_DATE_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.lang.NonNull;
@@ -40,6 +43,34 @@ class RSQLVisitorBaseTest {
     assertThatExceptionOfType(ConversionException.class)
         .isThrownBy(() -> unit.convert("abc", Integer.class))
         .satisfies(e -> assertEquals("Failed to convert abc to java.lang.Integer type", e.getMessage()));
+  }
+
+  @Test
+  void shouldPreferInstanceConversionServiceOverGlobalConversionService() {
+    ConversionService queryConversionService = mock(ConversionService.class);
+    when(queryConversionService.canConvert(String.class, ConvertedValue.class)).thenReturn(true);
+    when(queryConversionService.convert("abc", ConvertedValue.class))
+        .thenReturn(new ConvertedValue("query:abc"));
+    RSQLVisitorBase.defaultConversionService.addConverter(String.class, ConvertedValue.class,
+        source -> new ConvertedValue("global:" + source));
+    unit.setConversionService(queryConversionService);
+
+    var actual = unit.convert("abc", ConvertedValue.class);
+
+    assertThat(actual).isEqualTo(new ConvertedValue("query:abc"));
+  }
+
+  @Test
+  void shouldFallbackToGlobalConversionServiceWhenInstanceCannotConvert() {
+    ConversionService queryConversionService = mock(ConversionService.class);
+    when(queryConversionService.canConvert(String.class, ConvertedValue.class)).thenReturn(false);
+    RSQLVisitorBase.defaultConversionService.addConverter(String.class, ConvertedValue.class,
+        source -> new ConvertedValue("global:" + source));
+    unit.setConversionService(queryConversionService);
+
+    var actual = unit.convert("abc", ConvertedValue.class);
+
+    assertThat(actual).isEqualTo(new ConvertedValue("global:abc"));
   }
 
   @Nested
@@ -142,4 +173,6 @@ class RSQLVisitorBaseTest {
       return LocalDateTime.parse(source, DateTimeFormatter.ISO_DATE_TIME);
     }
   }
+
+  private record ConvertedValue(String value) {}
 }
