@@ -98,7 +98,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		this.strictEquality = strictEquality;
 		this.likeEscapeCharacter = likeEscapeCharacter;
         this.jsonbConfiguration = jsonbConfiguration;
-		setConversionService(conversionService);
+		this.conversionService = conversionService;
 	}
 
 	private static <X> Path<X> getPath(Path<X> path, String attribute) {
