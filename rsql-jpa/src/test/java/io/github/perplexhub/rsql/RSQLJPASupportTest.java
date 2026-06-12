@@ -8,6 +8,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.sql.Timestamp;
 import java.text.ParseException;
@@ -45,6 +47,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -173,6 +176,43 @@ class RSQLJPASupportTest {
 		log.info("rsql: {} -> count: {}", querySupport.getRsqlQuery(), count);
 		assertThat(querySupport.getRsqlQuery(), count, is(1L));
 		assertThat(querySupport.getRsqlQuery(), users.get(0).getName(), equalTo("February"));
+	}
+
+	@Test
+	final void testQuerySupportConversionServiceTakesPrecedence() {
+		ConversionService conversionService = mock(ConversionService.class);
+		when(conversionService.canConvert(String.class, Integer.class)).thenReturn(true);
+		when(conversionService.convert("1", Integer.class)).thenReturn(2);
+
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery("id==1")
+				.conversionService(conversionService)
+				.build();
+
+		List<User> users = userRepository.findAll(toSpecification(querySupport));
+
+		assertThat(querySupport.getRsqlQuery(), users.size(), is(1));
+		assertThat(querySupport.getRsqlQuery(), users.get(0).getId(), equalTo(2));
+		assertThat(querySupport.getRsqlQuery(), users.get(0).getName(), equalTo("February"));
+	}
+
+	@Test
+	final void testCustomPredicateUsesQuerySupportConversionService() {
+		ConversionService conversionService = mock(ConversionService.class);
+		when(conversionService.canConvert(String.class, Integer.class)).thenReturn(true);
+		when(conversionService.convert("1", Integer.class)).thenReturn(2);
+		RSQLCustomPredicate<Integer> customPredicate = new RSQLCustomPredicate<>(new ComparisonOperator("=shifted="), Integer.class,
+				input -> input.getCriteriaBuilder().equal(input.getPath(), input.getArguments().get(0)));
+		QuerySupport querySupport = QuerySupport.builder()
+				.rsqlQuery("id=shifted=1")
+				.customPredicates(List.of(customPredicate))
+				.conversionService(conversionService)
+				.build();
+
+		List<User> users = userRepository.findAll(toSpecification(querySupport));
+
+		assertThat(querySupport.getRsqlQuery(), users.size(), is(1));
+		assertThat(querySupport.getRsqlQuery(), users.get(0).getId(), equalTo(2));
 	}
 
 	@Test

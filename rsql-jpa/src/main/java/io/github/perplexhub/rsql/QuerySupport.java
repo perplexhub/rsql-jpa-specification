@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import jakarta.persistence.criteria.JoinType;
+import org.springframework.core.convert.ConversionService;
 
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +28,7 @@ public class QuerySupport {
     private Map<Class<?>, List<String>> propertyBlacklist;
     private Collection<String> procedureWhiteList;
     private Collection<String> procedureBlackList;
+    private ConversionService conversionService;
     @Builder.Default
     private JsonbConfiguration jsonbConfiguration = JsonbConfiguration.DEFAULT;
 
@@ -34,7 +36,7 @@ public class QuerySupport {
 
     @Override
     public String toString() {
-        return String.format("%s,distinct:%b,propertyPathMapper:%s,customPredicates:%d,joinHints:%s,propertyWhitelist:%s,propertyBlacklist:%s,jsonbConfiguration:%s",
-                rsqlQuery, distinct, propertyPathMapper, customPredicates == null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist, jsonbConfiguration);
+        return String.format("%s,distinct:%b,propertyPathMapper:%s,customPredicates:%d,joinHints:%s,propertyWhitelist:%s,propertyBlacklist:%s,conversionService:%s,jsonbConfiguration:%s",
+                rsqlQuery, distinct, propertyPathMapper, customPredicates == null ? 0 : customPredicates.size(), joinHints, propertyWhitelist, propertyBlacklist, conversionService, jsonbConfiguration);
     }
 }

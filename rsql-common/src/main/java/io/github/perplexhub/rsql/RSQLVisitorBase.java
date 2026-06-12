@@ -3,7 +3,6 @@ package io.github.perplexhub.rsql;
 import java.lang.reflect.*;
 import java.sql.Timestamp;
 import java.time.*;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -16,7 +15,7 @@ import jakarta.persistence.metamodel.PluralAttribute;
 import lombok.Getter;
 import org.hibernate.metamodel.model.domain.ManagedDomainType;
 import org.hibernate.metamodel.model.domain.PersistentAttribute;
-import org.springframework.core.convert.ConversionFailedException;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.util.StringUtils;
@@ -42,6 +41,8 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 	protected @Setter Map<Class<?>, List<String>> propertyWhitelist;
 
 	protected @Setter Map<Class<?>, List<String>> propertyBlacklist;
+
+	protected @Setter ConversionService conversionService;
 
 	protected Map<Class, ManagedType> getManagedTypeMap() {
 		return managedTypeMap != null ? managedTypeMap : Collections.emptyMap();
@@ -79,7 +80,9 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 		Object object = null;
 		try {
-			if (defaultConversionService.canConvert(String.class, targetType)) {
+			if (conversionService != null && conversionService.canConvert(String.class, targetType)) {
+				object = conversionService.convert(source, targetType);
+			} else if (defaultConversionService != null && defaultConversionService.canConvert(String.class, targetType)) {
 				object = defaultConversionService.convert(source, targetType);
 			} else if (targetType.equals(String.class)) {
 				object = source;

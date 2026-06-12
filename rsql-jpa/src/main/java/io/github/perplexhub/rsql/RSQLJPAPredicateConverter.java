@@ -22,6 +22,7 @@ import cz.jirutka.rsql.parser.ast.OrNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.query.criteria.JpaExpression;
+import org.springframework.core.convert.ConversionService;
 
 @Slf4j
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -74,6 +75,20 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
                                      boolean strictEquality,
                                      Character likeEscapeCharacter,
                                      JsonbConfiguration jsonbConfiguration) {
+		this(builder, propertyPathMapper, customPredicates, joinHints, proceduresWhiteList, proceduresBlackList,
+				strictEquality, likeEscapeCharacter, jsonbConfiguration, null);
+	}
+
+	public RSQLJPAPredicateConverter(CriteriaBuilder builder,
+                                     Map<String, String> propertyPathMapper,
+                                     List<RSQLCustomPredicate<?>> customPredicates,
+                                     Map<String, JoinType> joinHints,
+                                     Collection<String> proceduresWhiteList,
+                                     Collection<String> proceduresBlackList,
+                                     boolean strictEquality,
+                                     Character likeEscapeCharacter,
+                                     JsonbConfiguration jsonbConfiguration,
+                                     ConversionService conversionService) {
 		this.builder = builder;
 		this.propertyPathMapper = propertyPathMapper != null ? propertyPathMapper : Collections.emptyMap();
 		this.customPredicates = customPredicates != null ? customPredicates.stream().collect(Collectors.toMap(RSQLCustomPredicate::getOperator, Function.identity(), (a, b) -> a)) : Collections.emptyMap();
@@ -83,6 +98,7 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 		this.strictEquality = strictEquality;
 		this.likeEscapeCharacter = likeEscapeCharacter;
         this.jsonbConfiguration = jsonbConfiguration;
+		this.conversionService = conversionService;
 	}
 
 	private static <X> Path<X> getPath(Path<X> path, String attribute) {

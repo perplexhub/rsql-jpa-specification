@@ -128,7 +128,7 @@ public class RSQLJPASupport extends RSQLCommonSupport {
 					querySupport.getCustomPredicates(), querySupport.getJoinHints(),
 					querySupport.getProcedureWhiteList(), querySupport.getProcedureBlackList(),
 					querySupport.isStrictEquality(), querySupport.getLikeEscapeCharacter(),
-                    querySupport.getJsonbConfiguration());
+                    querySupport.getJsonbConfiguration(), querySupport.getConversionService());
 
 			visitor.setPropertyWhitelist(querySupport.getPropertyWhitelist());
 			visitor.setPropertyBlacklist(querySupport.getPropertyBlacklist());
