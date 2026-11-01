@@ -42,11 +42,14 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -359,6 +362,17 @@ class RSQLJPASupportTest {
 		long count = companys.size();
 		log.info("rsql: {} -> count: {}", rsql, count);
 		assertThat(rsql, count, is(4L));
+	}
+
+	@Test
+	@ExtendWith(OutputCaptureExtension.class)
+	final void testElementCollectionOfEnums(CapturedOutput output) {
+		String rsql = "statuses==ACTIVE";
+		List<Company> companys = companyRepository.findAll(toSpecification(rsql));
+		long count = companys.size();
+		log.info("rsql: {} -> count: {}", rsql, count);
+		assertThat(rsql, count, is(2L));
+		Assertions.assertThat(output).doesNotContain("Unable to get the managed type");
 	}
 
 	@Test

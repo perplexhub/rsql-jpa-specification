@@ -217,6 +217,11 @@ public abstract class RSQLVisitorBase<R, A> implements RSQLVisitor<R, A> {
 
 	protected <T> ManagedType<T> getManagedElementCollectionType(String mappedProperty, ManagedType<T> classMetadata) {
 		try {
+			Attribute<? super T, ?> attribute = getAttribute(mappedProperty, classMetadata);
+			if (attribute instanceof PluralAttribute<?, ?, ?> pluralAttribute
+					&& pluralAttribute.getElementType().getPersistenceType() == jakarta.persistence.metamodel.Type.PersistenceType.BASIC) {
+				return classMetadata;
+			}
 			Class<?> cls = findPropertyType(mappedProperty, classMetadata);
 			if (!cls.isPrimitive() && !primitiveToWrapper.containsValue(cls) && !cls.equals(String.class) && getEntityManagerMap().size() > 0) {
 				ManagedType<T> managedType = getManagedTypeMap().get(cls);

@@ -12,3 +12,6 @@ insert into company_tags(id, tag) values (2, 'concern');
 insert into company_tags(id, tag) values (3, 'tech');
 insert into company_tags(id, tag) values (4, 'tech');
 insert into company_tags(id, tag) values (5, 'tech');
+insert into company_statuses(id, status) values (1, 'ACTIVE');
+insert into company_statuses(id, status) values (2, 'ACTIVE');
+insert into company_statuses(id, status) values (3, 'CANCELLED');

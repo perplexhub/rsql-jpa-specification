@@ -30,6 +30,12 @@ public class Company {
 	@CollectionTable(name = "company_tags", joinColumns = @JoinColumn(name = "id"))
 	private List<BigTag> bigTags;
 
+	@ElementCollection
+	@CollectionTable(name = "company_statuses", joinColumns = @JoinColumn(name = "id"))
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status")
+	private List<Status> statuses;
+
 	@OneToMany(mappedBy = "company")
 	private List<User> users;
 
