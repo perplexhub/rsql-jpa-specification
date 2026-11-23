@@ -190,8 +190,14 @@ public class RSQLJPAPredicateConverter extends RSQLVisitorBase<Predicate, From> 
 					Class<?> embeddedType = findPropertyType(mappedProperty, classMetadata);
 					type = embeddedType;
 					classMetadata = getManagedType(embeddedType);
-					log.debug("Create a embedded join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
-					root = join(keyJoin, root, mappedProperty, null);
+					if (root instanceof From) {
+						log.debug("Create a embedded join between [{}] and [{}] using key [{}]", previousClass, classMetadata.getJavaType().getName(), keyJoin);
+						root = join(keyJoin, root, mappedProperty, null);
+					} else {
+						// e.g. the embedded id of a to-one association read from the foreign key (no join): keep navigating the path
+						log.debug("Create property path for embedded type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
+						root = root.get(mappedProperty);
+					}
 				} else {
 					log.debug("Create property path for type [{}] property [{}]", classMetadata.getJavaType().getName(), mappedProperty);
 					root = getPath(root, mappedProperty);
