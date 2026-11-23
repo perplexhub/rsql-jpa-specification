@@ -21,12 +21,15 @@ import java.util.*;
 
 import io.github.perplexhub.rsql.custom.CustomType;
 import io.github.perplexhub.rsql.model.City;
+import io.github.perplexhub.rsql.model.UserRole;
+import io.github.perplexhub.rsql.model.UserRoleGrant;
 import io.github.perplexhub.rsql.model.Project;
 import io.github.perplexhub.rsql.model.AdminProject;
 import io.github.perplexhub.rsql.model.account.AccountEntity;
 import io.github.perplexhub.rsql.model.account.AddressEntity;
 import io.github.perplexhub.rsql.model.account.AddressHistoryEntity;
 import io.github.perplexhub.rsql.repository.jpa.AccountRepository;
+import io.github.perplexhub.rsql.repository.jpa.UserRoleGrantRepository;
 import io.github.perplexhub.rsql.repository.jpa.AdminProjectRepository;
 import io.github.perplexhub.rsql.repository.jpa.ProjectRepository;
 import io.github.perplexhub.rsql.repository.jpa.custom.CustomTypeRepository;
@@ -74,6 +77,9 @@ class RSQLJPASupportTest {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private UserRoleGrantRepository userRoleGrantRepository;
 
 	@Autowired
 	private CompanyRepository companyRepository;
@@ -1634,6 +1640,25 @@ class RSQLJPASupportTest {
 		getPropertyBlacklist().clear();
 		customTypeRepository.deleteAll();
 		accountRepository.deleteAll();
+	}
+
+	@Test
+	@Transactional
+	@Rollback(true)
+	void testSearchByEmbeddedIdOfManyToOneAssociation() {
+		// Given
+		em.persist(new UserRoleGrant(1, "grant 1", em.find(UserRole.class, new UserRole.UserRolePK(1, 1))));
+		em.persist(new UserRoleGrant(2, "grant 2", em.find(UserRole.class, new UserRole.UserRolePK(2, 1))));
+		em.flush();
+		// When
+		List<UserRoleGrant> byUser = userRoleGrantRepository.findAll(RSQLJPASupport.rsql("userRole.id.userId==1"));
+		List<UserRoleGrant> byUsersAndRole = userRoleGrantRepository.findAll(
+				RSQLJPASupport.rsql("userRole.id.userId=in=(1,2);userRole.id.roleId==1"));
+		List<UserRoleGrant> byOtherUser = userRoleGrantRepository.findAll(RSQLJPASupport.rsql("userRole.id.userId!=1"));
+		// Then
+		Assertions.assertThat(byUser).extracting(UserRoleGrant::getId).containsExactly(1);
+		Assertions.assertThat(byUsersAndRole).extracting(UserRoleGrant::getId).containsExactlyInAnyOrder(1, 2);
+		Assertions.assertThat(byOtherUser).extracting(UserRoleGrant::getId).containsExactly(2);
 	}
 
 }
